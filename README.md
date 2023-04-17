@@ -20,11 +20,11 @@ What does it mean? You get llama.cpp with a fancy UI, persistent stories, editin
 
 ## Building at Windows
 - If you want to compile your binaries from source at Windows, the easiest way is:
-  - Use the latest release of w64devkit (https://github.com/skeeto/w64devkit). Be sure to use the "vanilla one" not i686 or other different stuff. If you try they will conflit with the precompiled libs!
-  - Make sure you are using the w64devkit integrated terminal, the run 'make'.
-  - Make sure you are the python module PyInstaller installed via pip.
-  - Run the script make_pyinstaller.bat .
-  - The koboldcpp.exe file will be at the dist folder.
+  - Use the latest release of w64devkit (https://github.com/skeeto/w64devkit). Be sure to use the "vanilla one", not i686 or other different stuff. If you try they will conflit with the precompiled libs!
+  - Make sure you are using the w64devkit integrated terminal, then run 'make' at the KoboldCpp source folder. This will create the .dll files.
+  - If you want to generate the .exe file, make sure you have the python module PyInstaller installed with pip ("pip install PyInstaller").
+  - Run the script make_pyinstaller.bat at a regular terminal (or Windows Explorer).
+  - The koboldcpp.exe file will be at your dist folder.
 
 ## OSX and Linux
 - You will have to compile your binaries from source. A makefile is provided, simply run `make`
