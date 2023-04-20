@@ -16,7 +16,6 @@
 #include <ggml_clblast_dequant.cl>
 
 cl_platform_id platform;
-cl_device_id device;
 cl_context context;
 cl_command_queue queue;
 cl_program program;
@@ -78,7 +77,7 @@ cl_program build_program_from_source(cl_context ctx, cl_device_id dev, const cha
    int err;
 
    program_size = strlen(program_buffer);
-   
+
    program = clCreateProgramWithSource(ctx, 1,
       (const char**)&program_buffer, &program_size, &err);
    if(err < 0) {
@@ -116,9 +115,34 @@ static void ggml_cl_sgemm_wrapper(const enum CBLAS_ORDER order, const enum CBLAS
         char * KCPP_CLBLAST_PLATFORM = getenv("KCPP_CLBLAST_PLATFORM");
         char * KCPP_CLBLAST_DEVICES = getenv("KCPP_CLBLAST_DEVICES");
         int plat_num = (KCPP_CLBLAST_PLATFORM == NULL ? 0 : atoi(KCPP_CLBLAST_PLATFORM));
-        int dev_num = (KCPP_CLBLAST_DEVICES == NULL ? 0 : atoi(KCPP_CLBLAST_DEVICES));
-        printf("\nInitializing CLBlast (First Run)...");
-        printf("\nAttempting to use: Platform=%d, Device=%d (If invalid, program will crash)\n",plat_num,dev_num);
+        int used_devices_nums[16];
+        int num_used_devices = 0;
+        cl_device_id *used_devices;
+        if (KCPP_CLBLAST_DEVICES == NULL) {
+            printf("KCPP_CLBLAST_DEVICES is NULL!\n");
+            used_devices_nums[0] = 0;
+            num_used_devices++;
+        } else {
+            printf("KCPP_CLBLAST_DEVICES is %s!\n", KCPP_CLBLAST_DEVICES);
+            char *token = strtok(KCPP_CLBLAST_DEVICES, ",");
+            if(token) {
+                used_devices_nums[num_used_devices] = atoi(token);
+                printf("Using device %d\n", used_devices_nums[num_used_devices]);
+                fflush(stdout);
+                num_used_devices++;
+            }
+            /* walk through other tokens */
+            while( token != NULL ) {
+                token = strtok(NULL, ",");
+                if(token) {
+                    used_devices_nums[num_used_devices] = atoi(token);
+                    printf("Using device %d\n", used_devices_nums[num_used_devices]);
+                    fflush(stdout);
+                    num_used_devices++;
+                }
+            }
+        }
+        used_devices = malloc(sizeof(cl_device_id)*num_used_devices);
         cl_uint num_platforms;
         clGetPlatformIDs(0, NULL, &num_platforms);
         cl_platform_id* platforms = (cl_platform_id*)malloc(num_platforms*sizeof(cl_platform_id));
@@ -130,27 +154,29 @@ static void ggml_cl_sgemm_wrapper(const enum CBLAS_ORDER order, const enum CBLAS
         clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, 0, NULL, &num_devices);
         cl_device_id* devices = (cl_device_id*)malloc(num_devices*sizeof(cl_device_id));
         clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, num_devices, devices, NULL);
-        device = devices[dev_num];
-        char device_buffer[1024];
-        clGetDeviceInfo(device, CL_DEVICE_NAME, sizeof(device_buffer), &device_buffer, NULL);
-        printf("Using Platform: %s Device: %s\n", platform_buffer, device_buffer);
-        context = clCreateContext(NULL, 1, &device, NULL, NULL, &err);
+        printf("\nInitializing CLBlast (First Run)...");
+        for(int i = 0; i<num_used_devices; i++) {
+            printf("\nAttempting to use: Platform=%d, Device=%d (If invalid, program will crash)\n", plat_num, used_devices_nums[i]);
+            used_devices[i] = devices[used_devices_nums[i]];
+            char device_buffer[1024];
+            clGetDeviceInfo(used_devices[i], CL_DEVICE_NAME, sizeof(device_buffer), &device_buffer, NULL);
+            printf("Using Platform: %s Device: %s\n", platform_buffer, device_buffer);
+        }
+        context = clCreateContext(NULL, num_used_devices, used_devices, NULL, NULL, &err);
         if (err != CL_SUCCESS) {
             printf("Error creating OpenCL context: %d\n", err);
             fflush(stdout);
         }
-        queue = clCreateCommandQueue(context, device, 0, &err);
-
-        if (err != CL_SUCCESS) {
-            printf("Error creating OpenCL Command Queue: %d\n", err);
-            fflush(stdout);
+        for(int i = 0; i < num_used_devices; i++) {
+            queue = clCreateCommandQueue(context, devices[used_devices_nums[i]], 0, &err);
+            if (err != CL_SUCCESS) {
+                printf("Error creating OpenCL Command Queue: %d\n", err);
+                fflush(stdout);
+            }
+            program = build_program_from_source(context, devices[used_devices_nums[i]], clblast_dequant);
         }
-
         free(platforms);
         free(devices);
-
-        program = build_program_from_source(context, device, clblast_dequant);
-
         // Prepare dequantize kernels
         kernel_q4_0 = clCreateKernel(program, "dequantize_row_q4_0", &err);
         if(err < 0) {
@@ -162,7 +188,6 @@ static void ggml_cl_sgemm_wrapper(const enum CBLAS_ORDER order, const enum CBLAS
             printf("Error creating OpenCL dequantize q4_1 kernel: %d\n", err);
             fflush(stdout);
         };
-
         cl_initialized = true;
     }
 
