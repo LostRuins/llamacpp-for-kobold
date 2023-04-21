@@ -26,12 +26,18 @@ What does it mean? You get llama.cpp with a fancy UI, persistent stories, editin
   - If you want to generate the .exe file, make sure you have the python module PyInstaller installed with pip ('pip install PyInstaller').
   - Run the script make_pyinstaller.bat at a regular terminal (or Windows Explorer).
   - The koboldcpp.exe file will be at your dist folder.
+- If you wish to use your own version of the additional Windows libraries (clblast, libopenblas or OpenCL), you can:
+  - Compile then, or download the lastest release from the respective GitHub repository.
+  - Replace the existing versions of the .dll file located in the project directory root.
+  - Move any import .lib file to the /lib folder of your project, overwriting the older file.
+  - Make the project using the instructions. 
 
 ## OSX and Linux
 - You will have to compile your binaries from source. A makefile is provided, simply run `make`
 - If you want you can also link your own install of OpenBLAS manually with `make LLAMA_OPENBLAS=1`
 - Alternatively, if you want you can also link your own install of CLBlast manually with `make LLAMA_CLBLAST=1`, for this you will need to obtain and link OpenCL and CLBlast libraries.
-  - For Arch Linux: Install `cblas` and `openblas`. In the makefile, find the `ifdef LLAMA_OPENBLAS` conditional and add `-lcblas` to `LDFLAGS`.
+- For a full featured build, do `make LLAMA_OPENBLAS=1 LLAMA_CLBLAST=1`
+  - For Arch Linux: Install `cblas` and `openblas`. 
   - For Debian: Install `libclblast-dev` and `libopenblas-dev`.
 - After all binaries are built, you can run the python script with the command `koboldcpp.py [ggml_model.bin] [port]`
 
