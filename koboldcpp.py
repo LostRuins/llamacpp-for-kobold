@@ -40,9 +40,6 @@ class generation_outputs(ctypes.Structure):
                 ("text", ctypes.c_char * 16384)]
 
 handle = None
-use_blas = False # if true, uses OpenBLAS for acceleration. libopenblas.dll must exist in the same dir.
-use_clblast = False #uses CLBlast instead
-use_noavx2 = False #uses openblas with no avx2 instructions
 
 def getdirpath():
     return os.path.dirname(os.path.realpath(__file__))
@@ -53,13 +50,11 @@ def pick_existant_file(ntoption,nonntoption):
     ntexist = file_exists(ntoption) 
     nonntexist = file_exists(nonntoption)
     if os.name == 'nt':
-        if nonntexist and not ntexist:
-            return nonntoption
-        return ntoption
-    else:
-        if ntexist and not nonntexist:
+        if ntexist:
             return ntoption
+    elif nonntexist:
         return nonntoption
+    return None
 
 lib_default = pick_existant_file("koboldcpp.dll","koboldcpp.so")
 lib_noavx2 = pick_existant_file("koboldcpp_noavx2.dll","koboldcpp_noavx2.so")
@@ -68,21 +63,8 @@ lib_openblas_noavx2 = pick_existant_file("koboldcpp_openblas_noavx2.dll","kobold
 lib_clblast = pick_existant_file("koboldcpp_clblast.dll","koboldcpp_clblast.so")
 
 
-def init_library():
-    global handle, use_blas, use_clblast, use_noavx2
-    libname = ""
-    if use_noavx2:
-        if use_blas:
-            libname = lib_openblas_noavx2
-        else:
-            libname = lib_noavx2
-    else:
-        if use_clblast:
-            libname = lib_clblast
-        elif use_blas:
-            libname = lib_openblas
-        else:
-            libname = lib_default
+def init_library(libname):
+    global handle
 
     print("Initializing dynamic library: " + libname)
     dir_path = getdirpath()
@@ -351,44 +333,37 @@ def RunServerMultiThreaded(addr, port, embedded_kailite = None):
             sys.exit(0)
 
 
-def main(args): 
-    global use_blas, use_clblast, use_noavx2
-    global lib_default,lib_noavx2,lib_openblas,lib_openblas_noavx2,lib_clblast
-
-    use_blas = False 
-    use_clblast = False 
-    use_noavx2 = False 
-    
+def main(args):     
     if args.noavx2:
-        use_noavx2 = True
-        if not file_exists(lib_openblas_noavx2) or (os.name=='nt' and not file_exists("libopenblas.dll")):
-            print("Warning: OpenBLAS library file not found. Non-BLAS library will be used.")     
-        elif args.noblas:            
+        if args.noblas and lib_noavx2:            
+            init_library(lib_noavx2)
             print("Attempting to use non-avx2 compatibility library without OpenBLAS.")
-        else:
-            use_blas = True
+        elif lib_openblas_noavx2:
+            init_library(lib_openblas_noavx2)
             print("Attempting to use non-avx2 compatibility library with OpenBLAS. A compatible libopenblas will be required.")
     elif args.useclblast:
-        if not file_exists(lib_clblast) or (os.name=='nt' and not file_exists("clblast.dll")):
-            print("Warning: CLBlast library file not found. Non-BLAS library will be used.")
-        else:
+        if lib_clblast:
             print("Attempting to use CLBlast library for faster prompt ingestion. A compatible clblast will be required.")
-            use_clblast = True
-    else:
-        if not file_exists(lib_openblas) or (os.name=='nt' and not file_exists("libopenblas.dll")):
-            print("Warning: OpenBLAS library file not found. Non-BLAS library will be used.")
-        elif args.noblas:
-            print("Attempting to library without OpenBLAS.")
+            init_library(lib_clblast)
         else:
-            use_blas = True
+            print("Warning: CLBlast library file not found.")
+            init_library(lib_default)
+    elif not args.noblas:
+        if lib_openblas:
             print("Attempting to use OpenBLAS library for faster prompt ingestion. A compatible libopenblas will be required.")
-    
+            init_library(lib_openblas)
+        else:
+            print("Warning: OpenBLAS library file not found. Non-BLAS library will be used.")
+            init_library(lib_default)
+    else:
+        print("Attempting to library without OpenBLAS.")
+        init_library (lib_default)   
+          
     if args.psutil_set_threads:
         import psutil
         args.threads = psutil.cpu_count(logical=False)
         print("Overriding thread count, using " + str(args.threads) + " threads instead.")
 
-    init_library() # Note: if blas does not exist and is enabled, program will crash.
     embedded_kailite = None 
     ggml_selected_file = args.model_param
     if not ggml_selected_file:
