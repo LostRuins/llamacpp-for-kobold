@@ -90,7 +90,7 @@ static const std::map<e_model, size_t> & MEM_REQ_KV_SELF()
 static const std::map<e_model, size_t> & MEM_REQ_EVAL()
 {
     static std::map<e_model, size_t> k_sizes = {
-        { MODEL_7B,   768ull * MB },
+        { MODEL_7B,   800ull * MB },
         { MODEL_13B, 1024ull * MB },
         { MODEL_30B, 1280ull * MB },
         { MODEL_65B, 1536ull * MB },
@@ -455,7 +455,14 @@ struct llama_file_loader {
     void read_vocab() {
         vocab.id_to_token.resize(hparams.n_vocab);
 
-        for (uint32_t i = 0; i < hparams.n_vocab; i++) {
+        int32_t vocabloops = hparams.n_vocab;
+        if(vocabloops==32001 && file_version == LLAMA_FILE_VERSION_GGML)
+        {
+            printf("---\n!! WARNING: Model appears to be GPT4ALL v1 model, triggering compatibility fix !!\n---\n");
+            vocabloops -= 1;
+        }
+
+        for (uint32_t i = 0; i < vocabloops; i++) {
             uint32_t len = file.read_u32();
             std::string word = file.read_string(len);
 
@@ -488,6 +495,8 @@ struct llama_file_loader {
                 case GGML_TYPE_F16:
                 case GGML_TYPE_Q4_0:
                 case GGML_TYPE_Q4_1:
+                case GGML_TYPE_Q4_2:
+                case GGML_TYPE_Q4_3:
                 case GGML_TYPE_Q5_0:
                 case GGML_TYPE_Q5_1:
                 case GGML_TYPE_Q8_0:
@@ -563,6 +572,8 @@ struct llama_file_saver {
             case GGML_TYPE_F16:
             case GGML_TYPE_Q4_0:
             case GGML_TYPE_Q4_1:
+            case GGML_TYPE_Q4_2:
+            case GGML_TYPE_Q4_3:
             case GGML_TYPE_Q5_0:
             case GGML_TYPE_Q5_1:
             case GGML_TYPE_Q8_0:
@@ -859,6 +870,8 @@ static const char *llama_ftype_name(enum llama_ftype ftype) {
         case LLAMA_FTYPE_MOSTLY_Q4_1: return "mostly Q4_1";
         case LLAMA_FTYPE_MOSTLY_Q4_1_SOME_F16:
                                       return "mostly Q4_1, some F16";
+        case LLAMA_FTYPE_MOSTLY_Q4_2: return "mostly Q4_2";
+        case LLAMA_FTYPE_MOSTLY_Q4_3: return "mostly Q4_3";
         case LLAMA_FTYPE_MOSTLY_Q5_0: return "mostly Q5_0";
         case LLAMA_FTYPE_MOSTLY_Q5_1: return "mostly Q5_1";
         case LLAMA_FTYPE_MOSTLY_Q8_0: return "mostly Q8_0";
@@ -929,7 +942,8 @@ static void llama_model_load_internal(
         if (hparams.ftype != LLAMA_FTYPE_ALL_F32     &&
             hparams.ftype != LLAMA_FTYPE_MOSTLY_F16  &&
             hparams.ftype != LLAMA_FTYPE_MOSTLY_Q8_0) {
-            throw format("this format is no longer supported (see https://github.com/ggerganov/llama.cpp/pull/1305)");
+            printf("\nLegacy LLAMA GGJT compatability changes triggered.\n");
+            //throw format("this format is no longer supported (see https://github.com/ggerganov/llama.cpp/pull/1305)");
         }
     }
 
@@ -1097,11 +1111,11 @@ static bool llama_eval_internal(
             const int   n_past,
             const int   n_threads) {
 
-    // enforce that the first token is BOS
-    if (n_past == 0 && tokens[0] != llama_token_bos()) {
-        fprintf(stderr, "%s: first token must be BOS\n", __func__);
-        return false;
-    }
+    // enforce that the first token is BOS (not needed, messes with my context manip code)
+    //if (n_past == 0 && tokens[0] != llama_token_bos()) {
+        //fprintf(stderr, "%s: first token must be BOS\n", __func__);
+        // return false; //never fail. Not even in the face of Armageddon.
+    //}
 
     const int64_t t_start_us = ggml_time_us();
 
@@ -1955,6 +1969,8 @@ static void llama_model_quantize_internal(const std::string & fname_inp, const s
     switch (ftype) {
         case LLAMA_FTYPE_MOSTLY_Q4_0: quantized_type = GGML_TYPE_Q4_0; break;
         case LLAMA_FTYPE_MOSTLY_Q4_1: quantized_type = GGML_TYPE_Q4_1; break;
+        case LLAMA_FTYPE_MOSTLY_Q4_2: quantized_type = GGML_TYPE_Q4_2; break;
+        case LLAMA_FTYPE_MOSTLY_Q4_3: quantized_type = GGML_TYPE_Q4_3; break;
         case LLAMA_FTYPE_MOSTLY_Q5_0: quantized_type = GGML_TYPE_Q5_0; break;
         case LLAMA_FTYPE_MOSTLY_Q5_1: quantized_type = GGML_TYPE_Q5_1; break;
         case LLAMA_FTYPE_MOSTLY_Q8_0: quantized_type = GGML_TYPE_Q8_0; break;

@@ -1,5 +1,8 @@
-# Define the default target now so that it is always the first target
-default: main quantize quantize-stats perplexity embedding vdot
+default: koboldcpp koboldcpp_noavx2 koboldcpp_openblas koboldcpp_openblas_noavx2 koboldcpp_clblast
+simple: koboldcpp koboldcpp_noavx2
+tools: quantize_gpt2 quantize_gptj quantize_llama quantize_neox
+dev: koboldcpp_openblas
+
 
 ifndef UNAME_S
 UNAME_S := $(shell uname -s)
@@ -13,8 +16,12 @@ ifndef UNAME_M
 UNAME_M := $(shell uname -m)
 endif
 
-CCV  = $(shell $(CC)  --version | head -n 1)
-CXXV = $(shell $(CXX) --version | head -n 1)
+ifneq ($(shell grep -e "Arch Linux" -e "ID_LIKE=arch" /etc/os-release 2>/dev/null),)
+ARCH_ADD = -lcblas
+endif
+
+CCV := $(shell $(CC) --version | head -n 1)
+CXXV := $(shell $(CXX) --version | head -n 1)
 
 # Mac OS + Arm can report x86_64
 # ref: https://github.com/ggerganov/whisper.cpp/issues/66#issuecomment-1282546789
@@ -34,25 +41,28 @@ endif
 #
 
 # keep standard at C11 and C++11
-CFLAGS   = -I.              -O3 -std=c11   -fPIC
-CXXFLAGS = -I. -I./examples -O3 -std=c++11 -fPIC
+CFLAGS   = -I.              -I./include -I./include/CL -I./otherarch -I./otherarch/tools -Ofast -DNDEBUG -std=c11   -fPIC
+CXXFLAGS = -I. -I./examples -I./include -I./include/CL -I./otherarch -I./otherarch/tools -Ofast -DNDEBUG -std=c++11 -fPIC
 LDFLAGS  =
 
-ifndef LLAMA_DEBUG
-	CFLAGS   += -DNDEBUG
-	CXXFLAGS += -DNDEBUG
-endif
+# these are used on windows, to build some libraries with extra old device compatibility
+BONUSCFLAGS1 =
+BONUSCFLAGS2 =
 
-# warnings
-CFLAGS   += -Wall -Wextra -Wpedantic -Wcast-qual -Wdouble-promotion -Wshadow -Wstrict-prototypes -Wpointer-arith
-CXXFLAGS += -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-multichar
+OPENBLAS_FLAGS = -DGGML_USE_OPENBLAS -I/usr/local/include/openblas
+CLBLAST_FLAGS = -DGGML_USE_CLBLAST
+
+#lets try enabling everything
+CFLAGS   += -pthread -s
+CXXFLAGS += -pthread -s -Wno-multichar -Wno-write-strings
 
 # OS specific
 # TODO: support Windows
 ifeq ($(UNAME_S),Linux)
 	CFLAGS   += -pthread
-	CXXFLAGS += -pthread
+	CXXFLAGS += -pthread	
 endif
+
 ifeq ($(UNAME_S),Darwin)
 	CFLAGS   += -pthread
 	CXXFLAGS += -pthread
@@ -88,12 +98,15 @@ endif
 #       feel free to update the Makefile for your architecture and send a pull request or issue
 ifeq ($(UNAME_M),$(filter $(UNAME_M),x86_64 i686))
 	# Use all CPU extensions that are available:
-	CFLAGS   += -march=native -mtune=native
-	CXXFLAGS += -march=native -mtune=native
-
-	# Usage AVX-only
-	#CFLAGS   += -mfma -mf16c -mavx
-	#CXXFLAGS += -mfma -mf16c -mavx
+	CFLAGS += -mavx
+# old library NEEDS mf16c to work. so we must build with it. new one doesnt
+	ifeq ($(OS),Windows_NT)
+		BONUSCFLAGS1 += -mf16c
+		BONUSCFLAGS2 += -mavx2 -msse3 -mfma
+	else
+# if not on windows, they are clearly building it themselves, so lets just use whatever is supported
+		CFLAGS += -march=native -mtune=native
+	endif
 endif
 ifneq ($(filter ppc64%,$(UNAME_M)),)
 	POWER9_M := $(shell grep "POWER9" /proc/cpuinfo)
@@ -114,6 +127,7 @@ ifndef LLAMA_NO_ACCELERATE
 		LDFLAGS += -framework Accelerate
 	endif
 endif
+
 ifdef LLAMA_OPENBLAS
 	CFLAGS  += -DGGML_USE_OPENBLAS -I/usr/local/include/openblas -I/usr/include/openblas
 	ifneq ($(shell grep -e "Arch Linux" -e "ID_LIKE=arch" /etc/os-release 2>/dev/null),)
@@ -122,6 +136,7 @@ ifdef LLAMA_OPENBLAS
 		LDFLAGS += -lopenblas
 	endif
 endif
+
 ifdef LLAMA_CUBLAS
 	CFLAGS    += -DGGML_USE_CUBLAS -I/usr/local/cuda/include -I/opt/cuda/include -I$(CUDA_PATH)/targets/x86_64-linux/include
 	CXXFLAGS  += -DGGML_USE_CUBLAS -I/usr/local/cuda/include -I/opt/cuda/include -I$(CUDA_PATH)/targets/x86_64-linux/include
@@ -132,17 +147,14 @@ ifdef LLAMA_CUBLAS
 ggml-cuda.o: ggml-cuda.cu ggml-cuda.h
 	$(NVCC) $(NVCCFLAGS) $(CXXFLAGS) -Wno-pedantic -c $< -o $@
 endif
-ifdef LLAMA_CLBLAST
-	CFLAGS  += -DGGML_USE_CLBLAST
-	# Mac provides OpenCL as a framework
-	ifeq ($(UNAME_S),Darwin)
-		LDFLAGS += -lclblast -framework OpenCL
-	else
-		LDFLAGS += -lclblast -lOpenCL
-	endif
-	OBJS    += ggml-opencl.o
-ggml-opencl.o: ggml-opencl.c ggml-opencl.h
-	$(CC) $(CFLAGS) -c $< -o $@
+
+ifdef LLAMA_GPROF
+	CFLAGS   += -pg
+	CXXFLAGS += -pg
+endif
+ifdef LLAMA_PERF
+	CFLAGS   += -DGGML_PERF
+	CXXFLAGS += -DGGML_PERF
 endif
 ifdef LLAMA_HIPBLAS
 	ROCM_PATH  ?= /opt/rocm
@@ -160,8 +172,8 @@ endif
 ifneq ($(filter aarch64%,$(UNAME_M)),)
 	# Apple M1, M2, etc.
 	# Raspberry Pi 3, 4, Zero 2 (64-bit)
-	CFLAGS   += -mcpu=native
-	CXXFLAGS += -mcpu=native
+	CFLAGS +=
+	CXXFLAGS +=
 endif
 ifneq ($(filter armv6%,$(UNAME_M)),)
 	# Raspberry Pi 1, Zero
@@ -174,6 +186,36 @@ endif
 ifneq ($(filter armv8%,$(UNAME_M)),)
 	# Raspberry Pi 3, 4, Zero 2 (32-bit)
 	CFLAGS += -mfp16-format=ieee -mno-unaligned-access
+endif
+
+DEFAULT_BUILD =
+NOAVX2_BUILD =
+OPENBLAS_BUILD =
+OPENBLAS_NOAVX2_BUILD =
+CLBLAST_BUILD =
+
+ifeq ($(OS),Windows_NT)
+	DEFAULT_BUILD = $(CXX) $(CXXFLAGS)  $^ -shared -o $@.dll $(LDFLAGS)
+	NOAVX2_BUILD = $(CXX) $(CXXFLAGS) $^ -shared -o $@.dll $(LDFLAGS)
+	OPENBLAS_BUILD = $(CXX) $(CXXFLAGS) $^ lib/libopenblas.lib -shared -o $@.dll $(LDFLAGS)
+	OPENBLAS_NOAVX2_BUILD = $(CXX) $(CXXFLAGS) $^ lib/libopenblas.lib -shared -o $@.dll $(LDFLAGS)
+	CLBLAST_BUILD = $(CXX) $(CXXFLAGS) $^ lib/OpenCL.lib lib/clblast.lib -shared -o $@.dll $(LDFLAGS)
+else
+	DEFAULT_BUILD = $(CXX) $(CXXFLAGS)  $^ -shared -o $@.so $(LDFLAGS)
+	NOAVX2_BUILD = $(CXX) $(CXXFLAGS) $^ -shared -o $@.so $(LDFLAGS)
+	ifdef LLAMA_OPENBLAS
+	OPENBLAS_BUILD = $(CXX) $(CXXFLAGS) $^ $(ARCH_ADD) -lopenblas -shared -o $@.so $(LDFLAGS)
+	OPENBLAS_NOAVX2_BUILD = $(CXX) $(CXXFLAGS) $^ $(ARCH_ADD) -lopenblas -shared -o $@.so $(LDFLAGS)
+	endif	
+	ifdef LLAMA_CLBLAST
+	CLBLAST_BUILD = $(CXX) $(CXXFLAGS) $^ -lclblast -lOpenCL $(ARCH_ADD) -lopenblas -shared -o $@.so $(LDFLAGS)
+	endif
+
+	ifndef LLAMA_OPENBLAS
+	ifndef LLAMA_CLBLAST
+	OPENBLAS_BUILD = @echo 'Your OS $(OS) does not appear to be Windows. For faster speeds, install and link a BLAS library. Set LLAMA_OPENBLAS=1 to compile with OpenBLAS support or LLAMA_CLBLAST=1 to compile with ClBlast support. This is just a reminder, not an error.'
+	endif
+	endif
 endif
 
 #
@@ -195,20 +237,41 @@ $(info )
 # Build library
 #
 
-ggml.o: ggml.c ggml.h ggml-cuda.h
-	$(CC)  $(CFLAGS)   -c $< -o $@
+ggml.o: ggml.c ggml.h
+	$(CC)  $(CFLAGS) $(BONUSCFLAGS1) $(BONUSCFLAGS2) -c $< -o $@
+ggml_openblas.o: ggml.c ggml.h
+	$(CC)  $(CFLAGS) $(BONUSCFLAGS1) $(BONUSCFLAGS2) $(OPENBLAS_FLAGS) -c $< -o $@
+ggml_noavx2.o: ggml.c ggml.h
+	$(CC)  $(CFLAGS) -c $< -o $@
+ggml_openblas_noavx2.o: ggml.c ggml.h
+	$(CC)  $(CFLAGS) $(OPENBLAS_FLAGS) -c $< -o $@
+ggml_clblast.o: ggml.c ggml.h
+	$(CC)  $(CFLAGS) $(BONUSCFLAGS1) $(BONUSCFLAGS2) $(CLBLAST_FLAGS) -c $< -o $@
+ggml-opencl.o: ggml-opencl.c ggml-opencl.h
+	$(CC) $(CFLAGS) -c $< -o $@
+ggml-opencl-legacy.o: ggml-opencl-legacy.c ggml-opencl-legacy.h
+	$(CC) $(CFLAGS) -c $< -o $@
 
-llama.o: llama.cpp ggml.h ggml-cuda.h llama.h llama-util.h
+#extreme old version compat
+ggml_v1.o: otherarch/ggml_v1.c otherarch/ggml_v1.h
+	$(CC)  $(CFLAGS) $(BONUSCFLAGS1) $(BONUSCFLAGS2) -c $< -o $@
+ggml_v1_noavx2.o: otherarch/ggml_v1.c otherarch/ggml_v1.h
+	$(CC)  $(CFLAGS) $(BONUSCFLAGS1) -c $< -o $@
+
+llama.o: llama.cpp llama.h llama-util.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 common.o: examples/common.cpp examples/common.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-libllama.so: llama.o ggml.o $(OBJS)
-	$(CXX) $(CXXFLAGS) -shared -fPIC -o $@ $^ $(LDFLAGS)
+expose.o: expose.cpp expose.h
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+gpttype_adapter.o: gpttype_adapter.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -vf *.o main quantize quantize-stats perplexity embedding benchmark-matmult save-load-state build-info.h
+	rm -vf *.o main quantize_llama quantize_gpt2 quantize_gptj quantize_neox quantize-stats perplexity embedding benchmark-matmult save-load-state build-info.h main.exe quantize_llama.exe quantize_gptj.exe quantize_gpt2.exe quantize_neox.exe koboldcpp.dll koboldcpp_openblas.dll koboldcpp_noavx2.dll koboldcpp_openblas_noavx2.dll koboldcpp_clblast.dll koboldcpp.so koboldcpp_openblas.so koboldcpp_noavx2.so koboldcpp_openblas_noavx2.so koboldcpp_clblast.so gptj.exe gpt2.exe
 
 #
 # Examples
@@ -220,17 +283,47 @@ main: examples/main/main.cpp build-info.h ggml.o llama.o common.o $(OBJS)
 	@echo '====  Run ./main -h for help.  ===='
 	@echo
 
-quantize: examples/quantize/quantize.cpp build-info.h ggml.o llama.o $(OBJS)
-	$(CXX) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDFLAGS)
+koboldcpp: ggml.o ggml_v1.o expose.o common.o gpttype_adapter.o
+	$(DEFAULT_BUILD)
 
-quantize-stats: examples/quantize-stats/quantize-stats.cpp build-info.h ggml.o llama.o $(OBJS)
-	$(CXX) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDFLAGS)
+koboldcpp_openblas: ggml_openblas.o ggml_v1.o expose.o common.o gpttype_adapter.o 
+	$(OPENBLAS_BUILD)
+	
+koboldcpp_noavx2: ggml_noavx2.o ggml_v1_noavx2.o expose.o common.o gpttype_adapter.o 
+	$(NOAVX2_BUILD)
 
-perplexity: examples/perplexity/perplexity.cpp build-info.h ggml.o llama.o common.o $(OBJS)
-	$(CXX) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDFLAGS)
+koboldcpp_openblas_noavx2: ggml_openblas_noavx2.o ggml_v1_noavx2.o expose.o common.o gpttype_adapter.o 
+	$(OPENBLAS_NOAVX2_BUILD)
 
-embedding: examples/embedding/embedding.cpp build-info.h ggml.o llama.o common.o $(OBJS)
-	$(CXX) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDFLAGS)
+koboldcpp_clblast: ggml_clblast.o ggml_v1.o expose.o common.o gpttype_adapter.o ggml-opencl.o ggml-opencl-legacy.o
+	$(CLBLAST_BUILD)
+		
+quantize_llama: examples/quantize/quantize.cpp ggml.o llama.o
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+
+quantize_gptj: ggml.o llama.o otherarch/tools/gptj_quantize.cpp otherarch/tools/common-ggml.cpp
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+
+quantize_gpt2: ggml.o llama.o otherarch/tools/gpt2_quantize.cpp otherarch/tools/common-ggml.cpp
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+
+quantize_neox: ggml.o llama.o otherarch/tools/neox_quantize.cpp otherarch/tools/common-ggml.cpp
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+
+quantize-stats: examples/quantize-stats/quantize-stats.cpp ggml.o llama.o $(OBJS)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+
+perplexity: examples/perplexity/perplexity.cpp ggml.o llama.o common.o $(OBJS)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+
+embedding: examples/embedding/embedding.cpp ggml.o llama.o common.o $(OBJS)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+
+vdot: pocs/vdot/vdot.cpp ggml.o $(OBJS)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+
+libllama.so: llama.o ggml.o $(OBJS)
+	$(CXX) $(CXXFLAGS) -shared -fPIC -o $@ $^ $(LDFLAGS)
 
 save-load-state: examples/save-load-state/save-load-state.cpp build-info.h ggml.o llama.o common.o $(OBJS)
 	$(CXX) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDFLAGS)
@@ -247,12 +340,9 @@ build-info.h: $(wildcard .git/index) scripts/build-info.sh
 # Tests
 #
 
-benchmark-matmult: examples/benchmark/benchmark-matmult.cpp build-info.h ggml.o $(OBJS)
-	$(CXX) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDFLAGS)
-	./$@
-
-vdot: pocs/vdot/vdot.cpp ggml.o $(OBJS)
+benchmark-matmult: examples/benchmark/benchmark-matmult.cpp ggml.o $(OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+	./$@
 
 .PHONY: tests
 tests:

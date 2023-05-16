@@ -1,6 +1,5 @@
 #include "ggml.h"
 #include "llama.h"
-#include "build-info.h"
 
 #include <cstdio>
 #include <map>
@@ -107,8 +106,6 @@ int main(int argc, char ** argv) {
     } else {
         nthread = 0;
     }
-
-    fprintf(stderr, "%s: build = %d (%s)\n", __func__, BUILD_NUMBER, BUILD_COMMIT);
 
     fprintf(stderr, "%s: quantizing '%s' to '%s' as %s", __func__, fname_inp.c_str(), fname_out.c_str(), ftype_str.c_str());
     if (nthread > 0) {

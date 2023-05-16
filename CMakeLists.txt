@@ -1,55 +1,32 @@
+# DO NOT USE THIS FILE. 
+# IT'S ONLY FOR CUBLAS BUILD PURPOSES ON WINDOWS VISUAL STUDIO. 
+# IT WILL NOT BE UPDATED OR MAINTAINED !!!
+
+message(STATUS "============== ============== ==============")
+message(STATUS "WARNING! Do NOT use this file. It is UNSUPPORTED for normal users. Use MAKE instead.")
+message(STATUS "It is ONLY for CUBLAS build testing on windows visual studio. IT WILL NOT BE UPDATED OR MAINTAINED !!!")
+message(STATUS "IF YOU ARE SEEING THIS, you MUST ONLY be building AN EXPERIMENAL WINDOWS CUBLAS BUILD! NOTHING ELSE WILL BE SUPPORTED !!!")
+message(STATUS "============== ============== ==============")
+
 cmake_minimum_required(VERSION 3.12) # Don't bump this version for no reason
 project("llama.cpp" C CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-if (NOT XCODE AND NOT MSVC AND NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
-    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
-endif()
-
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS 1)
+set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Release")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-    set(LLAMA_STANDALONE ON)
-
-    # configure project version
-    # TODO
-else()
-    set(LLAMA_STANDALONE OFF)
-endif()
-
-if (EMSCRIPTEN)
-    set(BUILD_SHARED_LIBS_DEFAULT OFF)
-
-    option(LLAMA_WASM_SINGLE_FILE "llama: embed WASM inside the generated llama.js" ON)
-else()
-    if (MINGW)
-        set(BUILD_SHARED_LIBS_DEFAULT OFF)
-    else()
-        set(BUILD_SHARED_LIBS_DEFAULT ON)
-    endif()
-endif()
-
-
-#
-# Option list
-#
-
-# general
-option(LLAMA_STATIC                 "llama: static link libraries"                          OFF)
-option(LLAMA_NATIVE                 "llama: enable -march=native flag"                      OFF)
-option(LLAMA_LTO                    "llama: enable link time optimization"                  OFF)
-
-# debug
-option(LLAMA_ALL_WARNINGS           "llama: enable all compiler warnings"                   ON)
-option(LLAMA_ALL_WARNINGS_3RD_PARTY "llama: enable all compiler warnings in 3rd party libs" OFF)
-option(LLAMA_GPROF                  "llama: enable gprof"                                   OFF)
-
-# sanitizers
-option(LLAMA_SANITIZE_THREAD        "llama: enable thread sanitizer"                        OFF)
-option(LLAMA_SANITIZE_ADDRESS       "llama: enable address sanitizer"                       OFF)
-option(LLAMA_SANITIZE_UNDEFINED     "llama: enable undefined sanitizer"                     OFF)
+set(LLAMA_STANDALONE ON)
+set(BUILD_SHARED_LIBS_DEFAULT ON)
+set(LLAMA_STATIC OFF)
+set(LLAMA_NATIVE OFF)
+set(LLAMA_LTO OFF)
+set(LLAMA_ALL_WARNINGS OFF)
+set(LLAMA_ALL_WARNINGS_3RD_PARTY OFF)
+set(LLAMA_GPROF OFF)
+set(LLAMA_SANITIZE_THREAD OFF)
+set(LLAMA_SANITIZE_ADDRESS OFF)
+set(LLAMA_SANITIZE_UNDEFINED OFF)
 
 # instruction set specific
 option(LLAMA_AVX                    "llama: enable AVX"                                     ON)
@@ -70,8 +47,8 @@ option(LLAMA_CUBLAS                 "llama: use cuBLAS"                         
 option(LLAMA_CLBLAST                "llama: use CLBlast"                                    OFF)
 option(LLAMA_HIPBLAS                "llama: use hipBLAS"                                    OFF)
 
-option(LLAMA_BUILD_TESTS            "llama: build tests"    ${LLAMA_STANDALONE})
-option(LLAMA_BUILD_EXAMPLES         "llama: build examples" ${LLAMA_STANDALONE})
+option(LLAMA_BUILD_TESTS            "llama: build tests"    OFF)
+option(LLAMA_BUILD_EXAMPLES         "llama: build examples" OFF)
 
 #
 # Build info header
@@ -117,68 +94,6 @@ set(CMAKE_C_STANDARD_REQUIRED true)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-if (NOT MSVC)
-    if (LLAMA_SANITIZE_THREAD)
-        add_compile_options(-fsanitize=thread)
-        link_libraries(-fsanitize=thread)
-    endif()
-
-    if (LLAMA_SANITIZE_ADDRESS)
-        add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
-        link_libraries(-fsanitize=address)
-    endif()
-
-    if (LLAMA_SANITIZE_UNDEFINED)
-        add_compile_options(-fsanitize=undefined)
-        link_libraries(-fsanitize=undefined)
-    endif()
-endif()
-
-if (APPLE AND LLAMA_ACCELERATE)
-    find_library(ACCELERATE_FRAMEWORK Accelerate)
-    if (ACCELERATE_FRAMEWORK)
-        message(STATUS "Accelerate framework found")
-
-        add_compile_definitions(GGML_USE_ACCELERATE)
-        set(LLAMA_EXTRA_LIBS ${LLAMA_EXTRA_LIBS} ${ACCELERATE_FRAMEWORK})
-    else()
-        message(WARNING "Accelerate framework not found")
-    endif()
-endif()
-
-if (LLAMA_OPENBLAS)
-    if (LLAMA_STATIC)
-        set(BLA_STATIC ON)
-    endif()
-
-    set(BLA_VENDOR OpenBLAS)
-    find_package(BLAS)
-    if (BLAS_FOUND)
-        message(STATUS "OpenBLAS found")
-
-        add_compile_definitions(GGML_USE_OPENBLAS)
-        add_link_options(${BLAS_LIBRARIES})
-        set(LLAMA_EXTRA_LIBS ${LLAMA_EXTRA_LIBS} openblas)
-
-        # find header file
-        set(OPENBLAS_INCLUDE_SEARCH_PATHS
-            /usr/include
-            /usr/include/openblas
-            /usr/include/openblas-base
-            /usr/local/include
-            /usr/local/include/openblas
-            /usr/local/include/openblas-base
-            /opt/OpenBLAS/include
-            $ENV{OpenBLAS_HOME}
-            $ENV{OpenBLAS_HOME}/include
-            )
-        find_path(OPENBLAS_INC NAMES cblas.h PATHS ${OPENBLAS_INCLUDE_SEARCH_PATHS})
-        add_compile_options(-I${OPENBLAS_INC})
-    else()
-        message(WARNING "OpenBLAS not found")
-    endif()
-endif()
-
 if (LLAMA_CUBLAS)
     cmake_minimum_required(VERSION 3.17)
 
@@ -203,20 +118,7 @@ if (LLAMA_CUBLAS)
     endif()
 endif()
 
-if (LLAMA_CLBLAST)
-    find_package(CLBlast)
-    if (CLBlast_FOUND)
-        message(STATUS "CLBlast found")
 
-        set(GGML_OPENCL_SOURCES ggml-opencl.c ggml-opencl.h)
-
-        add_compile_definitions(GGML_USE_CLBLAST)
-
-        set(LLAMA_EXTRA_LIBS ${LLAMA_EXTRA_LIBS} clblast)
-    else()
-        message(WARNING "CLBlast not found")
-    endif()
-endif()
 
 if (LLAMA_HIPBLAS)
     list(APPEND CMAKE_PREFIX_PATH /opt/rocm)
@@ -402,49 +304,49 @@ endif()
 add_library(ggml OBJECT
             ggml.c
             ggml.h
-            ${GGML_CUDA_SOURCES}
-            ${GGML_OPENCL_SOURCES})
-
-target_include_directories(ggml PUBLIC .)
+            ${GGML_CUDA_SOURCES})
+target_include_directories(ggml PUBLIC . ./otherarch ./otherarch/tools)
 target_compile_features(ggml PUBLIC c_std_11) # don't bump
 target_link_libraries(ggml PUBLIC Threads::Threads ${LLAMA_EXTRA_LIBS})
+set_target_properties(ggml PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-if (BUILD_SHARED_LIBS)
-    set_target_properties(ggml PROPERTIES POSITION_INDEPENDENT_CODE ON)
-endif()
+add_library(ggml_v1 OBJECT
+            otherarch/ggml_v1.c
+            otherarch/ggml_v1.h)
+target_include_directories(ggml_v1 PUBLIC . ./otherarch ./otherarch/tools)
+target_compile_features(ggml_v1 PUBLIC c_std_11) # don't bump
+target_link_libraries(ggml_v1 PUBLIC Threads::Threads ${LLAMA_EXTRA_LIBS})
+set_target_properties(ggml_v1 PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-add_library(llama
-            llama.cpp
-            llama.h
-            llama-util.h)
+add_library(common2
+            examples/common.cpp
+            examples/common.h)
+target_include_directories(common2 PUBLIC . ./otherarch ./otherarch/tools ./examples)
+target_compile_features(common2 PUBLIC cxx_std_11) # don't bump
+target_link_libraries(common2 PRIVATE ggml ${LLAMA_EXTRA_LIBS})
+set_target_properties(common2 PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-target_include_directories(llama PUBLIC .)
-target_compile_features(llama PUBLIC cxx_std_11) # don't bump
-target_link_libraries(llama PRIVATE ggml ${LLAMA_EXTRA_LIBS})
+add_library(gpttype_adapter 
+            gpttype_adapter.cpp)
+target_include_directories(gpttype_adapter PUBLIC . ./otherarch ./otherarch/tools ./examples)
+target_compile_features(gpttype_adapter PUBLIC cxx_std_11) # don't bump
+target_link_libraries(gpttype_adapter PRIVATE common2 ggml ${LLAMA_EXTRA_LIBS})
+set_target_properties(gpttype_adapter PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-if (BUILD_SHARED_LIBS)
-    set_target_properties(llama PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    target_compile_definitions(llama PRIVATE LLAMA_SHARED LLAMA_BUILD)
-endif()
 
 if (GGML_CUDA_SOURCES)
     message(STATUS "GGML CUDA sources found, configuring CUDA architecture")
     set_property(TARGET ggml PROPERTY CUDA_ARCHITECTURES OFF)
     set_property(TARGET ggml PROPERTY CUDA_SELECT_NVCC_ARCH_FLAGS "Auto")
-    set_property(TARGET llama PROPERTY CUDA_ARCHITECTURES OFF)
 endif()
 
+set(TARGET koboldcpp)
+add_library(${TARGET} SHARED expose.cpp expose.h)
+target_include_directories(${TARGET} PUBLIC . ./otherarch ./otherarch/tools ./examples)
+target_compile_features(${TARGET} PUBLIC cxx_std_11) # don't bump
+set_target_properties(${TARGET} PROPERTIES PREFIX "")
+set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME "koboldcpp")
+set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(${TARGET} PUBLIC ggml ggml_v1 common2 gpttype_adapter ${CMAKE_THREAD_LIBS_INIT})
+target_compile_features(${TARGET} PRIVATE cxx_std_11)
 
-#
-# programs, examples and tests
-#
-
-if (LLAMA_BUILD_TESTS AND NOT CMAKE_JS_VERSION)
-    include(CTest)
-    add_subdirectory(tests)
-endif ()
-
-if (LLAMA_BUILD_EXAMPLES)
-    add_subdirectory(examples)
-    add_subdirectory(pocs)
-endif()

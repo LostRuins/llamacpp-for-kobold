@@ -1,6 +1,6 @@
 // Internal header to be included only by llama.cpp.
 // Contains wrappers around OS interfaces.
-
+#pragma once
 #ifndef LLAMA_UTIL_H
 #define LLAMA_UTIL_H
 
