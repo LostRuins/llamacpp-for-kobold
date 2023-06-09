@@ -18,6 +18,7 @@ class load_model_inputs(ctypes.Structure):
                 ("executable_path", ctypes.c_char_p),
                 ("model_filename", ctypes.c_char_p),
                 ("lora_filename", ctypes.c_char_p),
+                ("lora_base_filename", ctypes.c_char_p),
                 ("use_mmap", ctypes.c_bool),
                 ("use_mlock", ctypes.c_bool),
                 ("use_smartcontext", ctypes.c_bool),
@@ -139,6 +140,7 @@ def load_model(model_filename):
     inputs = load_model_inputs()
     inputs.model_filename = model_filename.encode("UTF-8")
     inputs.lora_filename = args.lora.encode("UTF-8")
+    inputs.lora_base_filename = args.lora_base.encode("UTF-8")
     inputs.batch_size = 8
     inputs.max_context_length = maxctx #initial value to use for ctx, can be overwritten
     inputs.threads = args.threads
@@ -647,6 +649,14 @@ def main(args):
         else:
             args.lora = os.path.abspath(args.lora)
 
+    if args.lora_base and args.lora_base!="":
+        if not os.path.exists(args.lora_base):
+            print(f"Cannot find lora base file: {args.lora_base}")
+            time.sleep(2)
+            sys.exit(2)
+        else:
+            args.lora_base = os.path.abspath(args.lora_base)
+
     if args.psutil_set_threads:
         import psutil
         args.threads = psutil.cpu_count(logical=False)
@@ -703,6 +713,7 @@ if __name__ == '__main__':
     parser.add_argument("--host", help="Host IP to listen on. If empty, all routable interfaces are accepted.", default="")
     parser.add_argument("--launch", help="Launches a web browser when load is completed.", action='store_true')
     parser.add_argument("--lora", help="LLAMA models only, applies a lora file on top of model. Experimental.", default="")
+    parser.add_argument("--lora-base", help="Optional model to use as a base for the layers modified by the LoRA adapter. Experimental.", default="")
     physical_core_limit = 1
     if os.cpu_count()!=None and os.cpu_count()>1:
         physical_core_limit = int(os.cpu_count()/2)

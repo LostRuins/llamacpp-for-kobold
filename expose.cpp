@@ -22,6 +22,7 @@
 
 std::string executable_path = "";
 std::string lora_filename = "";
+std::string lora_base_filename = "";
 
 extern "C"
 {
@@ -35,6 +36,7 @@ extern "C"
     {
         std::string model = inputs.model_filename;
         lora_filename = inputs.lora_filename;
+        lora_base_filename = inputs.lora_base_filename;
 
         int forceversion = inputs.forceversion;
 
