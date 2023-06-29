@@ -140,8 +140,9 @@ extern "C" {
 
     // TODO: not great API - very likely to change
     // Initialize the llama + ggml backend
+    // If numa is true, use NUMA optimizations
     // Call once at the start of the program
-    LLAMA_API void llama_init_backend();
+    LLAMA_API void llama_init_backend(bool numa);
 
     LLAMA_API int64_t llama_time_us();
 
@@ -221,6 +222,14 @@ extern "C" {
     LLAMA_API int llama_eval(
             struct llama_context * ctx,
                const llama_token * tokens,
+                             int   n_tokens,
+                             int   n_past,
+                             int   n_threads);
+
+    // Same as llama_eval, but use float matrix input directly.
+    LLAMA_API int llama_eval_embd(
+            struct llama_context * ctx,
+                     const float * embd,
                              int   n_tokens,
                              int   n_past,
                              int   n_threads);
