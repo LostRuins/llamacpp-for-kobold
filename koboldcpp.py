@@ -571,21 +571,22 @@ def show_new_gui():
         return
 
     launchclicked = False
-
+    windowwidth = 480
+    windowheight = 480
     ctk.set_appearance_mode("dark")
     root = ctk.CTk()
-    root.geometry("480x360")
+    root.geometry(str(windowwidth) + "x" + str(windowheight))
     root.title("KoboldCpp v"+KcppVersion)
     
-    tabs = ctk.CTkFrame(root, corner_radius = 0, width=480, height=320)
+    tabs = ctk.CTkFrame(root, corner_radius = 0, width=windowwidth, height=windowheight-40)
     tabs.grid(row=0, stick="nsew")
     tabnames= ["Quick Launch", "Hardware", "Tokens", "Model", "Network", "Help"]
     navbuttons = {}
-    navbuttonframe = ctk.CTkFrame(tabs, width=100, height=320)
+    navbuttonframe = ctk.CTkFrame(tabs, width=100, height=int(tabs.cget("height")))
     navbuttonframe.grid(row=0, column=0, padx=2,pady=2)
     navbuttonframe.grid_propagate(False)
     
-    tabcontentframe = ctk.CTkFrame(tabs, width=370, height=320)
+    tabcontentframe = ctk.CTkFrame(tabs, width=windowwidth - int(navbuttonframe.cget("width")), height=int(tabs.cget("height")))
     tabcontentframe.grid(row=0, column=1, sticky="nsew", padx=2, pady=2)
     tabcontentframe.grid_propagate(False)
 
@@ -601,20 +602,126 @@ def show_new_gui():
                 navbuttons[t].configure(fg_color="transparent")
         
     for idx, name in enumerate(tabnames):
-        tabcontent[name] = ctk.CTkFrame(tabcontentframe, width= 380, height=360, fg_color="transparent")
+        tabcontent[name] = ctk.CTkFrame(tabcontentframe, width=int(tabcontentframe.cget("width")), height=int(tabcontentframe.cget("height")), fg_color="transparent")
         tabcontent[name].grid_propagate(False)
         if idx == 0:
             tabcontent[name].grid(row=idx, sticky="nsew")
-        ctk.CTkLabel(tabcontent[name], text= name, font=ctk.CTkFont(None, 14, 'bold')).grid(row=0, padx=5)
+        ctk.CTkLabel(tabcontent[name], text= name, font=ctk.CTkFont(None, 14, 'bold')).grid(row=0, padx=8, pady = 5, stick='nw')
 
         navbuttons[name] = ctk.CTkButton(navbuttonframe, text=name, width = 100, corner_radius=0 , command = lambda d=name:tabbuttonaction(d), hover_color="#868a94" )
         navbuttons[name].grid(row=idx)
     
     tabbuttonaction(tabnames[0])
     
-    # Quick Launch Menu
+    # helper functions
 
+    def makecheckbox(parent, text, variable=None, row=0, column=0, command=None, onvalue=1, offvalue=0):
+        temp = ctk.CTkCheckBox(parent, text=text,variable=variable, onvalue=onvalue, offvalue=offvalue, command=command)
+        temp.grid(row=row,column=column, padx=8, pady=1, stick="nw")
+        return temp
 
+    def makelabel(parent, text, row, column=0):
+        temp = ctk.CTkLabel(parent, text=text)
+        temp.grid(row=row, column=column, padx=8, pady=1, stick="nw")
+        return temp
+    
+    def makeslider(parent, label, options, from_ , to,  row=0, width=160, height=10, set=0):
+        sliderLabel = makelabel(parent, options[set], row + 1, 1) 
+        makelabel(parent, label, row)
+        def sliderUpdate(args):
+            sliderLabel.configure(text = options[int(args)])
+
+        var = ctk.IntVar(value = set)
+        slider = ctk.CTkSlider(parent, from_=from_, to=to, command = sliderUpdate, variable = var, width = width, height=height, border_width=5,number_of_steps=len(options))
+        slider.grid(row=row+1,  column=0, padx = 8, stick="w")
+        return slider, var
+
+    def makeentrycheckbox(parent, text , row=0, defaultvalue=None):
+        var = ctk.StringVar(value=defaultvalue)
+        entry = ctk.CTkEntry(parent, width=50, textvariable=var)
+
+        def toggle():
+            if checkbox.get() == 1:
+                entry.grid(row=row, column=1, stick="nw")
+            else:
+                entry.grid_forget()
+
+        checkbox = makecheckbox(parent, text, row=row, command=toggle)
+        return checkbox, entry, var
+
+    # Quick Launch Tab
+
+    # Hardware Tab
+    hardware_tab = tabcontent["Hardware"]
+    
+    # threads
+    threads_var = ctk.StringVar(value=str(default_threads))
+    makelabel(hardware_tab, "Threads", 2)
+    threads_entry = ctk.CTkEntry(hardware_tab, width=50, textvariable= threads_var)
+    threads_entry.grid(row=2, column=1, stick="nw")
+
+    # gpu options
+    gpu_layers_var = ctk.StringVar()
+    gpu_layers_label = makelabel(hardware_tab, "GPU Layers: ", 4)
+    gpu_layers_entry = ctk.CTkEntry(hardware_tab, width=50, textvariable=gpu_layers_var)
+    gpu_selector_label = makelabel(hardware_tab, "GPU: ", 3)
+    gpu_selector_box = ctk.CTkComboBox(hardware_tab, values=["1","2","3"], width=60)
+
+    # hides gpu options when CLBlast is not chosen
+    def changerunmode(index):
+        if index == "Use CLBLast":
+            gpu_layers_label.grid(row=4, column=0, padx = 4, pady=1, stick="nw")
+            gpu_layers_entry.grid(row=4, column=1, pady=1, stick="nw")
+            gpu_selector_label.grid(row=3, column=0, padx = 4, pady=1, stick="nw")
+            gpu_selector_box .grid(row=3, column=1, pady=1, stick="nw")
+        else:
+            gpu_layers_label.grid_forget()
+            gpu_layers_entry.grid_forget()
+            gpu_selector_label.grid_forget()
+            gpu_selector_box.grid_forget()
+
+    # presets selector
+    makelabel(hardware_tab, "Preset:", 1)
+    runopts = ["Use OpenBLAS","Use CLBLast","Use No BLAS","Use OpenBLAS (Old CPU, noavx2)","Failsafe Mode (Old CPU, noavx)"]
+    runoptbox = ctk.CTkComboBox(hardware_tab, values=runopts, command=changerunmode, width=150)
+    runoptbox.grid(row=1, column=1, stick="nw")
+    runoptbox.set("Use OpenBLAS")
+    changerunmode(runoptbox.get())
+
+    
+    # hardware checkboxes
+    launchbrowser = ctk.IntVar(value=1)
+    highpriority = ctk.IntVar()
+    disablemmap = ctk.IntVar()
+    psutil = ctk.IntVar()
+    usemlock = ctk.IntVar()
+    debugmode = ctk.IntVar()
+    hardware_boxes=  {"Launch Browser": launchbrowser , "High Priority" : highpriority, "Disable MMAP":disablemmap, "Use mlock":usemlock, "Use PSUtil":psutil, "Debug Mode":debugmode,}
+    
+    for idx, name, in enumerate(hardware_boxes):
+        makecheckbox(hardware_tab, name, hardware_boxes[name], idx+30)
+    
+        # blas thread specifier   
+    blas_threads_checkbox, blas_threads_entry, blas_threads_var = makeentrycheckbox(hardware_tab, "Specify BLAS threads", 5, str(default_threads))
+        # blas batch size
+    blas_size_slider, blas_size_var = makeslider(hardware_tab, "BLAS Batch Size: ", ["Don't Batch BLAS","32","64","128","256","512","1024"], 0, 6, 12, set=5)
+        # force version
+
+    version_checkbox, version_entry, version_var = makeentrycheckbox(hardware_tab, "Force Version", 100)
+
+    # Tokens Tab    
+    tokens_tab = tabcontent["Tokens"]
+    
+    stream = ctk.IntVar()
+    smartcontext = ctk.IntVar()
+    unbantokens = ctk.IntVar()
+    token_boxes = {"Streaming Mode":stream, "Use SmartContext":smartcontext, "Unban Tokens":unbantokens}
+    for idx, name, in enumerate(token_boxes):
+        makecheckbox(tokens_tab, name, token_boxes[name], idx + 1)
+    
+    context_slider, context_var = makeslider(tokens_tab, "Context Size:", ["512","1024","2048", "4096", "8192"], 0, 4, 20, set=2)
+
+    # Model Tab
 
     # launch button def, perhaps add input verification ?
 
@@ -623,8 +730,8 @@ def show_new_gui():
         launchclicked = True
         root.destroy()
         pass
-
-    ctk.CTkButton(root , text = "Launch", fg_color="#2f8d3c", command = guilaunch, width=50, height = 25 ).grid(row=1,column=0, stick="se", padx= 5, pady=5)
+    
+    ctk.CTkButton(root , text = "Launch", fg_color="#2f8d3c", command = guilaunch, width=50, height = 25 ).grid(row=1,column=0, stick="se", padx= 25, pady=5)
 
     # runs main loop until closed or launch clicked
     root.mainloop()
@@ -635,89 +742,8 @@ def show_new_gui():
             sys.exit()
 
     return
-    
-    # test code mimicking old UI
-    ctk.CTkLabel(root, text = "KoboldCpp Launcher",
-            font = ("Arial", 12)).grid(row=0,column=0)
-    ctk.CTkLabel(root, text = "(Note: KoboldCpp only works with GGML model formats!)",
-            font = ("Arial", 9)).grid(row=1,column=0)
-    
+      
 
-    # run options
-    runopts = ["Use OpenBLAS","Use CLBLast GPU #1","Use CLBLast GPU #2","Use CLBLast GPU #3","Use No BLAS","Use OpenBLAS (Old CPU, noavx2)","Failsafe Mode (Old CPU, noavx)"]
-
-    # hides box if option 0, or 4-6
-    def onDropdownChange(event):
-            if 0 < sel.index(runchoice.get()) < 4:
-                frameC.grid(row=4,column=0,pady=4)
-            else:
-                frameC.grid_forget()
-    
-    runoptbox = ctk.CTkComboBox(root, values=runopts, command=onDropdownChange, width=200)
-    runoptbox.grid(row=3, column=0)
-    runoptbox.set("Use OpenBLAS")
-
-    # blas options
-
-    blasbatchopts = ["Don't Batch BLAS","BLAS = 32","BLAS = 64","BLAS = 128","BLAS = 256","BLAS = 512","BLAS = 1024"]
-    blassliderLabel = ctk.CTkLabel(root, text = blasbatchopts[5], font = ("Arial", 12))
-    blassliderLabel.grid(row=12, column=0)
-    
-    def sliderUpdate(args):
-        blassliderLabel.configure(text = blasbatchopts[int(args)])
-
-    blasvar = ctk.IntVar(value = 6)
-    blasslider = ctk.CTkSlider(root, from_=0, to=6, command = sliderUpdate, variable = blasvar, width = 200, height=10, border_width=5,number_of_steps=6)
-    blasslider.grid(row=13, column=0)
-    blasslider.set(5)
-
-    frameC = ctk.CTkFrame(root, fg_color= "#585c65" )
-    frameC.grid(row=10, column = 0)
-    threads_var=ctk.StringVar()
-    threads_var.set(str(default_threads))
-    threads_lbl = ctk.CTkLabel(frameC, text = 'Threads: ', font=('calibre',10, 'bold'))
-    threads_input = ctk.CTkEntry(frameC,textvariable = threads_var, font=('calibre',10,'normal'))
-    threads_lbl.grid(row=10,column=0)
-    threads_input.grid(row=10,column=1)
-    
-    # checkboxes
-
-    stream = ctk.IntVar()
-    smartcontext = ctk.IntVar()
-    launchbrowser = ctk.IntVar(value=1)
-    unbantokens = ctk.IntVar()
-    highpriority = ctk.IntVar()
-    disablemmap = ctk.IntVar()
-    frameD = ctk.CTkFrame(root)
-    ctk.CTkCheckBox(frameD, text='Streaming Mode',variable=stream, onvalue=1, offvalue=0).grid(row=0,column=0)
-    ctk.CTkCheckBox(frameD, text='Use SmartContext',variable=smartcontext, onvalue=1, offvalue=0).grid(row=0,column=1)
-    ctk.CTkCheckBox(frameD, text='High Priority',variable=highpriority, onvalue=1, offvalue=0).grid(row=1,column=0)
-    ctk.CTkCheckBox(frameD, text='Disable MMAP',variable=disablemmap, onvalue=1, offvalue=0).grid(row=1,column=1)
-    ctk.CTkCheckBox(frameD, text='Unban Tokens',variable=unbantokens, onvalue=1, offvalue=0).grid(row=2,column=0)
-    ctk.CTkCheckBox(frameD, text='Launch Browser',variable=launchbrowser, onvalue=1, offvalue=0).grid(row=2,column=1)
-    frameD.grid(row=11,column=0,pady=4)
-
-    # launch 
-
-    # Create button, it will change label text
-
-    def guilaunch():
-        nonlocal launchclicked
-        launchclicked = True
-        root.destroy()
-        pass
-
-    ctk.CTkButton(root , text = "Launch", font = ("Arial", 18), fg_color="#459613", command = guilaunch ).grid(row=19,column=0)
-    ctk.CTkLabel(root, text = "(Please use the Command Line for more advanced options)",
-            font = ("Arial", 9)).grid(row=20,column=0)
-
-    # runs main loop until closed or launch pressed
-    root.mainloop()
-
-    if launchclicked==False:
-            print("Exiting by user request.")
-            time.sleep(2)
-            sys.exit()
 
 
 def show_gui():
