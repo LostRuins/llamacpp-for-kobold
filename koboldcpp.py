@@ -552,6 +552,173 @@ def RunServerMultiThreaded(addr, port, embedded_kailite = None):
                 threadArr[i].stop()
             sys.exit(0)
 
+# note: customtkinter-5.2.0
+def show_new_gui():
+    import customtkinter as ctk
+    from tkinter.filedialog import askopenfilename
+
+    # if args received, launch
+    if len(sys.argv) != 1:
+        root = ctk.CTk()
+         #we dont want the useless window to be visible, but we want it in taskbar
+        root.attributes("-alpha", 0)
+        args.model_param = askopenfilename(title="Select ggml model .bin files")
+        root.destroy()
+        if not args.model_param:
+            print("\nNo ggml model file was selected. Exiting.")
+            time.sleep(2)
+            sys.exit(2)
+        return
+
+    launchclicked = False
+
+    ctk.set_appearance_mode("dark")
+    root = ctk.CTk()
+    root.geometry("480x360")
+    root.title("KoboldCpp v"+KcppVersion)
+    
+    tabs = ctk.CTkFrame(root, corner_radius = 0, width=480, height=320)
+    tabs.grid(row=0, stick="nsew")
+    tabnames= ["Quick Launch", "Hardware", "Tokens", "Model", "Network", "Help"]
+    navbuttons = {}
+    navbuttonframe = ctk.CTkFrame(tabs, width=100, height=320)
+    navbuttonframe.grid(row=0, column=0, padx=2,pady=2)
+    navbuttonframe.grid_propagate(False)
+    
+    tabcontentframe = ctk.CTkFrame(tabs, width=370, height=320)
+    tabcontentframe.grid(row=0, column=1, sticky="nsew", padx=2, pady=2)
+    tabcontentframe.grid_propagate(False)
+
+    tabcontent = {}
+
+    def tabbuttonaction(name):
+        for t in tabcontent:
+            if name == t:
+                tabcontent[t].grid(row=0, column=0)
+                navbuttons[t].configure(fg_color="#6f727b")
+            else:
+                tabcontent[t].grid_forget()
+                navbuttons[t].configure(fg_color="transparent")
+        
+    for idx, name in enumerate(tabnames):
+        tabcontent[name] = ctk.CTkFrame(tabcontentframe, width= 380, height=360, fg_color="transparent")
+        tabcontent[name].grid_propagate(False)
+        if idx == 0:
+            tabcontent[name].grid(row=idx, sticky="nsew")
+        ctk.CTkLabel(tabcontent[name], text= name, font=ctk.CTkFont(None, 14, 'bold')).grid(row=0, padx=5)
+
+        navbuttons[name] = ctk.CTkButton(navbuttonframe, text=name, width = 100, corner_radius=0 , command = lambda d=name:tabbuttonaction(d), hover_color="#868a94" )
+        navbuttons[name].grid(row=idx)
+    
+    tabbuttonaction(tabnames[0])
+    
+    # Quick Launch Menu
+
+
+
+    # launch button def, perhaps add input verification ?
+
+    def guilaunch():
+        nonlocal launchclicked
+        launchclicked = True
+        root.destroy()
+        pass
+
+    ctk.CTkButton(root , text = "Launch", fg_color="#2f8d3c", command = guilaunch, width=50, height = 25 ).grid(row=1,column=0, stick="se", padx= 5, pady=5)
+
+    # runs main loop until closed or launch clicked
+    root.mainloop()
+
+    if launchclicked==False:
+            print("Exiting by user request.")
+            time.sleep(2)
+            sys.exit()
+
+    return
+    
+    # test code mimicking old UI
+    ctk.CTkLabel(root, text = "KoboldCpp Launcher",
+            font = ("Arial", 12)).grid(row=0,column=0)
+    ctk.CTkLabel(root, text = "(Note: KoboldCpp only works with GGML model formats!)",
+            font = ("Arial", 9)).grid(row=1,column=0)
+    
+
+    # run options
+    runopts = ["Use OpenBLAS","Use CLBLast GPU #1","Use CLBLast GPU #2","Use CLBLast GPU #3","Use No BLAS","Use OpenBLAS (Old CPU, noavx2)","Failsafe Mode (Old CPU, noavx)"]
+
+    # hides box if option 0, or 4-6
+    def onDropdownChange(event):
+            if 0 < sel.index(runchoice.get()) < 4:
+                frameC.grid(row=4,column=0,pady=4)
+            else:
+                frameC.grid_forget()
+    
+    runoptbox = ctk.CTkComboBox(root, values=runopts, command=onDropdownChange, width=200)
+    runoptbox.grid(row=3, column=0)
+    runoptbox.set("Use OpenBLAS")
+
+    # blas options
+
+    blasbatchopts = ["Don't Batch BLAS","BLAS = 32","BLAS = 64","BLAS = 128","BLAS = 256","BLAS = 512","BLAS = 1024"]
+    blassliderLabel = ctk.CTkLabel(root, text = blasbatchopts[5], font = ("Arial", 12))
+    blassliderLabel.grid(row=12, column=0)
+    
+    def sliderUpdate(args):
+        blassliderLabel.configure(text = blasbatchopts[int(args)])
+
+    blasvar = ctk.IntVar(value = 6)
+    blasslider = ctk.CTkSlider(root, from_=0, to=6, command = sliderUpdate, variable = blasvar, width = 200, height=10, border_width=5,number_of_steps=6)
+    blasslider.grid(row=13, column=0)
+    blasslider.set(5)
+
+    frameC = ctk.CTkFrame(root, fg_color= "#585c65" )
+    frameC.grid(row=10, column = 0)
+    threads_var=ctk.StringVar()
+    threads_var.set(str(default_threads))
+    threads_lbl = ctk.CTkLabel(frameC, text = 'Threads: ', font=('calibre',10, 'bold'))
+    threads_input = ctk.CTkEntry(frameC,textvariable = threads_var, font=('calibre',10,'normal'))
+    threads_lbl.grid(row=10,column=0)
+    threads_input.grid(row=10,column=1)
+    
+    # checkboxes
+
+    stream = ctk.IntVar()
+    smartcontext = ctk.IntVar()
+    launchbrowser = ctk.IntVar(value=1)
+    unbantokens = ctk.IntVar()
+    highpriority = ctk.IntVar()
+    disablemmap = ctk.IntVar()
+    frameD = ctk.CTkFrame(root)
+    ctk.CTkCheckBox(frameD, text='Streaming Mode',variable=stream, onvalue=1, offvalue=0).grid(row=0,column=0)
+    ctk.CTkCheckBox(frameD, text='Use SmartContext',variable=smartcontext, onvalue=1, offvalue=0).grid(row=0,column=1)
+    ctk.CTkCheckBox(frameD, text='High Priority',variable=highpriority, onvalue=1, offvalue=0).grid(row=1,column=0)
+    ctk.CTkCheckBox(frameD, text='Disable MMAP',variable=disablemmap, onvalue=1, offvalue=0).grid(row=1,column=1)
+    ctk.CTkCheckBox(frameD, text='Unban Tokens',variable=unbantokens, onvalue=1, offvalue=0).grid(row=2,column=0)
+    ctk.CTkCheckBox(frameD, text='Launch Browser',variable=launchbrowser, onvalue=1, offvalue=0).grid(row=2,column=1)
+    frameD.grid(row=11,column=0,pady=4)
+
+    # launch 
+
+    # Create button, it will change label text
+
+    def guilaunch():
+        nonlocal launchclicked
+        launchclicked = True
+        root.destroy()
+        pass
+
+    ctk.CTkButton(root , text = "Launch", font = ("Arial", 18), fg_color="#459613", command = guilaunch ).grid(row=19,column=0)
+    ctk.CTkLabel(root, text = "(Please use the Command Line for more advanced options)",
+            font = ("Arial", 9)).grid(row=20,column=0)
+
+    # runs main loop until closed or launch pressed
+    root.mainloop()
+
+    if launchclicked==False:
+            print("Exiting by user request.")
+            time.sleep(2)
+            sys.exit()
+
 
 def show_gui():
     import tkinter as tk
@@ -635,9 +802,9 @@ def show_gui():
         tk.Button( root , text = "Launch", font = ("Impact", 18), bg='#54FA9B', command = guilaunch ).grid(row=6,column=0)
         tk.Label(root, text = "(Please use the Command Line for more advanced options)",
                 font = ("Arial", 9)).grid(row=7,column=0)
-
+        
         root.mainloop()
-
+        
         if launchclicked==False:
             print("Exiting by user request.")
             time.sleep(2)
@@ -716,12 +883,19 @@ def main(args):
         print("For command line arguments, please refer to --help")
         print("Otherwise, please manually select ggml file:")
         try:
-            show_gui()
+            show_new_gui()
         except Exception as ex:
-            print("File selection GUI unsupported. Please check command line: script.py --help")
-            print("Reason for no GUI: " + str(ex))
+            print("Failed to use new GUI. Reason: " + str(ex))
+            print("Attempting to us old GUI...")
             time.sleep(2)
             sys.exit(2)
+            try:
+                show_gui()
+            except Exception as ex2:
+                print("File selection GUI unsupported. Please check command line: script.py --help")
+                print("Reason for no GUI: " + str(ex2))
+                time.sleep(2)
+                sys.exit(2)
 
     if args.hordeconfig and args.hordeconfig[0]!="":
         global friendlymodelname, maxhordelen, maxhordectx, showdebug
