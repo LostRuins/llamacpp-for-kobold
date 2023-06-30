@@ -586,12 +586,13 @@ def show_new_gui():
     windowheight = 480
     ctk.set_appearance_mode("dark")
     root = ctk.CTk()
+    root.iconbitmap("niko.ico")
     root.geometry(str(windowwidth) + "x" + str(windowheight))
     root.title("KoboldCpp v"+KcppVersion)
     
     tabs = ctk.CTkFrame(root, corner_radius = 0, width=windowwidth, height=windowheight-40)
     tabs.grid(row=0, stick="nsew")
-    tabnames= ["Quick Launch", "Hardware", "Tokens", "Model", "Network", "Help"]
+    tabnames= ["Quick Launch", "Hardware", "Tokens", "Model", "Network"]
     navbuttons = {}
     navbuttonframe = ctk.CTkFrame(tabs, width=100, height=int(tabs.cget("height")))
     navbuttonframe.grid(row=0, column=0, padx=2,pady=2)
@@ -602,7 +603,7 @@ def show_new_gui():
     tabcontentframe.grid_propagate(False)
 
     tabcontent = {}
-
+    
     def tabbuttonaction(name):
         for t in tabcontent:
             if name == t:
@@ -611,13 +612,14 @@ def show_new_gui():
             else:
                 tabcontent[t].grid_forget()
                 navbuttons[t].configure(fg_color="transparent")
-        
+    
+    # Dynamically create tabs + buttons based on values of [tabnames]
     for idx, name in enumerate(tabnames):
         tabcontent[name] = ctk.CTkFrame(tabcontentframe, width=int(tabcontentframe.cget("width")), height=int(tabcontentframe.cget("height")), fg_color="transparent")
         tabcontent[name].grid_propagate(False)
         if idx == 0:
             tabcontent[name].grid(row=idx, sticky="nsew")
-        ctk.CTkLabel(tabcontent[name], text= name, font=ctk.CTkFont(None, 14, 'bold')).grid(row=0, padx=8, pady = 5, stick='nw')
+        ctk.CTkLabel(tabcontent[name], text= name, font=ctk.CTkFont(None, 14, 'bold')).grid(row=0, padx=12, pady = 5, stick='nw')
 
         navbuttons[name] = ctk.CTkButton(navbuttonframe, text=name, width = 100, corner_radius=0 , command = lambda d=name:tabbuttonaction(d), hover_color="#868a94" )
         navbuttons[name].grid(row=idx)
@@ -636,105 +638,259 @@ def show_new_gui():
         temp.grid(row=row, column=column, padx=8, pady=1, stick="nw")
         return temp
     
-    def makeslider(parent, label, options, from_ , to,  row=0, width=160, height=10, set=0):
+    def makeslider(parent, label, options, var, from_ , to,  row=0, width=160, height=10, set=0):
         sliderLabel = makelabel(parent, options[set], row + 1, 1) 
         makelabel(parent, label, row)
+
         def sliderUpdate(args):
             sliderLabel.configure(text = options[int(args)])
 
-        var = ctk.IntVar(value = set)
-        slider = ctk.CTkSlider(parent, from_=from_, to=to, command = sliderUpdate, variable = var, width = width, height=height, border_width=5,number_of_steps=len(options))
+        slider = ctk.CTkSlider(parent, from_=from_, to=to, command = sliderUpdate, variable = var, width = width, height=height, border_width=5,number_of_steps=len(options) - 1)
         slider.grid(row=row+1,  column=0, padx = 8, stick="w")
-        return slider, var
+        slider.set(set)
+        return slider
 
-    def makeentrycheckbox(parent, text , row=0, defaultvalue=None):
-        var = ctk.StringVar(value=defaultvalue)
+    def makeentrycheckbox(parent, text , var, row=0):
         entry = ctk.CTkEntry(parent, width=50, textvariable=var)
-
         def toggle():
             if checkbox.get() == 1:
-                entry.grid(row=row, column=1, stick="nw")
+                entry.grid(row=row, column=1, padx=8, stick="nw")
             else:
                 entry.grid_forget()
 
         checkbox = makecheckbox(parent, text, row=row, command=toggle)
-        return checkbox, entry, var
+        return checkbox, entry
 
-    # Quick Launch Tab
+    def makelabelentry(parent, text, var, row=0, width= 50):
+        label = makelabel(parent, text, row)
+        entry = ctk.CTkEntry(parent, width=width, textvariable=var)
+        entry.grid(row=row, column=1, padx= 8, stick="nw")
+        return entry, label
 
-    # Hardware Tab
-    hardware_tab = tabcontent["Hardware"]
-    
-    # threads
+
+    def makefileentry(parent, text, searchtext, var, row=0, width=250):
+        makelabel(parent, text, row)
+        def getfilename(var, text):
+            var.set(askopenfilename(title=text))
+        entry = ctk.CTkEntry(parent, width, textvariable=var)
+        entry.grid(row=row+1, column=0, padx=8, stick="nw")
+        button = ctk.CTkButton(parent, 50, text="Browse", command= lambda a=var,b=searchtext:getfilename(a,b))
+        button.grid(row=row+1, column=1, stick="nw")
+        return
+
+    # TBD : LOAD FILE HERE
+
+    # TBD : SAVE FILE HERE
+
+    # Vars - should be in scope to be used by multiple widgets
+
+    gpulayers_var = ctk.StringVar(value="0")
     threads_var = ctk.StringVar(value=str(default_threads))
-    makelabel(hardware_tab, "Threads", 2)
-    threads_entry = ctk.CTkEntry(hardware_tab, width=50, textvariable= threads_var)
-    threads_entry.grid(row=2, column=1, stick="nw")
+    runopts_var = ctk.StringVar()
+    gpu_choice_var = ctk.StringVar()
 
-    # gpu options
-    gpu_layers_var = ctk.StringVar()
-    gpu_layers_label = makelabel(hardware_tab, "GPU Layers: ", 4)
-    gpu_layers_entry = ctk.CTkEntry(hardware_tab, width=50, textvariable=gpu_layers_var)
-    gpu_selector_label = makelabel(hardware_tab, "GPU: ", 3)
-    gpu_selector_box = ctk.CTkComboBox(hardware_tab, values=["1","2","3"], width=60)
-
-    # hides gpu options when CLBlast is not chosen
-    def changerunmode(index):
-        if index == "Use CLBLast":
-            gpu_layers_label.grid(row=4, column=0, padx = 4, pady=1, stick="nw")
-            gpu_layers_entry.grid(row=4, column=1, pady=1, stick="nw")
-            gpu_selector_label.grid(row=3, column=0, padx = 4, pady=1, stick="nw")
-            gpu_selector_box .grid(row=3, column=1, pady=1, stick="nw")
-        else:
-            gpu_layers_label.grid_forget()
-            gpu_layers_entry.grid_forget()
-            gpu_selector_label.grid_forget()
-            gpu_selector_box.grid_forget()
-
-    # presets selector
-    makelabel(hardware_tab, "Preset:", 1)
-    runopts = ["Use OpenBLAS","Use CLBLast","Use No BLAS","Use OpenBLAS (Old CPU, noavx2)","Failsafe Mode (Old CPU, noavx)"]
-    runoptbox = ctk.CTkComboBox(hardware_tab, values=runopts, command=changerunmode, width=150)
-    runoptbox.grid(row=1, column=1, stick="nw")
-    runoptbox.set("Use OpenBLAS")
-    changerunmode(runoptbox.get())
-
-    
-    # hardware checkboxes
     launchbrowser = ctk.IntVar(value=1)
     highpriority = ctk.IntVar()
     disablemmap = ctk.IntVar()
     psutil = ctk.IntVar()
     usemlock = ctk.IntVar()
     debugmode = ctk.IntVar()
-    hardware_boxes=  {"Launch Browser": launchbrowser , "High Priority" : highpriority, "Disable MMAP":disablemmap, "Use mlock":usemlock, "Use PSUtil":psutil, "Debug Mode":debugmode,}
-    
-    for idx, name, in enumerate(hardware_boxes):
-        makecheckbox(hardware_tab, name, hardware_boxes[name], idx+30)
-    
-        # blas thread specifier   
-    blas_threads_checkbox, blas_threads_entry, blas_threads_var = makeentrycheckbox(hardware_tab, "Specify BLAS threads", 5, str(default_threads))
-        # blas batch size
-    blas_size_slider, blas_size_var = makeslider(hardware_tab, "BLAS Batch Size: ", ["Don't Batch BLAS","32","64","128","256","512","1024"], 0, 6, 12, set=5)
-        # force version
 
-    version_checkbox, version_entry, version_var = makeentrycheckbox(hardware_tab, "Force Version", 100)
+    cublas_var = ctk.IntVar()
+    lowvram_var = ctk.IntVar()
 
-    # Tokens Tab    
-    tokens_tab = tabcontent["Tokens"]
-    
+    blas_threads_var = ctk.StringVar(value=str(default_threads))
+    blas_size_var = ctk.IntVar()
+    version_var =ctk.StringVar(value="500")
+
     stream = ctk.IntVar()
     smartcontext = ctk.IntVar()
     unbantokens = ctk.IntVar()
+    mirostat_var = ctk.StringVar(value="0")
+    mirostat_tau = ctk.StringVar(value="0")
+    mirostat_eta = ctk.StringVar(value="0")
+
+    context_var = ctk.IntVar(value=4)
+    
+    model_var = ctk.StringVar(value="")
+    lora_var = ctk.StringVar(value="") 
+    lora_base_var  = ctk.StringVar(value="")
+
+    port_var = ctk.StringVar(value="5000")
+    host_var = ctk.StringVar(value="")
+    horde_name_var = ctk.StringVar(value="")
+    horde_gen_var = ctk.StringVar(value="0")
+    horde_context_var = ctk.StringVar(value="0")
+    usehorde_var = ctk.IntVar()
+
+    # saving
+
+
+
+
+    # loading
+
+    # Quick Launch Tab  
+    quick_tab = tabcontent["Quick Launch"]
+
+    # gpu options
+    quick_gpu_layers_entry,quick_gpu_layers_label = makelabelentry(quick_tab,"GPU Layers: ", gpulayers_var, 4, 50)
+    quick_gpu_selector_label = makelabel(quick_tab, "GPU: ", 3)
+    quick_gpu_selector_box = ctk.CTkComboBox(quick_tab, values=["1","2","3"], width=60, variable=gpu_choice_var)
+    quick_lowvram_box = makecheckbox(quick_tab,  "Low VRAM", lowvram_var, 5)
+    
+
+        # hides gpu options when CLBlast is not chosen
+    def changerunmode(index):
+        if index == "Use CLBLast":
+            gpu_selector_label.grid(row=3, column=0, padx = 8, pady=1, stick="nw")
+            gpu_selector_box .grid(row=3, column=1, padx=8, pady=1, stick="nw")
+            quick_gpu_selector_label.grid(row=3, column=0, padx = 8, pady=1, stick="nw")
+            quick_gpu_selector_box .grid(row=3, column=1, padx=8, pady=1, stick="nw")
+        else:
+            gpu_selector_label.grid_forget()
+            gpu_selector_box.grid_forget()
+            quick_gpu_selector_label.grid_forget()
+            quick_gpu_selector_box.grid_forget()
+            
+        if index == "Use CuBLas":
+            lowvram_box.grid(row=3, column=0, padx=8, pady=1,  stick="nw")
+            quick_lowvram_box.grid(row=3, column=0, padx=8, pady=1,  stick="nw")
+        else:
+            lowvram_box.grid_forget()
+            quick_lowvram_box.grid_forget()
+
+        if index == "Use CLBLast" or index == "Use CuBLas":
+            gpu_layers_label.grid(row=4, column=0, padx = 8, pady=1, stick="nw")
+            gpu_layers_entry.grid(row=4, column=1, padx=8, pady=1, stick="nw")
+            quick_gpu_layers_label.grid(row=4, column=0, padx = 8, pady=1, stick="nw")
+            quick_gpu_layers_entry.grid(row=4, column=1, padx=8, pady=1, stick="nw")
+        else:
+            gpu_layers_label.grid_forget()
+            gpu_layers_entry.grid_forget()
+            quick_gpu_layers_label.grid_forget()
+            quick_gpu_layers_entry.grid_forget()
+
+        # presets selector
+    makelabel(quick_tab, "Presets:", 1)
+
+    runopts = ["Use OpenBLAS","Use CLBLast", "Use CuBLas", "Use No BLAS","Use OpenBLAS (Old CPU, noavx2)","Failsafe Mode (Old CPU, noavx)"]
+    runoptbox = ctk.CTkComboBox(quick_tab, values=runopts, command=changerunmode, width=150,variable=runopts_var)
+    runoptbox.grid(row=1, column=1,padx=8, stick="nw")
+    runoptbox.set("Use OpenBLAS")
+
+        # threads
+    makelabelentry(quick_tab, "Threads:" , threads_var, 8, 50)
+        
+    
+
+        # blas batch size
+    makeslider(quick_tab, "BLAS Batch Size: ", ["Don't Batch BLAS","32","64","128","256","512","1024"], blas_size_var, 0, 6, 12, set=5)
+
+        # quick boxes
+    quick_boxes = {"Launch Browser": launchbrowser , "High Priority" : highpriority, "Streaming Mode":stream, "Use SmartContext":smartcontext, "Unban Tokens":unbantokens, "Disable MMAP":disablemmap,}
+    for idx, name, in enumerate(quick_boxes):
+        makecheckbox(quick_tab, name, quick_boxes[name], int(idx/2) +20, idx%2)
+
+        # context size
+    makeslider(quick_tab, "Context Size:", ["512","1024","2048", "4096", "8192"], context_var, 0, 4, 30, set=2)
+
+        # load model
+    makefileentry(quick_tab, "Model:", "Select Model File", model_var, 40, 170)
+
+    # Hardware Tab  
+    hardware_tab = tabcontent["Hardware"]
+    
+        # gpu options
+    gpu_layers_entry,gpu_layers_label = makelabelentry(hardware_tab,"GPU Layers: ", gpulayers_var, 4, 50)
+    gpu_selector_label = makelabel(hardware_tab, "GPU: ", 3)
+    gpu_selector_box = ctk.CTkComboBox(hardware_tab, values=["1","2","3"], width=60, variable=gpu_choice_var)
+    lowvram_box = makecheckbox(hardware_tab,  "Low VRAM", lowvram_var, 5)
+
+        # presets selector
+    makelabel(hardware_tab, "Presets:", 1)
+    runopts = ["Use OpenBLAS","Use CLBLast", "Use CuBLas", "Use No BLAS","Use OpenBLAS (Old CPU, noavx2)","Failsafe Mode (Old CPU, noavx)"]
+    runoptbox = ctk.CTkComboBox(hardware_tab, values=runopts, command=changerunmode, width=150,variable=runopts_var)
+    runoptbox.grid(row=1, column=1,padx=8, stick="nw")
+    runoptbox.set("Use OpenBLAS")
+    changerunmode(runoptbox.get())
+
+        # threads
+    makelabelentry(hardware_tab, "Threads:" , threads_var, 8, 50)
+
+    # hardware checkboxes 
+    hardware_boxes=  {"Launch Browser": launchbrowser , "High Priority" : highpriority, "Disable MMAP":disablemmap, "Use mlock":usemlock, "Use PSUtil":psutil, "Debug Mode":debugmode,}
+    
+    for idx, name, in enumerate(hardware_boxes):
+        makecheckbox(hardware_tab, name, hardware_boxes[name], int(idx/2) +30, idx%2)
+
+        # blas thread specifier
+    makeentrycheckbox(hardware_tab, "Specify BLAS threads", blas_threads_var, 11)
+        # blas batch size
+    makeslider(hardware_tab, "BLAS Batch Size: ", ["Don't Batch BLAS","32","64","128","256","512","1024"], blas_size_var, 0, 6, 12, set=5)
+        # force version
+    makeentrycheckbox(hardware_tab, "Force Version", version_var, 100)
+
+    # Tokens Tab    
+    tokens_tab = tabcontent["Tokens"]
+        # tokens checkboxes
     token_boxes = {"Streaming Mode":stream, "Use SmartContext":smartcontext, "Unban Tokens":unbantokens}
     for idx, name, in enumerate(token_boxes):
         makecheckbox(tokens_tab, name, token_boxes[name], idx + 1)
-    
-    context_slider, context_var = makeslider(tokens_tab, "Context Size:", ["512","1024","2048", "4096", "8192"], 0, 4, 20, set=2)
+
+    mirostat_entry, mirostate_label = makelabelentry(tokens_tab, "Mirostat:", mirostat_var)
+    mirostat_tau_entry, mirostat_tau_label = makelabelentry(tokens_tab, "Mirostat Tau:", mirostat_tau)
+    mirostat_eta_entry, mirostat_eta_label = makelabelentry(tokens_tab, "Mirostat Eta:", mirostat_eta)
+    def togglemiro():
+        items = [mirostate_label, mirostat_entry, mirostat_tau_label, mirostat_tau_entry, mirostat_eta_label, mirostat_eta_entry]
+        for idx, item in enumerate(items):
+            if mirostat_box.get() == 1:
+                item.grid(row=11 + int(idx/2), column=idx%2, padx=8, stick="nw")
+            else:
+                item.grid_forget()
+
+
+    mirostat_box = makecheckbox(tokens_tab, "Use Mirostat", row=10, command=togglemiro)
+    togglemiro()
+
+        # context size
+    makeslider(tokens_tab, "Context Size:", ["512","1024","2048", "4096", "8192"], context_var, 0, 4, 20, set=2)
 
     # Model Tab
+    model_tab = tabcontent["Model"]
 
-    # launch button def, perhaps add input verification ?
+    makefileentry(model_tab, "Model:", "Select Model File", model_var, 1)
+    makefileentry(model_tab, "Lora:", "Select Lora File",lora_var, 3)
+    makefileentry(model_tab, "Lora Base:", "Select Lora Base File", lora_base_var, 5)
+
+    # Network Tab
+    network_tab = tabcontent["Network"]
+
+        # interfaces
+    makelabelentry(network_tab, "Port: ", port_var, 1, 150)
+    makelabelentry(network_tab, "Host: ", host_var, 2, 150)
+    
+        # horde
+    makelabel(network_tab, "Horde:", 3).grid(pady=10)
+    
+    horde_name_entry,  horde_name_label = makelabelentry(network_tab, "Horde Name:", horde_name_var, 5, 200)
+    horde_gen_entry,  horde_gen_label = makelabelentry(network_tab, "Gen. Length:", horde_gen_var, 6, 50)
+    horde_context_entry,  horde_context_label = makelabelentry(network_tab, "Max Context:",horde_context_var, 7, 50)
+    
+    def togglehorde():
+        labels = [horde_name_label, horde_gen_label, horde_context_label]
+        for idx, item in enumerate([horde_name_entry, horde_gen_entry, horde_context_entry]): 
+            if usehorde_box.get() == 1:
+                item.grid(row=5 + idx, column = 1, padx=8, pady=1, stick="nw")
+                labels[idx].grid(row=5 + idx, padx=8, pady=1, stick="nw")
+            else:
+                item.grid_forget()
+                labels[idx].grid_forget()
+        
+    usehorde_box = makecheckbox(network_tab, "Use Horde", usehorde_var, 4, command=togglehorde)
+    togglehorde()
+
+    # launch
 
     def guilaunch():
         nonlocal launchclicked
@@ -752,10 +908,55 @@ def show_new_gui():
             time.sleep(2)
             sys.exit()
 
-    return
-      
+    # processing vars
+    
+    args.gpu_layers = int(gpulayers_var.get())
+    args.threads = int(threads_var.get())
+    
+    runopts = ["Use OpenBLAS","Use CLBLast", "Use CuBLas", "Use No BLAS","Use OpenBLAS (Old CPU, noavx2)","Failsafe Mode (Old CPU, noavx)"]
+    if runopts_var.get() == runopts[1]:
+        args.useclblast = [[0,0], [1,0], [0,1]][int(gpu_choice_var.get())]
+    if runopts_var.get() == runopts[2]:
+        args.usecublas = "lowvram" if lowvram_var.get() == 1 else "normal"
+    if runopts_var.get()==runopts[3]:
+        args.noblas = True
+    if runopts_var.get()==runopts[4]:
+        args.noavx2 = True
+    if runopts_var.get()==runopts[5]:
+        args.noavx2 = True
+        args.noblas = True
+        args.nommap = True
+        print("[Failsafe Mode : mmap is disabled.]")
 
+    args.usemlock   = (usemlock.get() == 1) 
+    args.debubmode  = (debugmode.get() == 1)
+    args.launch     = (launchbrowser.get()==1)
+    args.highpriority = (highpriority.get()==1)
+    args.nommap = (disablemmap.get()==1)
+    args.psutil_set_threads = (psutil.get()==1)
+    
+    args.cublas = int(cublas_var.get()==1)
+    args.lowvram = int(lowvram_var.get()==1)
 
+    args.blasthreads = int(blas_threads_var.get())
+
+    args.blasbatchsize = [-1, 32, 64, 128, 256, 512, 1024][int(blas_size_var.get())]
+    args.forceversion = version_var.get()
+
+    args.mirostat = [int(mirostat_var.get()), float(mirostat_tau.get()), float(mirostat_eta.get())]
+    args.contextsize = [512,1024,2048, 4096, 8192][context_var.get()]
+    
+    args.stream = (stream.get()==1)
+    args.smartcontext = (smartcontext.get()==1)
+    args.unbantokens = (unbantokens.get()==1)
+
+    args.model_param = model_var.get() if model_var.get() != "" else None
+    args.lora = [lora_var.get(), lora_base_var.get()] if lora_var.get() != "" else None
+
+    args.port_param = port_var.get()
+    args.host =  host_var.get()
+
+    args.hordeconfig = [ "" if usehorde_var.get() == 0 else horde_name_var.ge(), horde_gen_var.get(), horde_context_var.get()]
 
 def show_gui():
     import tkinter as tk

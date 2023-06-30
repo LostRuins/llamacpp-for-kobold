@@ -1,2 +1,1 @@
-
-            sliderLabel.configure(text = options[int(args)])
+quick_cublas_box.grid_forget()
