@@ -7,7 +7,7 @@ What does it mean? You get llama.cpp with a fancy UI, persistent stories, editin
 ![Preview](media/preview.png)
 
 ## Usage
-- [Download the latest release here](https://github.com/LostRuins/koboldcpp/releases/latest) or clone the repo.
+- **[Download the latest .exe release here](https://github.com/LostRuins/koboldcpp/releases/latest)** or clone the git repo.
 - Windows binaries are provided in the form of **koboldcpp.exe**, which is a pyinstaller wrapper for a few **.dll** files and **koboldcpp.py**. If you feel concerned, you may prefer to rebuild it yourself with the provided makefiles and scripts.
 - Weights are not included, you can use the official llama.cpp `quantize.exe` to generate them from your official weight files (or download them from other places).
 - To run, execute **koboldcpp.exe** or drag and drop your quantized `ggml_model.bin` file onto the .exe, and then connect with Kobold or Kobold Lite. If you're not on windows, then run the script **KoboldCpp.py** after compiling the libraries.
@@ -23,9 +23,9 @@ For more information, be sure to run the program with the `--help` flag.
 - You will have to compile your binaries from source. A makefile is provided, simply run `make`
 - If you want you can also link your own install of OpenBLAS manually with `make LLAMA_OPENBLAS=1`
 - Alternatively, if you want you can also link your own install of CLBlast manually with `make LLAMA_CLBLAST=1`, for this you will need to obtain and link OpenCL and CLBlast libraries.
-- For a full featured build, do `make LLAMA_OPENBLAS=1 LLAMA_CLBLAST=1`
   - For Arch Linux: Install `cblas` `openblas` and `clblast`.
   - For Debian: Install `libclblast-dev` and `libopenblas-dev`.
+- For a full featured build, do `make LLAMA_OPENBLAS=1 LLAMA_CLBLAST=1 LLAMA_CUBLAS=1`
 - After all binaries are built, you can run the python script with the command `koboldcpp.py [ggml_model.bin] [port]`
 - Note: Many OSX users have found that the using Accelerate is actually faster than OpenBLAS. To try, you may wish to run with `--noblas` and compare speeds.
 
