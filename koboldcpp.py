@@ -733,9 +733,6 @@ def show_new_gui():
 
     toggle_params = {"--stream":stream, "--highpriority":highpriority, "--smartcontext":smartcontext, "--unbantokens":unbantokens, "--nommap":disablemmap, "--usemlock":usemlock, "--debugmode":debugmode, "--psutil_set_threads":psutil, "--launch":launchbrowser}
     value_params = {"model":model_var, "--lora":lora_var, "lorabase":lora_base_var, "--port":port_var, "--host":host_var, "--threads":threads_var, "--blasthreads":blas_threads_var, "--forceversion":version_var, "--gpulayers":gpulayers_var}
-    from os import getcwd
-    print(getcwd())
-    
 
     def save_config():
         from platform import system
@@ -751,7 +748,7 @@ def show_new_gui():
             if (value_params[param].get() != None) and value_params[param].get() != "":
                 outputstring += ((" " + param) if param not in ["lorabase", "model"] else "") + " " + value_params[param].get()
         
-        if blas_size_var.get() != None and blas_size_var.get() != 4:
+        if blas_size_var.get() != None and blas_size_var.get() != 5:
             outputstring += " --blasbatchsize " + ["-1", "32", "64", "128", "256", "512", "1024"][blas_size_var.get()]
 
         if context_var.get() != None and context_var.get() != 2:
@@ -811,7 +808,14 @@ def show_new_gui():
         if not onwindows:
             inputarray.pop(0)
         inputarray[-1] = inputarray[-1].strip()
-        print(inputarray)
+
+        # sliders
+
+        if inputarray.count("--contextsize"):
+            context_var.set(["512", "1024", "2048", "4096", "8192"].index(inputarray[inputarray.index("--contextsize") + 1]))
+
+        if inputarray.count("--blasbatchsize"):
+            blas_size_var.set(["-1", "32", "64", "128", "256", "512", "1024"].index(inputarray[inputarray.index("--blasbatchsize") + 1]))
 
         # runopts
         for param in value_params:
@@ -844,7 +848,7 @@ def show_new_gui():
 
         if inputarray.count("lowvram"):
             lowvram_var.set(1)
-
+        
         # mirostat
 
         if inputarray.count("--usemirostat"):
