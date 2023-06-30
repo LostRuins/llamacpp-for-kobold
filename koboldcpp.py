@@ -567,7 +567,7 @@ def RunServerMultiThreaded(addr, port, embedded_kailite = None):
 def show_new_gui():
     import customtkinter as ctk
     from tkinter.filedialog import askopenfilename
-
+    from tkinter.filedialog import asksaveasfile
     # if args received, launch
     if len(sys.argv) != 1:
         root = ctk.CTk()
@@ -650,8 +650,8 @@ def show_new_gui():
         slider.set(set)
         return slider
 
-    def makeentrycheckbox(parent, text , var, row=0):
-        entry = ctk.CTkEntry(parent, width=50, textvariable=var)
+    def makeentrycheckbox(parent, text , var, row=0, placeholder_text=None):
+        entry = ctk.CTkEntry(parent, width=50, textvariable=var, placeholder_text=placeholder_text)
         def toggle():
             if checkbox.get() == 1:
                 entry.grid(row=row, column=1, padx=8, stick="nw")
@@ -661,9 +661,9 @@ def show_new_gui():
         checkbox = makecheckbox(parent, text, row=row, command=toggle)
         return checkbox, entry
 
-    def makelabelentry(parent, text, var, row=0, width= 50):
+    def makelabelentry(parent, text, var, row=0, width= 50, placeholder_text=None):
         label = makelabel(parent, text, row)
-        entry = ctk.CTkEntry(parent, width=width, textvariable=var)
+        entry = ctk.CTkEntry(parent, width=width, textvariable=var, placeholder_text=None)
         entry.grid(row=row, column=1, padx= 8, stick="nw")
         return entry, label
 
@@ -684,24 +684,23 @@ def show_new_gui():
 
     # Vars - should be in scope to be used by multiple widgets
 
-    gpulayers_var = ctk.StringVar(value="0")
+    gpulayers_var = ctk.StringVar()
     threads_var = ctk.StringVar(value=str(default_threads))
     runopts_var = ctk.StringVar()
     gpu_choice_var = ctk.StringVar()
 
-    launchbrowser = ctk.IntVar(value=1)
+    launchbrowser = ctk.IntVar()
     highpriority = ctk.IntVar()
     disablemmap = ctk.IntVar()
     psutil = ctk.IntVar()
     usemlock = ctk.IntVar()
     debugmode = ctk.IntVar()
 
-    cublas_var = ctk.IntVar()
     lowvram_var = ctk.IntVar()
 
-    blas_threads_var = ctk.StringVar(value=str(default_threads))
+    blas_threads_var = ctk.StringVar()
     blas_size_var = ctk.IntVar()
-    version_var =ctk.StringVar(value="500")
+    version_var =ctk.StringVar()
 
     stream = ctk.IntVar()
     smartcontext = ctk.IntVar()
@@ -716,17 +715,78 @@ def show_new_gui():
     lora_var = ctk.StringVar(value="") 
     lora_base_var  = ctk.StringVar(value="")
 
-    port_var = ctk.StringVar(value="5000")
+    port_var = ctk.StringVar(value="")
     host_var = ctk.StringVar(value="")
     horde_name_var = ctk.StringVar(value="")
     horde_gen_var = ctk.StringVar(value="0")
     horde_context_var = ctk.StringVar(value="0")
     usehorde_var = ctk.IntVar()
 
+    # note - launch browser requires unique param
+
+   
     # saving
+    toggle_params = {"--stream":stream, "--highpriority":highpriority, "--smartcontext":smartcontext, "--unbantokens":unbantokens, "--nommap":disablemmap, "--usemlock":usemlock, "--debugmode":debugmode, "--psutil_set_threads":psutil, "--launch":launchbrowser}
+    value_params = {" ":model_var, "--lora":lora_var, "":lora_base_var, "--port":port_var, "--host":host_var, "--threads":threads_var, "--blasthreads":blas_threads_var, "--forceversion":version_var, "--gpulayers":gpulayers_var}
+    from os import getcwd
+    print(getcwd())
+    
+
+    def save_config():
+        from platform import system
+        from os import getcwd
+
+        if model_var.get() == "":
+            print("No Model Selected!")
+            return
+        
+        outputstring = (getcwd() + "\koboldcpp.exe") if system() == "Windows" else ("#!/bin/bash\npython3 " + getcwd() + "\koboldcpp.py")
+
+        for param in value_params:
+            if value_params[param].get() != None and value_params[param].get() != "":
+                outputstring += " " + param + " " + value_params[param].get()
+
+        if blas_size_var.get() != None and blas_size_var.get() != 4:
+            outputstring += " --blasbatchsize " + ["-1", "32", "64", "128", "256", "512", "1024"][blas_size_var.get()]
+
+        if context_var.get() != None and context_var.get() != 2:
+            outputstring += " --contextsize " + ["512", "1024", "2048", "4096", "8192"][context_var.get()]
+
+        for param in toggle_params:    
+            if toggle_params[param].get() == 1:
+                outputstring += " " + param
 
 
+        # runopts
 
+        runopts = ["Use OpenBLAS","Use CLBLast", "Use CuBLas", "Use No BLAS","Use OpenBLAS (Old CPU, noavx2)","Failsafe Mode (Old CPU, noavx)"]
+        if runopts_var.get() == runopts[1]:
+            outputstring += "--useclblast " +  ["0 0", "1 0", "0 1"][int(gpu_choice_var.get())]
+            
+        if runopts_var.get() == runopts[2]:
+            outputstring+= " --usecublas " + "lowvram" if lowvram_var.get() == 1 else ""
+            
+        if runopts_var.get()==runopts[3]:
+            outputstring += " --noblas"
+        if runopts_var.get()==runopts[4]:
+            outputstring += " --noavx2"
+        if runopts_var.get()==runopts[5]:
+            outputstring += " --noavx2"
+            outputstring += " --noblas"
+
+        # usemiro   
+        if mirostat_box.get() == 1:
+            outputstring += " --usemirostat " + mirostat_var.get() + " " + mirostat_tau.get() + " " + mirostat_eta.get()
+        
+        # hordgeconfig
+        if usehorde_box.get() == 1:
+            outputstring += " --hordeconfig " + horde_name_var.get() + " " + horde_gen_var.get() + " " + horde_context_var.get()
+        
+        file_type = [("Batch Files", "*.bat")] if platform.system() == "Windows" else [("Shell Script", "*.sh")]
+        filename = asksaveasfile(filetypes=file_type, defaultextension=file_type)
+        file = open(str(filename.name), 'a')
+        file.write(outputstring)
+        file.close()
 
     # loading
 
@@ -739,7 +799,6 @@ def show_new_gui():
     quick_gpu_selector_box = ctk.CTkComboBox(quick_tab, values=["1","2","3"], width=60, variable=gpu_choice_var)
     quick_lowvram_box = makecheckbox(quick_tab,  "Low VRAM", lowvram_var, 5)
     
-
         # hides gpu options when CLBlast is not chosen
     def changerunmode(index):
         if index == "Use CLBLast":
@@ -782,8 +841,6 @@ def show_new_gui():
         # threads
     makelabelentry(quick_tab, "Threads:" , threads_var, 8, 50)
         
-    
-
         # blas batch size
     makeslider(quick_tab, "BLAS Batch Size: ", ["Don't Batch BLAS","32","64","128","256","512","1024"], blas_size_var, 0, 6, 12, set=5)
 
@@ -867,8 +924,8 @@ def show_new_gui():
     network_tab = tabcontent["Network"]
 
         # interfaces
-    makelabelentry(network_tab, "Port: ", port_var, 1, 150)
-    makelabelentry(network_tab, "Host: ", host_var, 2, 150)
+    makelabelentry(network_tab, "Port: ", port_var, 1, 150, placeholder_text="5000")
+    makelabelentry(network_tab, "Host: ", host_var, 2, 150, placeholder_text="127.0.0.1")
     
         # horde
     makelabel(network_tab, "Horde:", 3).grid(pady=10)
@@ -898,8 +955,9 @@ def show_new_gui():
         root.destroy()
         pass
     
-    ctk.CTkButton(root , text = "Launch", fg_color="#2f8d3c", command = guilaunch, width=50, height = 25 ).grid(row=1,column=0, stick="se", padx= 25, pady=5)
+    ctk.CTkButton(tabs , text = "Launch", fg_color="#2f8d3c", command = guilaunch, width=50, height = 25 ).grid(row=1,column=1, stick="se", padx= 25, pady=5)
 
+    ctk.CTkButton(tabs , text = "Save", fg_color="#084a66", command = save_config, width=50, height = 25 ).grid(row=1,column=0, stick="sw", padx= 25, pady=5)
     # runs main loop until closed or launch clicked
     root.mainloop()
 
@@ -909,15 +967,18 @@ def show_new_gui():
             sys.exit()
 
     # processing vars
-    
-    args.gpu_layers = int(gpulayers_var.get())
+        
     args.threads = int(threads_var.get())
     
     runopts = ["Use OpenBLAS","Use CLBLast", "Use CuBLas", "Use No BLAS","Use OpenBLAS (Old CPU, noavx2)","Failsafe Mode (Old CPU, noavx)"]
     if runopts_var.get() == runopts[1]:
         args.useclblast = [[0,0], [1,0], [0,1]][int(gpu_choice_var.get())]
+        if gpulayers_var.get():
+            args.gpu_layers = int(gpulayers_var.get())
     if runopts_var.get() == runopts[2]:
         args.usecublas = "lowvram" if lowvram_var.get() == 1 else "normal"
+        if gpulayers_var.get():
+            args.gpu_layers = int(gpulayers_var.get())
     if runopts_var.get()==runopts[3]:
         args.noblas = True
     if runopts_var.get()==runopts[4]:
@@ -934,11 +995,10 @@ def show_new_gui():
     args.highpriority = (highpriority.get()==1)
     args.nommap = (disablemmap.get()==1)
     args.psutil_set_threads = (psutil.get()==1)
-    
-    args.cublas = int(cublas_var.get()==1)
     args.lowvram = int(lowvram_var.get()==1)
 
-    args.blasthreads = int(blas_threads_var.get())
+    if blas_threads_var.get():
+        args.blasthreads = int(blas_threads_var.get())
 
     args.blasbatchsize = [-1, 32, 64, 128, 256, 512, 1024][int(blas_size_var.get())]
     args.forceversion = version_var.get()
