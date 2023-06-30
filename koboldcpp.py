@@ -568,6 +568,7 @@ def show_new_gui():
     import customtkinter as ctk
     from tkinter.filedialog import askopenfilename
     from tkinter.filedialog import asksaveasfile
+
     # if args received, launch
     if len(sys.argv) != 1:
         root = ctk.CTk()
@@ -629,7 +630,9 @@ def show_new_gui():
     # helper functions
 
     def makecheckbox(parent, text, variable=None, row=0, column=0, command=None, onvalue=1, offvalue=0):
-        temp = ctk.CTkCheckBox(parent, text=text,variable=variable, onvalue=onvalue, offvalue=offvalue, command=command)
+        temp = ctk.CTkCheckBox(parent, text=text,variable=variable, onvalue=onvalue, offvalue=offvalue)
+        if command is not None and variable is not None:
+            variable.trace("w", command)
         temp.grid(row=row,column=column, padx=8, pady=1, stick="nw")
         return temp
 
@@ -642,23 +645,23 @@ def show_new_gui():
         sliderLabel = makelabel(parent, options[set], row + 1, 1) 
         makelabel(parent, label, row)
 
-        def sliderUpdate(args):
-            sliderLabel.configure(text = options[int(args)])
-
-        slider = ctk.CTkSlider(parent, from_=from_, to=to, command = sliderUpdate, variable = var, width = width, height=height, border_width=5,number_of_steps=len(options) - 1)
+        def sliderUpdate(a,b,c):
+            sliderLabel.configure(text = options[int(var.get())])
+        var.trace("w", sliderUpdate)
+        slider = ctk.CTkSlider(parent, from_=from_, to=to, variable = var, width = width, height=height, border_width=5,number_of_steps=len(options) - 1)
         slider.grid(row=row+1,  column=0, padx = 8, stick="w")
         slider.set(set)
         return slider
 
     def makeentrycheckbox(parent, text , var, row=0, placeholder_text=None):
         entry = ctk.CTkEntry(parent, width=50, textvariable=var, placeholder_text=placeholder_text)
-        def toggle():
+        def toggle(a,b,c):
             if checkbox.get() == 1:
                 entry.grid(row=row, column=1, padx=8, stick="nw")
             else:
                 entry.grid_forget()
-
-        checkbox = makecheckbox(parent, text, row=row, command=toggle)
+        var.trace("w", toggle)
+        checkbox = makecheckbox(parent, text, row=row)
         return checkbox, entry
 
     def makelabelentry(parent, text, var, row=0, width= 50, placeholder_text=None):
@@ -671,7 +674,7 @@ def show_new_gui():
     def makefileentry(parent, text, searchtext, var, row=0, width=250):
         makelabel(parent, text, row)
         def getfilename(var, text):
-            var.set(askopenfilename(title=text))
+            var.set( "\"" + askopenfilename(title=text) + "\"")
         entry = ctk.CTkEntry(parent, width, textvariable=var)
         entry.grid(row=row+1, column=0, padx=8, stick="nw")
         button = ctk.CTkButton(parent, 50, text="Browse", command= lambda a=var,b=searchtext:getfilename(a,b))
@@ -687,7 +690,7 @@ def show_new_gui():
     gpulayers_var = ctk.StringVar()
     threads_var = ctk.StringVar(value=str(default_threads))
     runopts_var = ctk.StringVar()
-    gpu_choice_var = ctk.StringVar()
+    gpu_choice_var = ctk.StringVar(value="1")
 
     launchbrowser = ctk.IntVar()
     highpriority = ctk.IntVar()
@@ -705,15 +708,16 @@ def show_new_gui():
     stream = ctk.IntVar()
     smartcontext = ctk.IntVar()
     unbantokens = ctk.IntVar()
+    usemirostat = ctk.IntVar()
     mirostat_var = ctk.StringVar(value="0")
     mirostat_tau = ctk.StringVar(value="0")
     mirostat_eta = ctk.StringVar(value="0")
-
+    
     context_var = ctk.IntVar(value=4)
     
-    model_var = ctk.StringVar(value="")
-    lora_var = ctk.StringVar(value="") 
-    lora_base_var  = ctk.StringVar(value="")
+    model_var = ctk.StringVar()
+    lora_var = ctk.StringVar() 
+    lora_base_var  = ctk.StringVar()
 
     port_var = ctk.StringVar(value="")
     host_var = ctk.StringVar(value="")
@@ -726,8 +730,9 @@ def show_new_gui():
 
    
     # saving
+
     toggle_params = {"--stream":stream, "--highpriority":highpriority, "--smartcontext":smartcontext, "--unbantokens":unbantokens, "--nommap":disablemmap, "--usemlock":usemlock, "--debugmode":debugmode, "--psutil_set_threads":psutil, "--launch":launchbrowser}
-    value_params = {" ":model_var, "--lora":lora_var, "":lora_base_var, "--port":port_var, "--host":host_var, "--threads":threads_var, "--blasthreads":blas_threads_var, "--forceversion":version_var, "--gpulayers":gpulayers_var}
+    value_params = {"model":model_var, "--lora":lora_var, "lorabase":lora_base_var, "--port":port_var, "--host":host_var, "--threads":threads_var, "--blasthreads":blas_threads_var, "--forceversion":version_var, "--gpulayers":gpulayers_var}
     from os import getcwd
     print(getcwd())
     
@@ -739,13 +744,13 @@ def show_new_gui():
         if model_var.get() == "":
             print("No Model Selected!")
             return
-        
-        outputstring = (getcwd() + "\koboldcpp.exe") if system() == "Windows" else ("#!/bin/bash\npython3 " + getcwd() + "\koboldcpp.py")
+        onwindows = system() == "Windows"
+        outputstring = ("\"" + getcwd()  + "\koboldcpp.exe" + "\"") if onwindows else ("#!/bin/bash\npython3 " + "\"" + getcwd() + "\koboldcpp.py" + "\"")
 
         for param in value_params:
-            if value_params[param].get() != None and value_params[param].get() != "":
-                outputstring += " " + param + " " + value_params[param].get()
-
+            if (value_params[param].get() != None) and value_params[param].get() != "":
+                outputstring += ((" " + param) if param not in ["lorabase", "model"] else "") + " " + value_params[param].get()
+        
         if blas_size_var.get() != None and blas_size_var.get() != 4:
             outputstring += " --blasbatchsize " + ["-1", "32", "64", "128", "256", "512", "1024"][blas_size_var.get()]
 
@@ -755,17 +760,16 @@ def show_new_gui():
         for param in toggle_params:    
             if toggle_params[param].get() == 1:
                 outputstring += " " + param
-
-
+        
         # runopts
-
         runopts = ["Use OpenBLAS","Use CLBLast", "Use CuBLas", "Use No BLAS","Use OpenBLAS (Old CPU, noavx2)","Failsafe Mode (Old CPU, noavx)"]
         if runopts_var.get() == runopts[1]:
-            outputstring += "--useclblast " +  ["0 0", "1 0", "0 1"][int(gpu_choice_var.get())]
+            outputstring += " --useclblast " +  ["0 0", "1 0", "0 1"][int(gpu_choice_var.get()) - 1]
             
         if runopts_var.get() == runopts[2]:
-            outputstring+= " --usecublas " + "lowvram" if lowvram_var.get() == 1 else ""
-            
+            outputstring+= " --usecublas" 
+            if lowvram_var.get() == 1:
+                outputstring += " lowvram"
         if runopts_var.get()==runopts[3]:
             outputstring += " --noblas"
         if runopts_var.get()==runopts[4]:
@@ -782,13 +786,82 @@ def show_new_gui():
         if usehorde_box.get() == 1:
             outputstring += " --hordeconfig " + horde_name_var.get() + " " + horde_gen_var.get() + " " + horde_context_var.get()
         
-        file_type = [("Batch Files", "*.bat")] if platform.system() == "Windows" else [("Shell Script", "*.sh")]
+        file_type = [("Batch Files", "*.bat")] if onwindows else [("Shell Script", "*.sh")]
         filename = asksaveasfile(filetypes=file_type, defaultextension=file_type)
+        if filename == None: return
         file = open(str(filename.name), 'a')
         file.write(outputstring)
         file.close()
 
     # loading
+
+    def load_config():
+        from platform import system
+        import linecache
+
+        onwindows = system() == "Windows"
+
+        file_type = [("Batch Files", "*.bat")] if onwindows else [("Shell Script", "*.sh")]
+        filename = askopenfilename(filetypes=file_type, defaultextension=file_type)
+        if len(filename) < 1: return
+        inputstring = linecache.getline(filename, 1 if onwindows else 2)
+        
+        inputarray = inputstring.split(" ")
+        inputarray.pop(0)
+        if not onwindows:
+            inputarray.pop(0)
+        inputarray[-1] = inputarray[-1].strip()
+        print(inputarray)
+
+        # runopts
+        for param in value_params:
+            if param in inputarray:
+                value_params[param].set(inputarray[inputarray.index(param) + 1] if isinstance(value_params[param] , ctk.StringVar) else int(inputarray[inputarray.index(param) + 1]))
+
+        model_var.set(inputarray[0])
+        if inputarray.count("--lora") and len(inputarray) >= 4:
+            if not inputarray[4] in value_params.keys and not inputarray[4] in toggle_params.keys:
+                lora_base_var.set(inputarray[4])
+
+        for param in toggle_params:
+            if param in inputarray:
+                toggle_params[param].set(1)
+
+        if inputarray.count("--useclblast"):
+            loc = inputarray.index("--useclblast")
+            runopts_var.set(runopts[1])
+            gpu_choice_var.set(["0 0", "1 0", "0 1"].index(inputarray[loc + 1] + " " + inputarray[loc + 2]))
+        
+        elif inputarray.count("--usecublas"):
+            runopts_var.set(runopts[2])
+        
+        elif inputarray.count("--noblas") and not inputarray.count("--noavx2"):
+            runopts_var.set(runopts[3])
+        elif not inputarray.count("--noblas") and inputarray.count("--noavx2"):
+            runopts_var.set(runopts[4])
+        elif inputarray.count("--noblas") and inputarray.count("--noavx2"):
+            runopts_var.set(runopts[5])
+
+        if inputarray.count("lowvram"):
+            lowvram_var.set(1)
+
+        # mirostat
+
+        if inputarray.count("--usemirostat"):
+            loc = inputarray.index("--usemirostat")
+            usemirostat.set(1)
+            mirostat_var.set(inputarray[loc + 1])
+            mirostat_tau.set(inputarray[loc + 2])
+            mirostat_eta.set(inputarray[loc + 3])
+        
+        # horde
+
+        if inputarray.count("--hordeconfig"):
+            loc = inputarray.index("--hordeconfig")
+            usehorde_var.set(1)
+            horde_name_var.set(inputarray[loc + 1])
+            horde_gen_var.set(inputarray[loc + 1])
+            horde_context_var.set(inputarray[loc + 1])
 
     # Quick Launch Tab  
     quick_tab = tabcontent["Quick Launch"]
@@ -800,7 +873,8 @@ def show_new_gui():
     quick_lowvram_box = makecheckbox(quick_tab,  "Low VRAM", lowvram_var, 5)
     
         # hides gpu options when CLBlast is not chosen
-    def changerunmode(index):
+    def changerunmode(a,b,c):
+        index = runopts_var.get()
         if index == "Use CLBLast":
             gpu_selector_label.grid(row=3, column=0, padx = 8, pady=1, stick="nw")
             gpu_selector_box .grid(row=3, column=1, padx=8, pady=1, stick="nw")
@@ -834,7 +908,7 @@ def show_new_gui():
     makelabel(quick_tab, "Presets:", 1)
 
     runopts = ["Use OpenBLAS","Use CLBLast", "Use CuBLas", "Use No BLAS","Use OpenBLAS (Old CPU, noavx2)","Failsafe Mode (Old CPU, noavx)"]
-    runoptbox = ctk.CTkComboBox(quick_tab, values=runopts, command=changerunmode, width=150,variable=runopts_var)
+    runoptbox = ctk.CTkComboBox(quick_tab, values=runopts, width=150,variable=runopts_var)
     runoptbox.grid(row=1, column=1,padx=8, stick="nw")
     runoptbox.set("Use OpenBLAS")
 
@@ -867,11 +941,11 @@ def show_new_gui():
         # presets selector
     makelabel(hardware_tab, "Presets:", 1)
     runopts = ["Use OpenBLAS","Use CLBLast", "Use CuBLas", "Use No BLAS","Use OpenBLAS (Old CPU, noavx2)","Failsafe Mode (Old CPU, noavx)"]
-    runoptbox = ctk.CTkComboBox(hardware_tab, values=runopts, command=changerunmode, width=150,variable=runopts_var)
+    runoptbox = ctk.CTkComboBox(hardware_tab, values=runopts,  width=150,variable=runopts_var)
     runoptbox.grid(row=1, column=1,padx=8, stick="nw")
     runoptbox.set("Use OpenBLAS")
-    changerunmode(runoptbox.get())
-
+    runopts_var.trace('w', changerunmode)
+    changerunmode(1,1,1)
         # threads
     makelabelentry(hardware_tab, "Threads:" , threads_var, 8, 50)
 
@@ -898,7 +972,7 @@ def show_new_gui():
     mirostat_entry, mirostate_label = makelabelentry(tokens_tab, "Mirostat:", mirostat_var)
     mirostat_tau_entry, mirostat_tau_label = makelabelentry(tokens_tab, "Mirostat Tau:", mirostat_tau)
     mirostat_eta_entry, mirostat_eta_label = makelabelentry(tokens_tab, "Mirostat Eta:", mirostat_eta)
-    def togglemiro():
+    def togglemiro(a,b,c):
         items = [mirostate_label, mirostat_entry, mirostat_tau_label, mirostat_tau_entry, mirostat_eta_label, mirostat_eta_entry]
         for idx, item in enumerate(items):
             if mirostat_box.get() == 1:
@@ -907,8 +981,8 @@ def show_new_gui():
                 item.grid_forget()
 
 
-    mirostat_box = makecheckbox(tokens_tab, "Use Mirostat", row=10, command=togglemiro)
-    togglemiro()
+    mirostat_box = makecheckbox(tokens_tab, "Use Mirostat", row=10, variable=usemirostat, command=togglemiro)
+    togglemiro(1,1,1)
 
         # context size
     makeslider(tokens_tab, "Context Size:", ["512","1024","2048", "4096", "8192"], context_var, 0, 4, 20, set=2)
@@ -934,7 +1008,7 @@ def show_new_gui():
     horde_gen_entry,  horde_gen_label = makelabelentry(network_tab, "Gen. Length:", horde_gen_var, 6, 50)
     horde_context_entry,  horde_context_label = makelabelentry(network_tab, "Max Context:",horde_context_var, 7, 50)
     
-    def togglehorde():
+    def togglehorde(a,b,c):
         labels = [horde_name_label, horde_gen_label, horde_context_label]
         for idx, item in enumerate([horde_name_entry, horde_gen_entry, horde_context_entry]): 
             if usehorde_box.get() == 1:
@@ -945,8 +1019,7 @@ def show_new_gui():
                 labels[idx].grid_forget()
         
     usehorde_box = makecheckbox(network_tab, "Use Horde", usehorde_var, 4, command=togglehorde)
-    togglehorde()
-
+    togglehorde(1,1,1)
     # launch
 
     def guilaunch():
@@ -958,6 +1031,8 @@ def show_new_gui():
     ctk.CTkButton(tabs , text = "Launch", fg_color="#2f8d3c", command = guilaunch, width=50, height = 25 ).grid(row=1,column=1, stick="se", padx= 25, pady=5)
 
     ctk.CTkButton(tabs , text = "Save", fg_color="#084a66", command = save_config, width=50, height = 25 ).grid(row=1,column=0, stick="sw", padx= 25, pady=5)
+
+    ctk.CTkButton(tabs , text = "Load", fg_color="#084a66", command = load_config, width=50, height = 25 ).grid(row=1,column=1, stick="sw", padx= 25, pady=5)
     # runs main loop until closed or launch clicked
     root.mainloop()
 
@@ -1182,13 +1257,14 @@ def main(args):
         #give them a chance to pick a file
         print("For command line arguments, please refer to --help")
         print("Otherwise, please manually select ggml file:")
-        try:
-            show_new_gui()
-        except Exception as ex:
-            print("Failed to use new GUI. Reason: " + str(ex))
-            print("Attempting to us old GUI...")
-            time.sleep(2)
-            sys.exit(2)
+        #try:
+        show_new_gui()
+    #except Exception as ex:
+        #print("Failed to use new GUI. Reason: " + str(ex))
+        #print("Attempting to us old GUI...")
+        time.sleep(2)
+        sys.exit(2)
+        if not args.model_param:
             try:
                 show_gui()
             except Exception as ex2:
