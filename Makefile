@@ -42,7 +42,7 @@ endif
 
 # keep standard at C11 and C++11
 CFLAGS   = -I.              -I./include -I./include/CL -I./otherarch -I./otherarch/tools -Ofast -DNDEBUG -std=c11   -fPIC -DGGML_USE_K_QUANTS
-CXXFLAGS = -I. -I./examples -I./include -I./include/CL -I./otherarch -I./otherarch/tools -O3 -DNDEBUG -std=c++11 -fPIC
+CXXFLAGS = -I. -I./examples -I./include -I./include/CL -I./otherarch -I./otherarch/tools -O3 -DNDEBUG -std=c++11 -fPIC -DGGML_USE_K_QUANTS
 LDFLAGS  =
 
 # these are used on windows, to build some libraries with extra old device compatibility
@@ -53,7 +53,11 @@ NONECFLAGS =
 OPENBLAS_FLAGS = -DGGML_USE_OPENBLAS -I/usr/local/include/openblas
 CLBLAST_FLAGS = -DGGML_USE_CLBLAST
 FAILSAFE_FLAGS = -DUSE_FAILSAFE
-CUBLAS_FLAGS = -DGGML_USE_CUBLAS
+ifdef LLAMA_CUBLAS
+	CUBLAS_FLAGS = -DGGML_USE_CUBLAS
+else
+	CUBLAS_FLAGS =
+endif
 CUBLASLD_FLAGS =
 CUBLAS_OBJS =
 
