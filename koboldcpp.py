@@ -681,10 +681,6 @@ def show_new_gui():
         button.grid(row=row+1, column=1, stick="nw")
         return
 
-    # TBD : LOAD FILE HERE
-
-    # TBD : SAVE FILE HERE
-
     # Vars - should be in scope to be used by multiple widgets
 
     gpulayers_var = ctk.StringVar()
@@ -726,9 +722,13 @@ def show_new_gui():
     horde_context_var = ctk.StringVar(value="0")
     usehorde_var = ctk.IntVar()
 
-    # note - launch browser requires unique param
+    # slider data
 
-   
+    blasbatchsize_values = ["-1", "32", "64", "128", "256", "512", "1024"]
+    blasbatchsize_text = ["Don't Batch BLAS","32","64","128","256","512","1024"]
+    contextsize_text = ["512", "1024", "2048", "4096", "8192"]
+    runopts = ["Use OpenBLAS","Use CLBLast", "Use CuBLas", "Use No BLAS","Use OpenBLAS (Old CPU, noavx2)","Failsafe Mode (Old CPU, noavx)"]
+
     # saving
 
     toggle_params = {"--stream":stream, "--highpriority":highpriority, "--smartcontext":smartcontext, "--unbantokens":unbantokens, "--nommap":disablemmap, "--usemlock":usemlock, "--debugmode":debugmode, "--psutil_set_threads":psutil, "--launch":launchbrowser}
@@ -749,17 +749,17 @@ def show_new_gui():
                 outputstring += ((" " + param) if param not in ["lorabase", "model"] else "") + " " + value_params[param].get()
         
         if blas_size_var.get() != None and blas_size_var.get() != 5:
-            outputstring += " --blasbatchsize " + ["-1", "32", "64", "128", "256", "512", "1024"][blas_size_var.get()]
+            outputstring += " --blasbatchsize " + blasbatchsize_text[blas_size_var.get()]
 
         if context_var.get() != None and context_var.get() != 2:
-            outputstring += " --contextsize " + ["512", "1024", "2048", "4096", "8192"][context_var.get()]
+            outputstring += " --contextsize " + contextsize_text[context_var.get()]
 
         for param in toggle_params:    
             if toggle_params[param].get() == 1:
                 outputstring += " " + param
         
         # runopts
-        runopts = ["Use OpenBLAS","Use CLBLast", "Use CuBLas", "Use No BLAS","Use OpenBLAS (Old CPU, noavx2)","Failsafe Mode (Old CPU, noavx)"]
+        
         if runopts_var.get() == runopts[1]:
             outputstring += " --useclblast " +  ["0 0", "1 0", "0 1"][int(gpu_choice_var.get()) - 1]
             
@@ -812,10 +812,10 @@ def show_new_gui():
         # sliders
 
         if inputarray.count("--contextsize"):
-            context_var.set(["512", "1024", "2048", "4096", "8192"].index(inputarray[inputarray.index("--contextsize") + 1]))
+            context_var.set(contextsize_text.index(inputarray[inputarray.index("--contextsize") + 1]))
 
         if inputarray.count("--blasbatchsize"):
-            blas_size_var.set(["-1", "32", "64", "128", "256", "512", "1024"].index(inputarray[inputarray.index("--blasbatchsize") + 1]))
+            blas_size_var.set(blasbatchsize_values.index(inputarray[inputarray.index("--blasbatchsize") + 1]))
 
         # runopts
         for param in value_params:
@@ -920,7 +920,7 @@ def show_new_gui():
     makelabelentry(quick_tab, "Threads:" , threads_var, 8, 50)
         
         # blas batch size
-    makeslider(quick_tab, "BLAS Batch Size: ", ["Don't Batch BLAS","32","64","128","256","512","1024"], blas_size_var, 0, 6, 12, set=5)
+    makeslider(quick_tab, "BLAS Batch Size: ", blasbatchsize_text, blas_size_var, 0, 6, 12, set=5)
 
         # quick boxes
     quick_boxes = {"Launch Browser": launchbrowser , "High Priority" : highpriority, "Streaming Mode":stream, "Use SmartContext":smartcontext, "Unban Tokens":unbantokens, "Disable MMAP":disablemmap,}
@@ -928,7 +928,7 @@ def show_new_gui():
         makecheckbox(quick_tab, name, quick_boxes[name], int(idx/2) +20, idx%2)
 
         # context size
-    makeslider(quick_tab, "Context Size:", ["512","1024","2048", "4096", "8192"], context_var, 0, 4, 30, set=2)
+    makeslider(quick_tab, "Context Size:", contextsize_text, context_var, 0, 4, 30, set=2)
 
         # load model
     makefileentry(quick_tab, "Model:", "Select Model File", model_var, 40, 170)
@@ -944,7 +944,6 @@ def show_new_gui():
 
         # presets selector
     makelabel(hardware_tab, "Presets:", 1)
-    runopts = ["Use OpenBLAS","Use CLBLast", "Use CuBLas", "Use No BLAS","Use OpenBLAS (Old CPU, noavx2)","Failsafe Mode (Old CPU, noavx)"]
     runoptbox = ctk.CTkComboBox(hardware_tab, values=runopts,  width=150,variable=runopts_var)
     runoptbox.grid(row=1, column=1,padx=8, stick="nw")
     runoptbox.set("Use OpenBLAS")
@@ -962,7 +961,7 @@ def show_new_gui():
         # blas thread specifier
     makeentrycheckbox(hardware_tab, "Specify BLAS threads", blas_threads_var, 11)
         # blas batch size
-    makeslider(hardware_tab, "BLAS Batch Size: ", ["Don't Batch BLAS","32","64","128","256","512","1024"], blas_size_var, 0, 6, 12, set=5)
+    makeslider(hardware_tab, "BLAS Batch Size: ", blasbatchsize_text, blas_size_var, 0, 6, 12, set=5)
         # force version
     makeentrycheckbox(hardware_tab, "Force Version", version_var, 100)
 
@@ -989,7 +988,7 @@ def show_new_gui():
     togglemiro(1,1,1)
 
         # context size
-    makeslider(tokens_tab, "Context Size:", ["512","1024","2048", "4096", "8192"], context_var, 0, 4, 20, set=2)
+    makeslider(tokens_tab, "Context Size:",contextsize_text, context_var, 0, 4, 20, set=2)
 
     # Model Tab
     model_tab = tabcontent["Model"]
@@ -1046,10 +1045,8 @@ def show_new_gui():
             sys.exit()
 
     # processing vars
-        
     args.threads = int(threads_var.get())
     
-    runopts = ["Use OpenBLAS","Use CLBLast", "Use CuBLas", "Use No BLAS","Use OpenBLAS (Old CPU, noavx2)","Failsafe Mode (Old CPU, noavx)"]
     if runopts_var.get() == runopts[1]:
         args.useclblast = [[0,0], [1,0], [0,1]][int(gpu_choice_var.get())]
         if gpulayers_var.get():
@@ -1067,35 +1064,33 @@ def show_new_gui():
         args.noblas = True
         args.nommap = True
         print("[Failsafe Mode : mmap is disabled.]")
+    
+    args.usemlock   = usemlock.get() == 1
+    args.debugmode  = debugmode.get() == 1
+    args.launch     = launchbrowser.get()==1
+    args.highpriority = highpriority.get()==1
+    args.nommap = disablemmap.get()==1
+    args.psutil_set_threads = psutil.get()==1
+    args.lowvram = lowvram_var.get()==1
+    args.stream = stream.get()==1
+    args.smartcontext = smartcontext.get()==1
+    args.unbantokens = unbantokens.get()==1
 
-    args.usemlock   = (usemlock.get() == 1) 
-    args.debubmode  = (debugmode.get() == 1)
-    args.launch     = (launchbrowser.get()==1)
-    args.highpriority = (highpriority.get()==1)
-    args.nommap = (disablemmap.get()==1)
-    args.psutil_set_threads = (psutil.get()==1)
-    args.lowvram = int(lowvram_var.get()==1)
+    args.blasthreads = None if not blas_threads_var.get() else int(blas_threads_var.get())
 
-    if blas_threads_var.get():
-        args.blasthreads = int(blas_threads_var.get())
-
-    args.blasbatchsize = [-1, 32, 64, 128, 256, 512, 1024][int(blas_size_var.get())]
+    args.blasbatchsize = int(blasbatchsize_values[int(blas_size_var.get())])
     args.forceversion = version_var.get()
 
     args.mirostat = [int(mirostat_var.get()), float(mirostat_tau.get()), float(mirostat_eta.get())]
-    args.contextsize = [512,1024,2048, 4096, 8192][context_var.get()]
+    args.contextsize = int(contextsize_text[context_var.get()])
     
-    args.stream = (stream.get()==1)
-    args.smartcontext = (smartcontext.get()==1)
-    args.unbantokens = (unbantokens.get()==1)
-
-    args.model_param = model_var.get() if model_var.get() != "" else None
-    args.lora = [lora_var.get(), lora_base_var.get()] if lora_var.get() != "" else None
+    args.model_param =None if model_var.get() == "" else model_var.get()
+    args.lora = None if lora_var.get() == "" else [lora_var.get(), lora_base_var.get()]
 
     args.port_param = port_var.get()
     args.host =  host_var.get()
 
-    args.hordeconfig = [ "" if usehorde_var.get() == 0 else horde_name_var.ge(), horde_gen_var.get(), horde_context_var.get()]
+    args.hordeconfig = None if usehorde_var.get() == 0 else [horde_name_var.ge(), horde_gen_var.get(), horde_context_var.get()]
 
 def show_gui():
     import tkinter as tk
