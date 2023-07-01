@@ -656,7 +656,7 @@ def show_new_gui():
     def makeentrycheckbox(parent, text , var, row=0, placeholder_text=None):
         entry = ctk.CTkEntry(parent, width=50, textvariable=var, placeholder_text=placeholder_text)
         def toggle(a,b,c):
-            if checkbox.get() == 1:
+            if var.get() == 1:
                 entry.grid(row=row, column=1, padx=8, stick="nw")
             else:
                 entry.grid_forget()
@@ -736,18 +736,23 @@ def show_new_gui():
 
     def save_config():
         from platform import system
-        from os import getcwd
+        from os import getcwd  
 
-        if model_var.get() == "":
+        toggle_params = {"--stream":stream, "--highpriority":highpriority, "--smartcontext":smartcontext, "--unbantokens":unbantokens, "--nommap":disablemmap, "--usemlock":usemlock, "--debugmode":debugmode, "--psutil_set_threads":psutil, "--launch":launchbrowser}
+        value_params = {"model":model_var, "--lora":lora_var, "lorabase":lora_base_var, "--port":port_var, "--host":host_var, "--threads":threads_var, "--blasthreads":blas_threads_var, "--forceversion":version_var, "--gpulayers":gpulayers_var}
+
+        onwindows = system() == "Windows"
+        if not value_params["model"].get():
             print("No Model Selected!")
             return
-        onwindows = system() == "Windows"
-        outputstring = ("\"" + getcwd()  + "\koboldcpp.exe" + "\"") if onwindows else ("#!/bin/bash\npython3 " + "\"" + getcwd() + "\koboldcpp.py" + "\"")
-
-        for param in value_params:
-            if (value_params[param].get() != None) and value_params[param].get() != "":
-                outputstring += ((" " + param) if param not in ["lorabase", "model"] else "") + " " + value_params[param].get()
         
+        outputstring = ("\"" + getcwd()  + "\koboldcpp.exe" + "\"") if onwindows else ("#!/bin/bash\npython3 " + "\"" + getcwd() + "\koboldcpp.py" + "\"")
+        
+        for param in value_params:
+            if value_params[param].get():
+                outputstring += ((" " + param) if param not in ["lorabase", "model"] else "") + " " + value_params[param].get()
+            
+
         if blas_size_var.get() != None and blas_size_var.get() != 5:
             outputstring += " --blasbatchsize " + blasbatchsize_text[blas_size_var.get()]
 
@@ -777,11 +782,11 @@ def show_new_gui():
 
         # usemiro   
         if mirostat_box.get() == 1:
-            outputstring += " --usemirostat " + mirostat_var.get() + " " + mirostat_tau.get() + " " + mirostat_eta.get()
+            outputstring += " --usemirostat " + mirostat_var.get().replace("\"", "") + " " + mirostat_tau.get() + " " + mirostat_eta.get()
         
         # hordgeconfig
         if usehorde_box.get() == 1:
-            outputstring += " --hordeconfig " + horde_name_var.get() + " " + horde_gen_var.get() + " " + horde_context_var.get()
+            outputstring += " --hordeconfig \"" + horde_name_var.get() + "\" " + horde_gen_var.get() + " " + horde_context_var.get()
         
         file_type = [("Batch Files", "*.bat")] if onwindows else [("Shell Script", "*.sh")]
         filename = asksaveasfile(filetypes=file_type, defaultextension=file_type)
@@ -796,13 +801,16 @@ def show_new_gui():
         from platform import system
         import linecache
 
+        toggle_params = {"--stream":stream, "--highpriority":highpriority, "--smartcontext":smartcontext, "--unbantokens":unbantokens, "--nommap":disablemmap, "--usemlock":usemlock, "--debugmode":debugmode, "--psutil_set_threads":psutil, "--launch":launchbrowser}
+        value_params = {"model":model_var, "--lora":lora_var, "lorabase":lora_base_var, "--port":port_var, "--host":host_var, "--threads":threads_var, "--blasthreads":blas_threads_var, "--forceversion":version_var, "--gpulayers":gpulayers_var}
+
         onwindows = system() == "Windows"
 
         file_type = [("Batch Files", "*.bat")] if onwindows else [("Shell Script", "*.sh")]
         filename = askopenfilename(filetypes=file_type, defaultextension=file_type)
         if len(filename) < 1: return
         inputstring = linecache.getline(filename, 1 if onwindows else 2)
-        
+
         inputarray = inputstring.split(" ")
         inputarray.pop(0)
         if not onwindows:
@@ -821,6 +829,8 @@ def show_new_gui():
         for param in value_params:
             if param in inputarray:
                 value_params[param].set(inputarray[inputarray.index(param) + 1] if isinstance(value_params[param] , ctk.StringVar) else int(inputarray[inputarray.index(param) + 1]))
+            else:
+                value_params[param] = ctk.StringVar() if isinstance(value_params[param] , ctk.StringVar) else ctk.IntVar()
 
         model_var.set(inputarray[0])
         if inputarray.count("--lora") and len(inputarray) >= 4:
@@ -828,13 +838,12 @@ def show_new_gui():
                 lora_base_var.set(inputarray[4])
 
         for param in toggle_params:
-            if param in inputarray:
-                toggle_params[param].set(1)
+            toggle_params[param].set(1 if param in inputarray else 0)
 
         if inputarray.count("--useclblast"):
             loc = inputarray.index("--useclblast")
             runopts_var.set(runopts[1])
-            gpu_choice_var.set(["0 0", "1 0", "0 1"].index(inputarray[loc + 1] + " " + inputarray[loc + 2]))
+            gpu_choice_var.set(str(["0 0", "1 0", "0 1"].index(inputarray[loc + 1] + " " + inputarray[loc + 2]) + 1))
         
         elif inputarray.count("--usecublas"):
             runopts_var.set(runopts[2])
@@ -864,8 +873,8 @@ def show_new_gui():
             loc = inputarray.index("--hordeconfig")
             usehorde_var.set(1)
             horde_name_var.set(inputarray[loc + 1])
-            horde_gen_var.set(inputarray[loc + 1])
-            horde_context_var.set(inputarray[loc + 1])
+            horde_gen_var.set(inputarray[loc + 2])
+            horde_context_var.set(inputarray[loc + 3])
 
     # Quick Launch Tab  
     quick_tab = tabcontent["Quick Launch"]
@@ -978,7 +987,7 @@ def show_new_gui():
     def togglemiro(a,b,c):
         items = [mirostate_label, mirostat_entry, mirostat_tau_label, mirostat_tau_entry, mirostat_eta_label, mirostat_eta_entry]
         for idx, item in enumerate(items):
-            if mirostat_box.get() == 1:
+            if usemirostat.get() == 1:
                 item.grid(row=11 + int(idx/2), column=idx%2, padx=8, stick="nw")
             else:
                 item.grid_forget()
@@ -1014,7 +1023,7 @@ def show_new_gui():
     def togglehorde(a,b,c):
         labels = [horde_name_label, horde_gen_label, horde_context_label]
         for idx, item in enumerate([horde_name_entry, horde_gen_entry, horde_context_entry]): 
-            if usehorde_box.get() == 1:
+            if usehorde_var.get() == 1:
                 item.grid(row=5 + idx, column = 1, padx=8, pady=1, stick="nw")
                 labels[idx].grid(row=5 + idx, padx=8, pady=1, stick="nw")
             else:
