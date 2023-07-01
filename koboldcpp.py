@@ -1256,21 +1256,19 @@ def main(args):
         #give them a chance to pick a file
         print("For command line arguments, please refer to --help")
         print("Otherwise, please manually select ggml file:")
-        #try:
-        show_new_gui()
-    #except Exception as ex:
-        #print("Failed to use new GUI. Reason: " + str(ex))
-        #print("Attempting to us old GUI...")
-        time.sleep(2)
-        sys.exit(2)
-        if not args.model_param:
-            try:
-                show_gui()
-            except Exception as ex2:
-                print("File selection GUI unsupported. Please check command line: script.py --help")
-                print("Reason for no GUI: " + str(ex2))
-                time.sleep(2)
-                sys.exit(2)
+        try:
+            show_new_gui()
+        except Exception as ex:
+            print("Failed to use new GUI. Reason: " + str(ex))
+            print("Attempting to us old GUI...")
+            if not args.model_param:
+                try:
+                    show_gui()
+                except Exception as ex2:
+                    print("File selection GUI unsupported. Please check command line: script.py --help")
+                    print("Reason for no GUI: " + str(ex2))
+                    time.sleep(2)
+                    sys.exit(2)
 
     if args.hordeconfig and args.hordeconfig[0]!="":
         global friendlymodelname, maxhordelen, maxhordectx, showdebug
