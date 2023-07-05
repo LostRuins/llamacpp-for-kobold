@@ -195,8 +195,8 @@ struct llama_layer {
 };
 
 struct llama_kv_cache {
-    struct ggml_tensor * k;
-    struct ggml_tensor * v;
+    struct ggml_tensor * k = NULL;
+    struct ggml_tensor * v = NULL;
 
     struct ggml_context * ctx = NULL;
 
@@ -283,7 +283,13 @@ struct llama_model {
 
 struct llama_context {
     llama_context(const llama_model & model, const llama_vocab & vocab) : model(model), vocab(vocab), t_load_us(model.t_load_us), t_start_us(model.t_start_us) {}
-
+#ifdef GGML_USE_METAL
+    ~llama_context() {
+        if (ctx_metal) {
+            ggml_metal_free(ctx_metal);
+        }
+    }
+#endif
     std::mt19937 rng;
 
     bool has_evaluated_once = false;
@@ -476,9 +482,7 @@ struct llama_file_loader {
             std::string word = file.read_string(len);
 
             float score = 0.0f;
-            if (file_version >= LLAMA_FILE_VERSION_GGMF_V1) {
-                file.read_raw(&score, sizeof(score));
-            }
+            file.read_raw(&score, sizeof(score));
 
             vocab.token_to_id[word] = i;
 
@@ -1121,7 +1125,7 @@ static void llama_model_load_internal(
         const size_t scale = memory_type == GGML_TYPE_F32 ? 2 : 1;
 
         // this is the total memory required to run the inference
-        const size_t bigctxmul = (hparams.n_ctx>2048?2:1);
+        const size_t bigctxmul = (hparams.n_ctx>4096?3:(hparams.n_ctx>2048?2:1));
         const size_t mem_required =
             ctx_size +
             mmapped_size - vram_weights + // weights in VRAM not in memory
@@ -2400,9 +2404,9 @@ static void llama_model_quantize_internal(const std::string & fname_inp, const s
                 int ny = tensor.ne.at(1);
                 if (nx % QK_K != 0 || ny % QK_K != 0) {
                     fprintf(stderr, "\n\n========================= Tensor sizes %d x %d are not divisible by %d\n",nx,ny,QK_K);
-                    fprintf(stderr, "This is required to be able to use k-quants for now!\n");
+                    fprintf(stderr, "Verify before using\n");
                     fprintf(stderr, "========================================================================================\n\n");
-                    throw std::runtime_error("Unsupported tensor size encountered\n");
+                   // throw std::runtime_error("Unsupported tensor size encountered\n");
                 }
             }
             if (tensor.name == "output.weight") {
@@ -2627,7 +2631,7 @@ struct llama_context * llama_new_context_with_model(
 
         ctx->buf_compute.resize(MEM_REQ_EVAL().at(ctx->model.type));
 
-        const size_t bigctxmul = (hparams.n_ctx>2048?2:1);
+        const size_t bigctxmul = (hparams.n_ctx>4096?3:(hparams.n_ctx>2048?2:1));
         ctx->buf_scratch[0].resize(MEM_REQ_SCRATCH0().at(ctx->model.type)*bigctxmul);
         ctx->buf_scratch[1].resize(MEM_REQ_SCRATCH1().at(ctx->model.type)*bigctxmul);
     }
@@ -3252,7 +3256,7 @@ size_t llama_set_state_data(struct llama_context * ctx, uint8_t * src) {
     return nread;
 }
 
-bool llama_load_session_file(struct llama_context * ctx, const char * path_session, llama_token * tokens_out, size_t n_token_capacity, size_t * n_token_count_out) {
+static bool llama_load_session_file_internal(struct llama_context * ctx, const char * path_session, llama_token * tokens_out, size_t n_token_capacity, size_t * n_token_count_out) {
     llama_file file(path_session, "rb");
 
     // sanity checks
@@ -3304,6 +3308,15 @@ bool llama_load_session_file(struct llama_context * ctx, const char * path_sessi
     }
 
     return true;
+}
+
+bool llama_load_session_file(struct llama_context * ctx, const char * path_session, llama_token * tokens_out, size_t n_token_capacity, size_t * n_token_count_out) {
+    try {
+        return llama_load_session_file_internal(ctx, path_session, tokens_out, n_token_capacity, n_token_count_out);
+    } catch (const std::exception & err) {
+        fprintf(stderr, "error loading session file: %s\n", err.what());
+        return false;
+    }
 }
 
 bool llama_save_session_file(struct llama_context * ctx, const char * path_session, const llama_token * tokens, size_t n_token_count) {

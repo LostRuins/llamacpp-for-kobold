@@ -68,6 +68,8 @@ ModelLoadResult gptj_model_load(const std::string & fname, gptj_model & model, g
         printf("%s: ftype   = %d\n", __func__, hparams.ftype);
         printf("%s: qntvr   = %d\n", __func__, qntvr);
 
+        hparams.n_ctx = std::max(origmaxctx,hparams.n_ctx);
+
         hparams.ftype %= GGML_QNT_VERSION_FACTOR;
     }
 
@@ -346,7 +348,7 @@ ModelLoadResult gptj_model_load(const std::string & fname, gptj_model & model, g
         const auto & hparams = model.hparams;
         size_t vram_total = 0;
         const int n_gpu = std::min(gpulayers, int(hparams.n_layer));
-        fprintf(stderr, "%s: [opencl] offloading %d layers to GPU\n", __func__, n_gpu);
+        fprintf(stderr, "%s: [GPU] offloading %d layers to GPU\n", __func__, n_gpu);
         for (int i = 0; i < n_gpu; ++i) {
             const auto & layer = model.layers[i];
             layer.c_attn_q_proj_w->backend = GGML_BACKEND_GPU;
@@ -371,7 +373,7 @@ ModelLoadResult gptj_model_load(const std::string & fname, gptj_model & model, g
             ggml_cuda_transform_tensor(layer.c_mlp_proj_w->data,layer.c_mlp_proj_w); vram_total += ggml_nbytes(layer.c_mlp_proj_w);
             #endif
         }
-        fprintf(stderr, "%s: [opencl] total VRAM used: %zu MB\n", __func__, vram_total / 1024 / 1024);
+        fprintf(stderr, "%s: [GPU] total VRAM used: %zu MB\n", __func__, vram_total / 1024 / 1024);
     }
     #endif
 
@@ -474,8 +476,8 @@ bool gptj_eval(
 
         // self-attention
         {
-            struct ggml_tensor * Qcur = ggml_rope_inplace(ctx0, ggml_reshape_3d(ctx0, ggml_mul_mat(ctx0, model.layers[il].c_attn_q_proj_w, cur), n_embd/n_head, n_head, N), n_past, n_rot, 0, 0);
-            struct ggml_tensor * Kcur = ggml_rope_inplace(ctx0, ggml_reshape_3d(ctx0, ggml_mul_mat(ctx0, model.layers[il].c_attn_k_proj_w, cur), n_embd/n_head, n_head, N), n_past, n_rot, 0, 0);
+            struct ggml_tensor * Qcur = ggml_rope_inplace(ctx0, ggml_reshape_3d(ctx0, ggml_mul_mat(ctx0, model.layers[il].c_attn_q_proj_w, cur), n_embd/n_head, n_head, N), n_past, n_rot, 0, n_ctx);
+            struct ggml_tensor * Kcur = ggml_rope_inplace(ctx0, ggml_reshape_3d(ctx0, ggml_mul_mat(ctx0, model.layers[il].c_attn_k_proj_w, cur), n_embd/n_head, n_head, N), n_past, n_rot, 0, n_ctx);
 
             // store key and value to memory
             {

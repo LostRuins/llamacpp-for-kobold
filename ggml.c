@@ -3846,6 +3846,41 @@ static_assert(GGML_OP_COUNT == 64, "GGML_OP_COUNT != 64");
 static_assert(sizeof(struct ggml_object)%GGML_MEM_ALIGN == 0, "ggml_object size must be a multiple of GGML_MEM_ALIGN");
 static_assert(sizeof(struct ggml_tensor)%GGML_MEM_ALIGN == 0, "ggml_tensor size must be a multiple of GGML_MEM_ALIGN");
 
+// WARN:
+// Mis-confguration can lead to problem that's hard to reason about:
+// * At best  it crash or talks nosense.
+// * At worst it talks slightly difference but hard to perceive.
+//
+// An op has to enable INIT or FINALIZE when any of it's branch needs that pass.
+// Take care about compile options (e.g., GGML_USE_xxx).
+static bool GGML_OP_HAS_INIT    [GGML_OP_COUNT] = { 0 };
+static bool GGML_OP_HAS_FINALIZE[GGML_OP_COUNT] = { 0 };
+
+static void ggml_setup_op_has_task_pass(void) {
+    {   // INIT
+        bool * p = GGML_OP_HAS_INIT;
+
+        p[GGML_OP_ACC                    ] = true;
+        p[GGML_OP_MUL_MAT                ] = true;
+        p[GGML_OP_OUT_PROD               ] = true;
+        p[GGML_OP_SET                    ] = true;
+        p[GGML_OP_GET_ROWS_BACK          ] = true;
+        p[GGML_OP_DIAG_MASK_INF          ] = true;
+        p[GGML_OP_DIAG_MASK_ZERO         ] = true;
+        p[GGML_OP_CONV_1D_S1_PH          ] = true;
+        p[GGML_OP_CONV_1D_S2_PH          ] = true;
+        p[GGML_OP_CONV_2D_SK_P0          ] = true;
+        p[GGML_OP_FLASH_ATTN_BACK        ] = true;
+        p[GGML_OP_CROSS_ENTROPY_LOSS     ] = true;
+    }
+
+    {   // FINALIZE
+        bool * p = GGML_OP_HAS_FINALIZE;
+
+        p[GGML_OP_CROSS_ENTROPY_LOSS     ] = true;
+    }
+}
+
 //
 // ggml context
 //
@@ -4208,6 +4243,22 @@ static inline int ggml_up(int n, int m) {
 #define ggml_assert_aligned(ptr) \
     GGML_ASSERT(((uintptr_t) (ptr))%GGML_MEM_ALIGN == 0)
 
+float get_theta_scale(int n_dims,int n_past,int n_ctx)
+{
+   if(n_ctx<=2048) //normie mode
+   {
+        return powf(10000.0, -2.0f/n_dims);
+   }
+   else
+   {
+       //using scaled NTK aware ctx
+       float a = (n_ctx<=4096?4.0:8.0);
+       float m = powf(a, n_dims / (n_dims - 2.0));
+       float s = powf(10000.0 * m, -2.0f/n_dims);
+       return s;
+   }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 struct ggml_context * ggml_init(struct ggml_init_params params) {
@@ -4266,6 +4317,8 @@ struct ggml_context * ggml_init(struct ggml_init_params params) {
 #elif defined(GGML_USE_CLBLAST)
         ggml_cl_init();
 #endif
+
+        ggml_setup_op_has_task_pass();
 
         is_first_call = false;
     }
@@ -12495,7 +12548,7 @@ static void ggml_compute_forward_rope_f32(
     // row index used to determine which thread to use
     int ir = 0;
 
-    const float theta_scale = powf(10000.0, -2.0f/n_dims);
+    const float theta_scale = get_theta_scale(n_dims,n_past,n_ctx);
 
     const bool is_neox = mode & 2;
     const bool is_glm  = mode & 4;
@@ -12535,9 +12588,7 @@ static void ggml_compute_forward_rope_f32(
                         dst_data[n_dims/2*3] = x2*sin_block_theta + x3*cos_block_theta;
                     }
                 } else if (!is_neox) {
-                    if (n_ctx > GGML_TRAINING_CTX) {
-                        theta = theta * GGML_TRAINING_CTX / n_ctx;
-                    }
+
                     for (int64_t i0 = 0; i0 < ne0; i0 += 2) {
                         const float cos_theta = cosf(theta);
                         const float sin_theta = sinf(theta);
@@ -12638,7 +12689,7 @@ static void ggml_compute_forward_rope_f16(
     // row index used to determine which thread to use
     int ir = 0;
 
-    const float theta_scale = powf(10000.0, -2.0f/n_dims);
+    const float theta_scale = get_theta_scale(n_dims,n_past,n_ctx);
 
     const bool is_neox = mode & 2;
     const bool is_glm  = mode & 4;
@@ -12678,9 +12729,6 @@ static void ggml_compute_forward_rope_f16(
                         dst_data[n_dims/2*3] = GGML_FP32_TO_FP16(x2*sin_block_theta + x3*cos_block_theta);
                     }
                 } if (!is_neox) {
-                    if (n_ctx > GGML_TRAINING_CTX) {
-                        theta = theta * GGML_TRAINING_CTX / n_ctx;
-                    }
                     for (int64_t i0 = 0; i0 < ne0; i0 += 2) {
                         const float cos_theta = cosf(theta);
                         const float sin_theta = sinf(theta);
@@ -12806,7 +12854,7 @@ static void ggml_compute_forward_rope_back_f32(
     // row index used to determine which thread to use
     int ir = 0;
 
-    const float theta_scale = powf(10000.0, -2.0f/n_dims);
+    const float theta_scale = get_theta_scale(n_dims,n_past,n_ctx);
 
     const bool is_neox = mode & 2;
 
@@ -12820,9 +12868,6 @@ static void ggml_compute_forward_rope_back_f32(
                 float theta = (float)p;
 
                 if (!is_neox) {
-                    if (n_ctx > GGML_TRAINING_CTX) {
-                        theta = theta * GGML_TRAINING_CTX / n_ctx;
-                    }
                     for (int64_t i0 = 0; i0 < ne0; i0 += 2) {
                         const float cos_theta = cosf(theta);
                         const float sin_theta = sinf(theta);
@@ -12923,7 +12968,7 @@ static void ggml_compute_forward_rope_back_f16(
     // row index used to determine which thread to use
     int ir = 0;
 
-    const float theta_scale = powf(10000.0, -2.0f/n_dims);
+    const float theta_scale = get_theta_scale(n_dims,n_past,n_ctx);
 
     const bool is_neox = mode & 2;
 
@@ -12937,9 +12982,6 @@ static void ggml_compute_forward_rope_back_f16(
                 float theta = (float)p;
 
                 if (!is_neox) {
-                    if (n_ctx > GGML_TRAINING_CTX) {
-                        theta = theta * GGML_TRAINING_CTX / n_ctx;
-                    }
                     for (int64_t i0 = 0; i0 < ne0; i0 += 2) {
                         const float cos_theta = cosf(theta);
                         const float sin_theta = sinf(theta);
@@ -16805,9 +16847,11 @@ static thread_ret_t ggml_graph_compute_thread(void * data) {
             if (node_n != -1) {
                 /* FINALIZE */
                 struct ggml_tensor * node = state->shared->cgraph->nodes[node_n];
-                params.nth = node->n_tasks;
-                ggml_compute_forward(&params, node);
-                ggml_graph_compute_perf_stats_node(node, state->shared);
+                if (GGML_OP_HAS_FINALIZE[node->op]) {
+                    params.nth = node->n_tasks;
+                    ggml_compute_forward(&params, node);
+                    ggml_graph_compute_perf_stats_node(node, state->shared);
+                }
             }
 
             // distribute new work or execute it direct if 1T
@@ -16819,10 +16863,13 @@ static thread_ret_t ggml_graph_compute_thread(void * data) {
                 state->shared->perf_node_start_cycles  = ggml_perf_cycles();
                 state->shared->perf_node_start_time_us = ggml_perf_time_us();
 
+                params.nth = node->n_tasks;
+
                 /* INIT */
-                params.type = GGML_TASK_INIT;
-                params.nth  = node->n_tasks;
-                ggml_compute_forward(&params, node);
+                if (GGML_OP_HAS_INIT[node->op]) {
+                    params.type = GGML_TASK_INIT;
+                    ggml_compute_forward(&params, node);
+                }
 
                 if (node->n_tasks == 1) {
                     // TODO: maybe push node_n to the atomic but if other threads see n_tasks is 1,
@@ -16830,9 +16877,11 @@ static thread_ret_t ggml_graph_compute_thread(void * data) {
                     params.type = GGML_TASK_COMPUTE;
                     ggml_compute_forward(&params, node);
 
-                    params.type = GGML_TASK_FINALIZE;
-                    ggml_compute_forward(&params, node);
-                    ggml_graph_compute_perf_stats_node(node, state->shared);
+                    if (GGML_OP_HAS_FINALIZE[node->op]) {
+                        params.type = GGML_TASK_FINALIZE;
+                        ggml_compute_forward(&params, node);
+                        ggml_graph_compute_perf_stats_node(node, state->shared);
+                    }
                 } else {
                     break;
                 }
