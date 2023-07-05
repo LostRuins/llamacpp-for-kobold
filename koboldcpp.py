@@ -582,7 +582,7 @@ def show_new_gui():
             sys.exit(2)
         return
 
-    launchclicked = False
+    nextstate = 0 #0=exit, 1=launch, 2=oldgui
     windowwidth = 480
     windowheight = 480
     ctk.set_appearance_mode("dark")
@@ -590,7 +590,8 @@ def show_new_gui():
     root.iconbitmap("niko.ico")
     root.geometry(str(windowwidth) + "x" + str(windowheight))
     root.title("KoboldCpp v"+KcppVersion)
-    
+    root.resizable(False,False)
+
     tabs = ctk.CTkFrame(root, corner_radius = 0, width=windowwidth, height=windowheight-40)
     tabs.grid(row=0, stick="nsew")
     tabnames= ["Quick Launch", "Hardware", "Tokens", "Model", "Network"]
@@ -598,13 +599,19 @@ def show_new_gui():
     navbuttonframe = ctk.CTkFrame(tabs, width=100, height=int(tabs.cget("height")))
     navbuttonframe.grid(row=0, column=0, padx=2,pady=2)
     navbuttonframe.grid_propagate(False)
-    
+
     tabcontentframe = ctk.CTkFrame(tabs, width=windowwidth - int(navbuttonframe.cget("width")), height=int(tabs.cget("height")))
     tabcontentframe.grid(row=0, column=1, sticky="nsew", padx=2, pady=2)
     tabcontentframe.grid_propagate(False)
 
     tabcontent = {}
-    
+
+    # slider data
+    blasbatchsize_values = ["-1", "32", "64", "128", "256", "512", "1024"]
+    blasbatchsize_text = ["Don't Batch BLAS","32","64","128","256","512","1024"]
+    contextsize_text = ["512", "1024", "2048", "3072", "4096", "6144", "8192"]
+    runopts = ["Use OpenBLAS","Use CLBlast", "Use CuBLAS", "Use No BLAS","Use OpenBLAS (Old CPU, noavx2)","Failsafe Mode (Old CPU, noavx)"]
+
     def tabbuttonaction(name):
         for t in tabcontent:
             if name == t:
@@ -613,7 +620,7 @@ def show_new_gui():
             else:
                 tabcontent[t].grid_forget()
                 navbuttons[t].configure(fg_color="transparent")
-    
+
     # Dynamically create tabs + buttons based on values of [tabnames]
     for idx, name in enumerate(tabnames):
         tabcontent[name] = ctk.CTkFrame(tabcontentframe, width=int(tabcontentframe.cget("width")), height=int(tabcontentframe.cget("height")), fg_color="transparent")
@@ -624,11 +631,10 @@ def show_new_gui():
 
         navbuttons[name] = ctk.CTkButton(navbuttonframe, text=name, width = 100, corner_radius=0 , command = lambda d=name:tabbuttonaction(d), hover_color="#868a94" )
         navbuttons[name].grid(row=idx)
-    
-    tabbuttonaction(tabnames[0])
-    
-    # helper functions
 
+    tabbuttonaction(tabnames[0])
+
+    # helper functions
     def makecheckbox(parent, text, variable=None, row=0, column=0, command=None, onvalue=1, offvalue=0):
         temp = ctk.CTkCheckBox(parent, text=text,variable=variable, onvalue=onvalue, offvalue=offvalue)
         if command is not None and variable is not None:
@@ -640,9 +646,9 @@ def show_new_gui():
         temp = ctk.CTkLabel(parent, text=text)
         temp.grid(row=row, column=column, padx=8, pady=1, stick="nw")
         return temp
-    
+
     def makeslider(parent, label, options, var, from_ , to,  row=0, width=160, height=10, set=0):
-        sliderLabel = makelabel(parent, options[set], row + 1, 1) 
+        sliderLabel = makelabel(parent, options[set], row + 1, 1)
         makelabel(parent, label, row)
 
         def sliderUpdate(a,b,c):
@@ -666,7 +672,7 @@ def show_new_gui():
 
     def makelabelentry(parent, text, var, row=0, width= 50, placeholder_text=None):
         label = makelabel(parent, text, row)
-        entry = ctk.CTkEntry(parent, width=width, textvariable=var, placeholder_text=None)
+        entry = ctk.CTkEntry(parent, width=width, textvariable=var, placeholder_text=placeholder_text)
         entry.grid(row=row, column=1, padx= 8, stick="nw")
         return entry, label
 
@@ -674,7 +680,7 @@ def show_new_gui():
     def makefileentry(parent, text, searchtext, var, row=0, width=250):
         makelabel(parent, text, row)
         def getfilename(var, text):
-            var.set( "\"" + askopenfilename(title=text) + "\"")
+            var.set(askopenfilename(title=text))
         entry = ctk.CTkEntry(parent, width, textvariable=var)
         entry.grid(row=row+1, column=0, padx=8, stick="nw")
         button = ctk.CTkButton(parent, 50, text="Browse", command= lambda a=var,b=searchtext:getfilename(a,b))
@@ -682,8 +688,7 @@ def show_new_gui():
         return
 
     # Vars - should be in scope to be used by multiple widgets
-
-    gpulayers_var = ctk.StringVar()
+    gpulayers_var = ctk.StringVar(value="0")
     threads_var = ctk.StringVar(value=str(default_threads))
     runopts_var = ctk.StringVar()
     gpu_choice_var = ctk.StringVar(value="1")
@@ -699,7 +704,7 @@ def show_new_gui():
 
     blas_threads_var = ctk.StringVar()
     blas_size_var = ctk.IntVar()
-    version_var =ctk.StringVar()
+    version_var =ctk.StringVar(value="0")
 
     stream = ctk.IntVar()
     smartcontext = ctk.IntVar()
@@ -708,50 +713,42 @@ def show_new_gui():
     mirostat_var = ctk.StringVar(value="0")
     mirostat_tau = ctk.StringVar(value="0")
     mirostat_eta = ctk.StringVar(value="0")
-    
+
     context_var = ctk.IntVar(value=4)
-    
+
     model_var = ctk.StringVar()
-    lora_var = ctk.StringVar() 
+    lora_var = ctk.StringVar()
     lora_base_var  = ctk.StringVar()
 
-    port_var = ctk.StringVar(value="")
+    port_var = ctk.StringVar(value=defaultport)
     host_var = ctk.StringVar(value="")
-    horde_name_var = ctk.StringVar(value="")
-    horde_gen_var = ctk.StringVar(value="0")
-    horde_context_var = ctk.StringVar(value="0")
+    horde_name_var = ctk.StringVar(value="koboldcpp")
+    horde_gen_var = ctk.StringVar(value=maxhordelen)
+    horde_context_var = ctk.StringVar(value=maxhordectx)
     usehorde_var = ctk.IntVar()
 
-    # slider data
-
-    blasbatchsize_values = ["-1", "32", "64", "128", "256", "512", "1024"]
-    blasbatchsize_text = ["Don't Batch BLAS","32","64","128","256","512","1024"]
-    contextsize_text = ["512", "1024", "2048", "4096", "8192"]
-    runopts = ["Use OpenBLAS","Use CLBLast", "Use CuBLas", "Use No BLAS","Use OpenBLAS (Old CPU, noavx2)","Failsafe Mode (Old CPU, noavx)"]
-
     # saving
-
     toggle_params = {"--stream":stream, "--highpriority":highpriority, "--smartcontext":smartcontext, "--unbantokens":unbantokens, "--nommap":disablemmap, "--usemlock":usemlock, "--debugmode":debugmode, "--psutil_set_threads":psutil, "--launch":launchbrowser}
-    value_params = {"model":model_var, "--lora":lora_var, "lorabase":lora_base_var, "--port":port_var, "--host":host_var, "--threads":threads_var, "--blasthreads":blas_threads_var, "--forceversion":version_var, "--gpulayers":gpulayers_var}
+    value_params = {"--model":model_var, "--lora":lora_var, "lorabase":lora_base_var, "--port":port_var, "--host":host_var, "--threads":threads_var, "--blasthreads":blas_threads_var, "--forceversion":version_var, "--gpulayers":gpulayers_var}
 
     def save_config():
         from platform import system
-        from os import getcwd  
+        from os import getcwd
 
         toggle_params = {"--stream":stream, "--highpriority":highpriority, "--smartcontext":smartcontext, "--unbantokens":unbantokens, "--nommap":disablemmap, "--usemlock":usemlock, "--debugmode":debugmode, "--psutil_set_threads":psutil, "--launch":launchbrowser}
-        value_params = {"model":model_var, "--lora":lora_var, "lorabase":lora_base_var, "--port":port_var, "--host":host_var, "--threads":threads_var, "--blasthreads":blas_threads_var, "--forceversion":version_var, "--gpulayers":gpulayers_var}
+        value_params = {"--model":model_var, "--lora":lora_var, "lorabase":lora_base_var, "--port":port_var, "--host":host_var, "--threads":threads_var, "--blasthreads":blas_threads_var, "--forceversion":version_var, "--gpulayers":gpulayers_var}
 
         onwindows = system() == "Windows"
         if not value_params["model"].get():
             print("No Model Selected!")
             return
-        
+
         outputstring = ("\"" + getcwd()  + "\koboldcpp.exe" + "\"") if onwindows else ("#!/bin/bash\npython3 " + "\"" + getcwd() + "\koboldcpp.py" + "\"")
-        
+
         for param in value_params:
             if value_params[param].get():
                 outputstring += ((" " + param) if param not in ["lorabase", "model"] else "") + " " + value_params[param].get()
-            
+
 
         if blas_size_var.get() != None and blas_size_var.get() != 5:
             outputstring += " --blasbatchsize " + blasbatchsize_text[blas_size_var.get()]
@@ -759,17 +756,15 @@ def show_new_gui():
         if context_var.get() != None and context_var.get() != 2:
             outputstring += " --contextsize " + contextsize_text[context_var.get()]
 
-        for param in toggle_params:    
+        for param in toggle_params:
             if toggle_params[param].get() == 1:
                 outputstring += " " + param
-        
+
         # runopts
-        
         if runopts_var.get() == runopts[1]:
             outputstring += " --useclblast " +  ["0 0", "1 0", "0 1"][int(gpu_choice_var.get()) - 1]
-            
         if runopts_var.get() == runopts[2]:
-            outputstring+= " --usecublas" 
+            outputstring+= " --usecublas"
             if lowvram_var.get() == 1:
                 outputstring += " lowvram"
         if runopts_var.get()==runopts[3]:
@@ -780,14 +775,14 @@ def show_new_gui():
             outputstring += " --noavx2"
             outputstring += " --noblas"
 
-        # usemiro   
+        # usemiro
         if mirostat_box.get() == 1:
             outputstring += " --usemirostat " + mirostat_var.get().replace("\"", "") + " " + mirostat_tau.get() + " " + mirostat_eta.get()
-        
+
         # hordgeconfig
         if usehorde_box.get() == 1:
             outputstring += " --hordeconfig \"" + horde_name_var.get() + "\" " + horde_gen_var.get() + " " + horde_context_var.get()
-        
+
         file_type = [("Batch Files", "*.bat")] if onwindows else [("Shell Script", "*.sh")]
         filename = asksaveasfile(filetypes=file_type, defaultextension=file_type)
         if filename == None: return
@@ -796,13 +791,12 @@ def show_new_gui():
         file.close()
 
     # loading
-
     def load_config():
         from platform import system
         import linecache
 
         toggle_params = {"--stream":stream, "--highpriority":highpriority, "--smartcontext":smartcontext, "--unbantokens":unbantokens, "--nommap":disablemmap, "--usemlock":usemlock, "--debugmode":debugmode, "--psutil_set_threads":psutil, "--launch":launchbrowser}
-        value_params = {"model":model_var, "--lora":lora_var, "lorabase":lora_base_var, "--port":port_var, "--host":host_var, "--threads":threads_var, "--blasthreads":blas_threads_var, "--forceversion":version_var, "--gpulayers":gpulayers_var}
+        value_params = {"--model":model_var, "--lora":lora_var, "lorabase":lora_base_var, "--port":port_var, "--host":host_var, "--threads":threads_var, "--blasthreads":blas_threads_var, "--forceversion":version_var, "--gpulayers":gpulayers_var}
 
         onwindows = system() == "Windows"
 
@@ -818,7 +812,6 @@ def show_new_gui():
         inputarray[-1] = inputarray[-1].strip()
 
         # sliders
-
         if inputarray.count("--contextsize"):
             context_var.set(contextsize_text.index(inputarray[inputarray.index("--contextsize") + 1]))
 
@@ -844,10 +837,10 @@ def show_new_gui():
             loc = inputarray.index("--useclblast")
             runopts_var.set(runopts[1])
             gpu_choice_var.set(str(["0 0", "1 0", "0 1"].index(inputarray[loc + 1] + " " + inputarray[loc + 2]) + 1))
-        
+
         elif inputarray.count("--usecublas"):
             runopts_var.set(runopts[2])
-        
+
         elif inputarray.count("--noblas") and not inputarray.count("--noavx2"):
             runopts_var.set(runopts[3])
         elif not inputarray.count("--noblas") and inputarray.count("--noavx2"):
@@ -857,18 +850,16 @@ def show_new_gui():
 
         if inputarray.count("lowvram"):
             lowvram_var.set(1)
-        
-        # mirostat
 
+        # mirostat
         if inputarray.count("--usemirostat"):
             loc = inputarray.index("--usemirostat")
             usemirostat.set(1)
             mirostat_var.set(inputarray[loc + 1])
             mirostat_tau.set(inputarray[loc + 2])
             mirostat_eta.set(inputarray[loc + 3])
-        
-        # horde
 
+        # horde
         if inputarray.count("--hordeconfig"):
             loc = inputarray.index("--hordeconfig")
             usehorde_var.set(1)
@@ -876,19 +867,19 @@ def show_new_gui():
             horde_gen_var.set(inputarray[loc + 2])
             horde_context_var.set(inputarray[loc + 3])
 
-    # Quick Launch Tab  
+    # Quick Launch Tab
     quick_tab = tabcontent["Quick Launch"]
 
     # gpu options
     quick_gpu_layers_entry,quick_gpu_layers_label = makelabelentry(quick_tab,"GPU Layers: ", gpulayers_var, 4, 50)
-    quick_gpu_selector_label = makelabel(quick_tab, "GPU: ", 3)
-    quick_gpu_selector_box = ctk.CTkComboBox(quick_tab, values=["1","2","3"], width=60, variable=gpu_choice_var)
+    quick_gpu_selector_label = makelabel(quick_tab, "GPU ID#: ", 3)
+    quick_gpu_selector_box = ctk.CTkComboBox(quick_tab, values=["1","2","3"], width=60, variable=gpu_choice_var, state="readonly")
     quick_lowvram_box = makecheckbox(quick_tab,  "Low VRAM", lowvram_var, 5)
-    
-        # hides gpu options when CLBlast is not chosen
+
+    # hides gpu options when CLBlast is not chosen
     def changerunmode(a,b,c):
         index = runopts_var.get()
-        if index == "Use CLBLast":
+        if index == "Use CLBlast":
             gpu_selector_label.grid(row=3, column=0, padx = 8, pady=1, stick="nw")
             gpu_selector_box .grid(row=3, column=1, padx=8, pady=1, stick="nw")
             quick_gpu_selector_label.grid(row=3, column=0, padx = 8, pady=1, stick="nw")
@@ -898,15 +889,15 @@ def show_new_gui():
             gpu_selector_box.grid_forget()
             quick_gpu_selector_label.grid_forget()
             quick_gpu_selector_box.grid_forget()
-            
-        if index == "Use CuBLas":
+
+        if index == "Use CuBLAS":
             lowvram_box.grid(row=3, column=0, padx=8, pady=1,  stick="nw")
             quick_lowvram_box.grid(row=3, column=0, padx=8, pady=1,  stick="nw")
         else:
             lowvram_box.grid_forget()
             quick_lowvram_box.grid_forget()
 
-        if index == "Use CLBLast" or index == "Use CuBLas":
+        if index == "Use CLBlast" or index == "Use CuBLAS":
             gpu_layers_label.grid(row=4, column=0, padx = 8, pady=1, stick="nw")
             gpu_layers_entry.grid(row=4, column=1, padx=8, pady=1, stick="nw")
             quick_gpu_layers_label.grid(row=4, column=0, padx = 8, pady=1, stick="nw")
@@ -917,66 +908,65 @@ def show_new_gui():
             quick_gpu_layers_label.grid_forget()
             quick_gpu_layers_entry.grid_forget()
 
-        # presets selector
+    # presets selector
     makelabel(quick_tab, "Presets:", 1)
 
-    runopts = ["Use OpenBLAS","Use CLBLast", "Use CuBLas", "Use No BLAS","Use OpenBLAS (Old CPU, noavx2)","Failsafe Mode (Old CPU, noavx)"]
-    runoptbox = ctk.CTkComboBox(quick_tab, values=runopts, width=150,variable=runopts_var)
+    runoptbox = ctk.CTkComboBox(quick_tab, values=runopts, width=150,variable=runopts_var, state="readonly")
     runoptbox.grid(row=1, column=1,padx=8, stick="nw")
     runoptbox.set("Use OpenBLAS")
 
-        # threads
+    # threads
     makelabelentry(quick_tab, "Threads:" , threads_var, 8, 50)
-        
-        # blas batch size
+
+    # blas batch size
     makeslider(quick_tab, "BLAS Batch Size: ", blasbatchsize_text, blas_size_var, 0, 6, 12, set=5)
 
-        # quick boxes
+    # quick boxes
     quick_boxes = {"Launch Browser": launchbrowser , "High Priority" : highpriority, "Streaming Mode":stream, "Use SmartContext":smartcontext, "Unban Tokens":unbantokens, "Disable MMAP":disablemmap,}
     for idx, name, in enumerate(quick_boxes):
         makecheckbox(quick_tab, name, quick_boxes[name], int(idx/2) +20, idx%2)
 
-        # context size
-    makeslider(quick_tab, "Context Size:", contextsize_text, context_var, 0, 4, 30, set=2)
+    # context size
+    makeslider(quick_tab, "Context Size:", contextsize_text, context_var, 0, len(contextsize_text)-1, 30, set=2)
 
-        # load model
+    # load model
     makefileentry(quick_tab, "Model:", "Select Model File", model_var, 40, 170)
 
-    # Hardware Tab  
+    # Hardware Tab
     hardware_tab = tabcontent["Hardware"]
-    
-        # gpu options
+
+    # gpu options
     gpu_layers_entry,gpu_layers_label = makelabelentry(hardware_tab,"GPU Layers: ", gpulayers_var, 4, 50)
     gpu_selector_label = makelabel(hardware_tab, "GPU: ", 3)
-    gpu_selector_box = ctk.CTkComboBox(hardware_tab, values=["1","2","3"], width=60, variable=gpu_choice_var)
+    gpu_selector_box = ctk.CTkComboBox(hardware_tab, values=["1","2","3"], width=60, variable=gpu_choice_var, state="readonly")
     lowvram_box = makecheckbox(hardware_tab,  "Low VRAM", lowvram_var, 5)
 
-        # presets selector
+    # presets selector
     makelabel(hardware_tab, "Presets:", 1)
-    runoptbox = ctk.CTkComboBox(hardware_tab, values=runopts,  width=150,variable=runopts_var)
+    runoptbox = ctk.CTkComboBox(hardware_tab, values=runopts,  width=150,variable=runopts_var, state="readonly")
     runoptbox.grid(row=1, column=1,padx=8, stick="nw")
     runoptbox.set("Use OpenBLAS")
     runopts_var.trace('w', changerunmode)
     changerunmode(1,1,1)
-        # threads
+    # threads
     makelabelentry(hardware_tab, "Threads:" , threads_var, 8, 50)
 
-    # hardware checkboxes 
+    # hardware checkboxes
     hardware_boxes=  {"Launch Browser": launchbrowser , "High Priority" : highpriority, "Disable MMAP":disablemmap, "Use mlock":usemlock, "Use PSUtil":psutil, "Debug Mode":debugmode,}
-    
+
     for idx, name, in enumerate(hardware_boxes):
         makecheckbox(hardware_tab, name, hardware_boxes[name], int(idx/2) +30, idx%2)
 
-        # blas thread specifier
-    makeentrycheckbox(hardware_tab, "Specify BLAS threads", blas_threads_var, 11)
-        # blas batch size
+    # blas thread specifier
+    makelabelentry(hardware_tab, "BLAS threads:" , blas_threads_var, 11, 50)
+    # blas batch size
     makeslider(hardware_tab, "BLAS Batch Size: ", blasbatchsize_text, blas_size_var, 0, 6, 12, set=5)
-        # force version
-    makeentrycheckbox(hardware_tab, "Force Version", version_var, 100)
+    # force version
+    makelabelentry(hardware_tab, "Force Version:" , version_var, 100, 50)
 
-    # Tokens Tab    
+    # Tokens Tab
     tokens_tab = tabcontent["Tokens"]
-        # tokens checkboxes
+    # tokens checkboxes
     token_boxes = {"Streaming Mode":stream, "Use SmartContext":smartcontext, "Unban Tokens":unbantokens}
     for idx, name, in enumerate(token_boxes):
         makecheckbox(tokens_tab, name, token_boxes[name], idx + 1)
@@ -996,7 +986,7 @@ def show_new_gui():
     mirostat_box = makecheckbox(tokens_tab, "Use Mirostat", row=10, variable=usemirostat, command=togglemiro)
     togglemiro(1,1,1)
 
-        # context size
+    # context size
     makeslider(tokens_tab, "Context Size:",contextsize_text, context_var, 0, 4, 20, set=2)
 
     # Model Tab
@@ -1009,99 +999,118 @@ def show_new_gui():
     # Network Tab
     network_tab = tabcontent["Network"]
 
-        # interfaces
+    # interfaces
     makelabelentry(network_tab, "Port: ", port_var, 1, 150, placeholder_text="5000")
     makelabelentry(network_tab, "Host: ", host_var, 2, 150, placeholder_text="127.0.0.1")
-    
-        # horde
+
+    # horde
     makelabel(network_tab, "Horde:", 3).grid(pady=10)
-    
+
     horde_name_entry,  horde_name_label = makelabelentry(network_tab, "Horde Name:", horde_name_var, 5, 200)
     horde_gen_entry,  horde_gen_label = makelabelentry(network_tab, "Gen. Length:", horde_gen_var, 6, 50)
     horde_context_entry,  horde_context_label = makelabelentry(network_tab, "Max Context:",horde_context_var, 7, 50)
-    
+
     def togglehorde(a,b,c):
         labels = [horde_name_label, horde_gen_label, horde_context_label]
-        for idx, item in enumerate([horde_name_entry, horde_gen_entry, horde_context_entry]): 
+        for idx, item in enumerate([horde_name_entry, horde_gen_entry, horde_context_entry]):
             if usehorde_var.get() == 1:
                 item.grid(row=5 + idx, column = 1, padx=8, pady=1, stick="nw")
                 labels[idx].grid(row=5 + idx, padx=8, pady=1, stick="nw")
             else:
                 item.grid_forget()
                 labels[idx].grid_forget()
-        
+
     usehorde_box = makecheckbox(network_tab, "Use Horde", usehorde_var, 4, command=togglehorde)
     togglehorde(1,1,1)
-    # launch
 
+    # launch
     def guilaunch():
-        nonlocal launchclicked
-        launchclicked = True
+        if model_var.get() == "":
+            tmp = askopenfilename(title="Select ggml model .bin files")
+            model_var.set(tmp)
+        nonlocal nextstate
+        nextstate = 1
         root.destroy()
         pass
-    
+
+    def switch_old_gui():
+        nonlocal nextstate
+        nextstate = 2
+        root.destroy()
+        pass
+
     ctk.CTkButton(tabs , text = "Launch", fg_color="#2f8d3c", command = guilaunch, width=50, height = 25 ).grid(row=1,column=1, stick="se", padx= 25, pady=5)
 
-    ctk.CTkButton(tabs , text = "Save", fg_color="#084a66", command = save_config, width=50, height = 25 ).grid(row=1,column=0, stick="sw", padx= 25, pady=5)
+    ctk.CTkButton(tabs , text = "Save", fg_color="#084a66", command = save_config, width=60, height = 25 ).grid(row=1,column=1, stick="sw", padx= 5, pady=5)
+    ctk.CTkButton(tabs , text = "Load", fg_color="#084a66", command = load_config, width=60, height = 25 ).grid(row=1,column=1, stick="sw", padx= 70, pady=5)
 
-    ctk.CTkButton(tabs , text = "Load", fg_color="#084a66", command = load_config, width=50, height = 25 ).grid(row=1,column=1, stick="sw", padx= 25, pady=5)
+    ctk.CTkButton(tabs , text = "Old GUI", fg_color="#084a66", command = switch_old_gui, width=100, height = 25 ).grid(row=1,column=0, stick="sw", padx= 5, pady=5)
     # runs main loop until closed or launch clicked
     root.mainloop()
 
-    if launchclicked==False:
-            print("Exiting by user request.")
+    if nextstate==0:
+        print("Exiting by user request.")
+        time.sleep(2)
+        sys.exit()
+    elif nextstate==2:
+        time.sleep(0.1)
+        show_old_gui()
+    else:
+        # processing vars
+        args.threads = int(threads_var.get())
+
+        if runopts_var.get() == runopts[1]:
+            args.useclblast = [[0,0], [1,0], [0,1]][int(gpu_choice_var.get())]
+            if gpulayers_var.get():
+                args.gpu_layers = int(gpulayers_var.get())
+        if runopts_var.get() == runopts[2]:
+            args.usecublas = "lowvram" if lowvram_var.get() == 1 else "normal"
+            if gpulayers_var.get():
+                args.gpu_layers = int(gpulayers_var.get())
+        if runopts_var.get()==runopts[3]:
+            args.noblas = True
+        if runopts_var.get()==runopts[4]:
+            args.noavx2 = True
+        if runopts_var.get()==runopts[5]:
+            args.noavx2 = True
+            args.noblas = True
+            args.nommap = True
+            print("[Failsafe Mode : mmap is disabled.]")
+
+        args.usemlock   = usemlock.get() == 1
+        args.debugmode  = debugmode.get() == 1
+        args.launch     = launchbrowser.get()==1
+        args.highpriority = highpriority.get()==1
+        args.nommap = disablemmap.get()==1
+        args.psutil_set_threads = psutil.get()==1
+        args.lowvram = lowvram_var.get()==1
+        args.stream = stream.get()==1
+        args.smartcontext = smartcontext.get()==1
+        args.unbantokens = unbantokens.get()==1
+
+        args.blasthreads = None if blas_threads_var.get()=="" else int(blas_threads_var.get())
+
+        args.blasbatchsize = int(blasbatchsize_values[int(blas_size_var.get())])
+        args.forceversion = 0 if version_var.get()=="" else int(version_var.get())
+
+        args.mirostat = [int(mirostat_var.get()), float(mirostat_tau.get()), float(mirostat_eta.get())]
+        args.contextsize = int(contextsize_text[context_var.get()])
+
+        args.model_param = None if model_var.get() == "" else model_var.get()
+        args.lora = None if lora_var.get() == "" else ([lora_var.get()] if lora_base_var.get()=="" else [lora_var.get(), lora_base_var.get()])
+
+        args.port_param = defaultport if port_var.get()=="" else int(port_var.get())
+        args.host = host_var.get()
+
+        args.hordeconfig = None if usehorde_var.get() == 0 else [horde_name_var.get(), horde_gen_var.get(), horde_context_var.get()]
+
+        if not args.model_param:
+            print("\nNo ggml model file was selected. Exiting.")
             time.sleep(2)
-            sys.exit()
+            sys.exit(2)
 
-    # processing vars
-    args.threads = int(threads_var.get())
-    
-    if runopts_var.get() == runopts[1]:
-        args.useclblast = [[0,0], [1,0], [0,1]][int(gpu_choice_var.get())]
-        if gpulayers_var.get():
-            args.gpu_layers = int(gpulayers_var.get())
-    if runopts_var.get() == runopts[2]:
-        args.usecublas = "lowvram" if lowvram_var.get() == 1 else "normal"
-        if gpulayers_var.get():
-            args.gpu_layers = int(gpulayers_var.get())
-    if runopts_var.get()==runopts[3]:
-        args.noblas = True
-    if runopts_var.get()==runopts[4]:
-        args.noavx2 = True
-    if runopts_var.get()==runopts[5]:
-        args.noavx2 = True
-        args.noblas = True
-        args.nommap = True
-        print("[Failsafe Mode : mmap is disabled.]")
-    
-    args.usemlock   = usemlock.get() == 1
-    args.debugmode  = debugmode.get() == 1
-    args.launch     = launchbrowser.get()==1
-    args.highpriority = highpriority.get()==1
-    args.nommap = disablemmap.get()==1
-    args.psutil_set_threads = psutil.get()==1
-    args.lowvram = lowvram_var.get()==1
-    args.stream = stream.get()==1
-    args.smartcontext = smartcontext.get()==1
-    args.unbantokens = unbantokens.get()==1
 
-    args.blasthreads = None if not blas_threads_var.get() else int(blas_threads_var.get())
-
-    args.blasbatchsize = int(blasbatchsize_values[int(blas_size_var.get())])
-    args.forceversion = version_var.get()
-
-    args.mirostat = [int(mirostat_var.get()), float(mirostat_tau.get()), float(mirostat_eta.get())]
-    args.contextsize = int(contextsize_text[context_var.get()])
-    
-    args.model_param =None if model_var.get() == "" else model_var.get()
-    args.lora = None if lora_var.get() == "" else [lora_var.get(), lora_base_var.get()]
-
-    args.port_param = port_var.get()
-    args.host =  host_var.get()
-
-    args.hordeconfig = None if usehorde_var.get() == 0 else [horde_name_var.ge(), horde_gen_var.get(), horde_context_var.get()]
-
-def show_gui():
+def show_old_gui():
     import tkinter as tk
     from tkinter.filedialog import askopenfilename
 
@@ -1183,9 +1192,9 @@ def show_gui():
         tk.Button( root , text = "Launch", font = ("Impact", 18), bg='#54FA9B', command = guilaunch ).grid(row=6,column=0)
         tk.Label(root, text = "(Please use the Command Line for more advanced options)",
                 font = ("Arial", 9)).grid(row=7,column=0)
-        
+
         root.mainloop()
-        
+
         if launchclicked==False:
             print("Exiting by user request.")
             time.sleep(2)
@@ -1272,7 +1281,7 @@ def main(args):
             print("Attempting to us old GUI...")
             if not args.model_param:
                 try:
-                    show_gui()
+                    show_old_gui()
                 except Exception as ex2:
                     print("File selection GUI unsupported. Please check command line: script.py --help")
                     print("Reason for no GUI: " + str(ex2))
