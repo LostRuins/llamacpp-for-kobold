@@ -659,20 +659,10 @@ def show_new_gui():
         slider.set(set)
         return slider
 
-    def makeentrycheckbox(parent, text , var, row=0, placeholder_text=None):
-        entry = ctk.CTkEntry(parent, width=50, textvariable=var, placeholder_text=placeholder_text)
-        def toggle(a,b,c):
-            if var.get() == 1:
-                entry.grid(row=row, column=1, padx=8, stick="nw")
-            else:
-                entry.grid_forget()
-        var.trace("w", toggle)
-        checkbox = makecheckbox(parent, text, row=row)
-        return checkbox, entry
 
-    def makelabelentry(parent, text, var, row=0, width= 50, placeholder_text=None):
+    def makelabelentry(parent, text, var, row=0, width= 50):
         label = makelabel(parent, text, row)
-        entry = ctk.CTkEntry(parent, width=width, textvariable=var, placeholder_text=placeholder_text)
+        entry = ctk.CTkEntry(parent, width=width, textvariable=var) #you cannot set placeholder text for SHARED variables
         entry.grid(row=row, column=1, padx= 8, stick="nw")
         return entry, label
 
@@ -693,7 +683,7 @@ def show_new_gui():
     runopts_var = ctk.StringVar()
     gpu_choice_var = ctk.StringVar(value="1")
 
-    launchbrowser = ctk.IntVar()
+    launchbrowser = ctk.IntVar(value=1)
     highpriority = ctk.IntVar()
     disablemmap = ctk.IntVar()
     psutil = ctk.IntVar()
@@ -710,11 +700,11 @@ def show_new_gui():
     smartcontext = ctk.IntVar()
     unbantokens = ctk.IntVar()
     usemirostat = ctk.IntVar()
-    mirostat_var = ctk.StringVar(value="0")
-    mirostat_tau = ctk.StringVar(value="0")
-    mirostat_eta = ctk.StringVar(value="0")
+    mirostat_var = ctk.StringVar(value="2")
+    mirostat_tau = ctk.StringVar(value="5.0")
+    mirostat_eta = ctk.StringVar(value="0.1")
 
-    context_var = ctk.IntVar(value=4)
+    context_var = ctk.IntVar()
 
     model_var = ctk.StringVar()
     lora_var = ctk.StringVar()
@@ -734,9 +724,6 @@ def show_new_gui():
     def save_config():
         from platform import system
         from os import getcwd
-
-        toggle_params = {"--stream":stream, "--highpriority":highpriority, "--smartcontext":smartcontext, "--unbantokens":unbantokens, "--nommap":disablemmap, "--usemlock":usemlock, "--debugmode":debugmode, "--psutil_set_threads":psutil, "--launch":launchbrowser}
-        value_params = {"--model":model_var, "--lora":lora_var, "lorabase":lora_base_var, "--port":port_var, "--host":host_var, "--threads":threads_var, "--blasthreads":blas_threads_var, "--forceversion":version_var, "--gpulayers":gpulayers_var}
 
         onwindows = system() == "Windows"
         if not value_params["model"].get():
@@ -794,9 +781,6 @@ def show_new_gui():
     def load_config():
         from platform import system
         import linecache
-
-        toggle_params = {"--stream":stream, "--highpriority":highpriority, "--smartcontext":smartcontext, "--unbantokens":unbantokens, "--nommap":disablemmap, "--usemlock":usemlock, "--debugmode":debugmode, "--psutil_set_threads":psutil, "--launch":launchbrowser}
-        value_params = {"--model":model_var, "--lora":lora_var, "lorabase":lora_base_var, "--port":port_var, "--host":host_var, "--threads":threads_var, "--blasthreads":blas_threads_var, "--forceversion":version_var, "--gpulayers":gpulayers_var}
 
         onwindows = system() == "Windows"
 
@@ -952,7 +936,7 @@ def show_new_gui():
     makelabelentry(hardware_tab, "Threads:" , threads_var, 8, 50)
 
     # hardware checkboxes
-    hardware_boxes=  {"Launch Browser": launchbrowser , "High Priority" : highpriority, "Disable MMAP":disablemmap, "Use mlock":usemlock, "Use PSUtil":psutil, "Debug Mode":debugmode,}
+    hardware_boxes = {"Launch Browser": launchbrowser , "High Priority" : highpriority, "Disable MMAP":disablemmap, "Use mlock":usemlock, "PSUtil Set Threads":psutil, "Debug Mode":debugmode,}
 
     for idx, name, in enumerate(hardware_boxes):
         makecheckbox(hardware_tab, name, hardware_boxes[name], int(idx/2) +30, idx%2)
@@ -960,7 +944,7 @@ def show_new_gui():
     # blas thread specifier
     makelabelentry(hardware_tab, "BLAS threads:" , blas_threads_var, 11, 50)
     # blas batch size
-    makeslider(hardware_tab, "BLAS Batch Size: ", blasbatchsize_text, blas_size_var, 0, 6, 12, set=5)
+    makeslider(hardware_tab, "BLAS Batch Size:", blasbatchsize_text, blas_size_var, 0, 6, 12, set=5)
     # force version
     makelabelentry(hardware_tab, "Force Version:" , version_var, 100, 50)
 
@@ -1000,8 +984,8 @@ def show_new_gui():
     network_tab = tabcontent["Network"]
 
     # interfaces
-    makelabelentry(network_tab, "Port: ", port_var, 1, 150, placeholder_text="5000")
-    makelabelentry(network_tab, "Host: ", host_var, 2, 150, placeholder_text="127.0.0.1")
+    makelabelentry(network_tab, "Port: ", port_var, 1, 150)
+    makelabelentry(network_tab, "Host: ", host_var, 2, 150)
 
     # horde
     makelabel(network_tab, "Horde:", 3).grid(pady=10)
@@ -1093,7 +1077,7 @@ def show_new_gui():
         args.blasbatchsize = int(blasbatchsize_values[int(blas_size_var.get())])
         args.forceversion = 0 if version_var.get()=="" else int(version_var.get())
 
-        args.mirostat = [int(mirostat_var.get()), float(mirostat_tau.get()), float(mirostat_eta.get())]
+        args.mirostat = [int(mirostat_var.get()), float(mirostat_tau.get()), float(mirostat_eta.get())] if usemirostat.get()==1 else None
         args.contextsize = int(contextsize_text[context_var.get()])
 
         args.model_param = None if model_var.get() == "" else model_var.get()
@@ -1356,7 +1340,8 @@ def main(args):
         args.blasthreads = args.threads
 
     modelname = os.path.abspath(args.model_param)
-    print(f"Loading model: {modelname} \n[Threads: {args.threads}, BlasThreads: {args.blasthreads}, SmartContext: {args.smartcontext}]")
+    print(args)
+    print(f"===\nLoading model: {modelname} \n[Threads: {args.threads}, BlasThreads: {args.blasthreads}, SmartContext: {args.smartcontext}]")
     loadok = load_model(modelname)
     print("Load Model OK: " + str(loadok))
 
