@@ -880,8 +880,8 @@ def show_new_gui():
     quick_tab = tabcontent["Quick Launch"]
 
     # gpu options
-    quick_gpu_layers_entry,quick_gpu_layers_label = makelabelentry(quick_tab,"GPU Layers: ", gpulayers_var, 4, 50)
-    quick_gpu_selector_label = makelabel(quick_tab, "GPU ID#: ", 3)
+    quick_gpu_layers_entry,quick_gpu_layers_label = makelabelentry(quick_tab,"GPU Layers:", gpulayers_var, 4, 50)
+    quick_gpu_selector_label = makelabel(quick_tab, "GPU ID:", 3)
     quick_gpu_selector_box = ctk.CTkComboBox(quick_tab, values=["1","2","3"], width=60, variable=gpu_choice_var, state="readonly")
     quick_lowvram_box = makecheckbox(quick_tab,  "Low VRAM", lowvram_var, 5)
 
@@ -928,7 +928,7 @@ def show_new_gui():
     makelabelentry(quick_tab, "Threads:" , threads_var, 8, 50)
 
     # blas batch size
-    makeslider(quick_tab, "BLAS Batch Size: ", blasbatchsize_text, blas_size_var, 0, 6, 12, set=5)
+    makeslider(quick_tab, "BLAS Batch Size:", blasbatchsize_text, blas_size_var, 0, 6, 12, set=5)
 
     # quick boxes
     quick_boxes = {"Launch Browser": launchbrowser , "High Priority" : highpriority, "Streaming Mode":stream, "Use SmartContext":smartcontext, "Unban Tokens":unbantokens, "Disable MMAP":disablemmap,}
@@ -945,8 +945,8 @@ def show_new_gui():
     hardware_tab = tabcontent["Hardware"]
 
     # gpu options
-    gpu_layers_entry,gpu_layers_label = makelabelentry(hardware_tab,"GPU Layers: ", gpulayers_var, 4, 50)
-    gpu_selector_label = makelabel(hardware_tab, "GPU: ", 3)
+    gpu_layers_entry,gpu_layers_label = makelabelentry(hardware_tab,"GPU Layers:", gpulayers_var, 4, 50)
+    gpu_selector_label = makelabel(hardware_tab, "GPU ID:", 3)
     gpu_selector_box = ctk.CTkComboBox(hardware_tab, values=["1","2","3"], width=60, variable=gpu_choice_var, state="readonly")
     lowvram_box = makecheckbox(hardware_tab,  "Low VRAM", lowvram_var, 5)
 
@@ -1029,7 +1029,7 @@ def show_new_gui():
                 item.grid_forget()
                 labels[idx].grid_forget()
 
-    usehorde_box = makecheckbox(network_tab, "Use Horde", usehorde_var, 4, command=togglehorde)
+    usehorde_box = makecheckbox(network_tab, "Configure for Horde", usehorde_var, 4, command=togglehorde)
     togglehorde(1,1,1)
 
     # launch
@@ -1068,14 +1068,22 @@ def show_new_gui():
         # processing vars
         args.threads = int(threads_var.get())
 
+        args.usemlock   = usemlock.get() == 1
+        args.debugmode  = debugmode.get() == 1
+        args.launch     = launchbrowser.get()==1
+        args.highpriority = highpriority.get()==1
+        args.nommap = disablemmap.get()==1
+        args.psutil_set_threads = psutil.get()==1
+        args.stream = stream.get()==1
+        args.smartcontext = smartcontext.get()==1
+        args.unbantokens = unbantokens.get()==1
+
         if runopts_var.get() == runopts[1]:
-            args.useclblast = [[0,0], [1,0], [0,1]][int(gpu_choice_var.get())]
-            if gpulayers_var.get():
-                args.gpu_layers = int(gpulayers_var.get())
+            args.useclblast = [[0,0], [1,0], [0,1]][int(gpu_choice_var.get())-1]
         if runopts_var.get() == runopts[2]:
             args.usecublas = "lowvram" if lowvram_var.get() == 1 else "normal"
-            if gpulayers_var.get():
-                args.gpu_layers = int(gpulayers_var.get())
+        if gpulayers_var.get():
+            args.gpulayers = int(gpulayers_var.get())
         if runopts_var.get()==runopts[3]:
             args.noblas = True
         if runopts_var.get()==runopts[4]:
@@ -1086,16 +1094,7 @@ def show_new_gui():
             args.nommap = True
             print("[Failsafe Mode : mmap is disabled.]")
 
-        args.usemlock   = usemlock.get() == 1
-        args.debugmode  = debugmode.get() == 1
-        args.launch     = launchbrowser.get()==1
-        args.highpriority = highpriority.get()==1
-        args.nommap = disablemmap.get()==1
-        args.psutil_set_threads = psutil.get()==1
-        args.lowvram = lowvram_var.get()==1
-        args.stream = stream.get()==1
-        args.smartcontext = smartcontext.get()==1
-        args.unbantokens = unbantokens.get()==1
+
 
         args.blasthreads = None if blas_threads_var.get()=="" else int(blas_threads_var.get())
 
