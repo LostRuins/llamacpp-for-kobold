@@ -742,140 +742,6 @@ def show_new_gui():
     horde_context_var = ctk.StringVar(value=maxhordectx)
     usehorde_var = ctk.IntVar()
 
-    # saving
-    toggle_params = {"--stream":stream, "--highpriority":highpriority, "--smartcontext":smartcontext, "--unbantokens":unbantokens, "--nommap":disablemmap, "--usemlock":usemlock, "--debugmode":debugmode, "--psutil_set_threads":psutil, "--launch":launchbrowser}
-    value_params = {"--model":model_var, "--lora":lora_var, "lorabase":lora_base_var, "--port":port_var, "--host":host_var, "--threads":threads_var, "--blasthreads":blas_threads_var, "--forceversion":version_var, "--gpulayers":gpulayers_var}
-
-    def save_config():
-        from platform import system
-        from os import getcwd
-
-        onwindows = system() == "Windows"
-        if not value_params["model"].get():
-            print("No Model Selected!")
-            return
-
-        outputstring = ("\"" + getcwd()  + "\koboldcpp.exe" + "\"") if onwindows else ("#!/bin/bash\npython3 " + "\"" + getcwd() + "\koboldcpp.py" + "\"")
-
-        for param in value_params:
-            if value_params[param].get():
-                outputstring += ((" " + param) if param not in ["lorabase", "model"] else "") + " " + value_params[param].get()
-
-
-        if blas_size_var.get() != None and blas_size_var.get() != 5:
-            outputstring += " --blasbatchsize " + blasbatchsize_text[blas_size_var.get()]
-
-        if context_var.get() != None and context_var.get() != 2:
-            outputstring += " --contextsize " + contextsize_text[context_var.get()]
-
-        for param in toggle_params:
-            if toggle_params[param].get() == 1:
-                outputstring += " " + param
-
-        # runopts
-        if runopts_var.get() == runopts[1]:
-            outputstring += " --useclblast " +  ["0 0", "1 0", "0 1"][int(gpu_choice_var.get()) - 1]
-        if runopts_var.get() == runopts[2]:
-            outputstring+= " --usecublas"
-            if lowvram_var.get() == 1:
-                outputstring += " lowvram"
-        if runopts_var.get()==runopts[3]:
-            outputstring += " --noblas"
-        if runopts_var.get()==runopts[4]:
-            outputstring += " --noavx2"
-        if runopts_var.get()==runopts[5]:
-            outputstring += " --noavx2"
-            outputstring += " --noblas"
-
-        # usemiro
-        if mirostat_box.get() == 1:
-            outputstring += " --usemirostat " + mirostat_var.get().replace("\"", "") + " " + mirostat_tau.get() + " " + mirostat_eta.get()
-
-        # hordgeconfig
-        if usehorde_box.get() == 1:
-            outputstring += " --hordeconfig \"" + horde_name_var.get() + "\" " + horde_gen_var.get() + " " + horde_context_var.get()
-
-        file_type = [("Batch Files", "*.bat")] if onwindows else [("Shell Script", "*.sh")]
-        filename = asksaveasfile(filetypes=file_type, defaultextension=file_type)
-        if filename == None: return
-        file = open(str(filename.name), 'a')
-        file.write(outputstring)
-        file.close()
-
-    # loading
-    def load_config():
-        from platform import system
-        import linecache
-
-        onwindows = system() == "Windows"
-
-        file_type = [("Batch Files", "*.bat")] if onwindows else [("Shell Script", "*.sh")]
-        filename = askopenfilename(filetypes=file_type, defaultextension=file_type)
-        if len(filename) < 1: return
-        inputstring = linecache.getline(filename, 1 if onwindows else 2)
-
-        inputarray = inputstring.split(" ")
-        inputarray.pop(0)
-        if not onwindows:
-            inputarray.pop(0)
-        inputarray[-1] = inputarray[-1].strip()
-
-        # sliders
-        if inputarray.count("--contextsize"):
-            context_var.set(contextsize_text.index(inputarray[inputarray.index("--contextsize") + 1]))
-
-        if inputarray.count("--blasbatchsize"):
-            blas_size_var.set(blasbatchsize_values.index(inputarray[inputarray.index("--blasbatchsize") + 1]))
-
-        # runopts
-        for param in value_params:
-            if param in inputarray:
-                value_params[param].set(inputarray[inputarray.index(param) + 1] if isinstance(value_params[param] , ctk.StringVar) else int(inputarray[inputarray.index(param) + 1]))
-            else:
-                value_params[param] = ctk.StringVar() if isinstance(value_params[param] , ctk.StringVar) else ctk.IntVar()
-
-        model_var.set(inputarray[0])
-        if inputarray.count("--lora") and len(inputarray) >= 4:
-            if not inputarray[4] in value_params.keys and not inputarray[4] in toggle_params.keys:
-                lora_base_var.set(inputarray[4])
-
-        for param in toggle_params:
-            toggle_params[param].set(1 if param in inputarray else 0)
-
-        if inputarray.count("--useclblast"):
-            loc = inputarray.index("--useclblast")
-            runopts_var.set(runopts[1])
-            gpu_choice_var.set(str(["0 0", "1 0", "0 1"].index(inputarray[loc + 1] + " " + inputarray[loc + 2]) + 1))
-
-        elif inputarray.count("--usecublas"):
-            runopts_var.set(runopts[2])
-
-        elif inputarray.count("--noblas") and not inputarray.count("--noavx2"):
-            runopts_var.set(runopts[3])
-        elif not inputarray.count("--noblas") and inputarray.count("--noavx2"):
-            runopts_var.set(runopts[4])
-        elif inputarray.count("--noblas") and inputarray.count("--noavx2"):
-            runopts_var.set(runopts[5])
-
-        if inputarray.count("lowvram"):
-            lowvram_var.set(1)
-
-        # mirostat
-        if inputarray.count("--usemirostat"):
-            loc = inputarray.index("--usemirostat")
-            usemirostat.set(1)
-            mirostat_var.set(inputarray[loc + 1])
-            mirostat_tau.set(inputarray[loc + 2])
-            mirostat_eta.set(inputarray[loc + 3])
-
-        # horde
-        if inputarray.count("--hordeconfig"):
-            loc = inputarray.index("--hordeconfig")
-            usehorde_var.set(1)
-            horde_name_var.set(inputarray[loc + 1])
-            horde_gen_var.set(inputarray[loc + 2])
-            horde_context_var.set(inputarray[loc + 3])
-
     # Quick Launch Tab
     quick_tab = tabcontent["Quick Launch"]
 
@@ -1050,8 +916,8 @@ def show_new_gui():
 
     ctk.CTkButton(tabs , text = "Launch", fg_color="#2f8d3c", command = guilaunch, width=50, height = 25 ).grid(row=1,column=1, stick="se", padx= 25, pady=5)
 
-    ctk.CTkButton(tabs , text = "Save", fg_color="#084a66", command = save_config, width=60, height = 25 ).grid(row=1,column=1, stick="sw", padx= 5, pady=5)
-    ctk.CTkButton(tabs , text = "Load", fg_color="#084a66", command = load_config, width=60, height = 25 ).grid(row=1,column=1, stick="sw", padx= 70, pady=5)
+    # ctk.CTkButton(tabs , text = "Save", fg_color="#084a66", command = save_config, width=60, height = 25 ).grid(row=1,column=1, stick="sw", padx= 5, pady=5)
+    # ctk.CTkButton(tabs , text = "Load", fg_color="#084a66", command = load_config, width=60, height = 25 ).grid(row=1,column=1, stick="sw", padx= 70, pady=5)
 
     ctk.CTkButton(tabs , text = "Old GUI", fg_color="#084a66", command = switch_old_gui, width=100, height = 25 ).grid(row=1,column=0, stick="sw", padx= 5, pady=5)
     # runs main loop until closed or launch clicked
@@ -1197,7 +1063,7 @@ def show_old_gui():
         frameD.grid(row=5,column=0,pady=4)
 
         # Create button, it will change label text
-        tk.Button( root , text = "Launch", font = ("Impact", 18), bg='#54FA9B', command = guilaunch ).grid(row=6,column=0)
+        tk.Button(root , text = "Launch", font = ("Impact", 18), bg='#54FA9B', command = guilaunch ).grid(row=6,column=0)
         tk.Label(root, text = "(Please use the Command Line for more advanced options)",
                 font = ("Arial", 9)).grid(row=7,column=0)
 
@@ -1281,7 +1147,7 @@ def main(args):
     if not args.model_param:
         #give them a chance to pick a file
         print("For command line arguments, please refer to --help")
-        print("Otherwise, please manually select ggml file:")
+        print("***")
         try:
             show_new_gui()
         except Exception as ex:
@@ -1365,7 +1231,7 @@ def main(args):
 
     modelname = os.path.abspath(args.model_param)
     print(args)
-    print(f"===\nLoading model: {modelname} \n[Threads: {args.threads}, BlasThreads: {args.blasthreads}, SmartContext: {args.smartcontext}]")
+    print(f"==========\nLoading model: {modelname} \n[Threads: {args.threads}, BlasThreads: {args.blasthreads}, SmartContext: {args.smartcontext}]")
     loadok = load_model(modelname)
     print("Load Model OK: " + str(loadok))
 
@@ -1400,7 +1266,7 @@ def main(args):
     asyncio.run(RunServerMultiThreaded(args.host, args.port, embedded_kailite))
 
 if __name__ == '__main__':
-    print("Welcome to KoboldCpp - Version " + KcppVersion) # just update version manually
+    print("***\nWelcome to KoboldCpp - Version " + KcppVersion) # just update version manually
     # print("Python version: " + sys.version)
     parser = argparse.ArgumentParser(description='KoboldCpp Server')
     modelgroup = parser.add_mutually_exclusive_group() #we want to be backwards compatible with the unnamed positional args
