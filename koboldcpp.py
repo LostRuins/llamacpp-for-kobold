@@ -233,7 +233,7 @@ def generate(prompt,max_length=20, max_context_length=512, temperature=0.8, top_
         inputs.mirostat_eta = mirostat_eta
     else:
         inputs.mirostat = inputs.mirostat_tau = inputs.mirostat_eta = 0
-    if sampler_order and 0 < len(sampler_order) <= sampler_order_max:
+    if args.usesamplerorder and sampler_order and 0 < len(sampler_order) <= sampler_order_max:
         try:
             for i, sampler in enumerate(sampler_order):
                 inputs.sampler_order[i] = sampler
@@ -740,6 +740,7 @@ def show_new_gui():
     smartcontext = ctk.IntVar()
     unbantokens = ctk.IntVar()
     usemirostat = ctk.IntVar()
+    usesamplerorder = ctk.IntVar()
     mirostat_var = ctk.StringVar(value="2")
     mirostat_tau = ctk.StringVar(value="5.0")
     mirostat_eta = ctk.StringVar(value="0.1")
@@ -876,6 +877,8 @@ def show_new_gui():
     makecheckbox(tokens_tab, "Use Mirostat", row=10, variable=usemirostat, command=togglemiro)
     togglemiro(1,1,1)
 
+    makecheckbox(tokens_tab, "Use Sampler Order", row=11, variable=usesamplerorder)
+
     # context size
     makeslider(tokens_tab, "Context Size:",contextsize_text, context_var, 0, 4, 20, set=2)
 
@@ -984,6 +987,7 @@ def show_new_gui():
         args.forceversion = 0 if version_var.get()=="" else int(version_var.get())
 
         args.mirostat = [int(mirostat_var.get()), float(mirostat_tau.get()), float(mirostat_eta.get())] if usemirostat.get()==1 else None
+        args.usesamplerorder = usesamplerorder.get()==1
         args.contextsize = int(contextsize_text[context_var.get()])
 
         args.model_param = None if model_var.get() == "" else model_var.get()
@@ -1319,6 +1323,7 @@ if __name__ == '__main__':
     parser.add_argument("--unbantokens", help="Normally, KoboldAI prevents the EOS token from being generated. This flag unbans it.", action='store_true')
     parser.add_argument("--bantokens", help="You can manually specify a list of token SUBSTRINGS that the AI cannot use. This bans ALL instances of that substring.", metavar=('[token_substrings]'), nargs='+')
     parser.add_argument("--usemirostat", help="Experimental! Replaces your samplers with mirostat. Takes 3 params = [type(0/1/2), tau(5.0), eta(0.1)].",metavar=('[type]', '[tau]', '[eta]'), type=float, nargs=3)
+    parser.add_argument("--usesamplerorder", help="Enables custom sampler ordering. (be sure you want this, the defaults are optimal)", action='store_true')
     parser.add_argument("--forceversion", help="If the model file format detection fails (e.g. rogue modified model) you can set this to override the detected format (enter desired version, e.g. 401 for GPTNeoX-Type2).",metavar=('[version]'), type=int, default=0)
     parser.add_argument("--nommap", help="If set, do not use mmap to load newer models", action='store_true')
     parser.add_argument("--usemlock", help="For Apple Systems. Force system to keep model in RAM rather than swapping or compressing", action='store_true')
