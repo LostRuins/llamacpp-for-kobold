@@ -416,13 +416,13 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                 for message in messages_array:
                     # TODO: use the template format of the model rather than generic Instruction/Response
                     if message['role'] == "system":
-                        messages_string+="\n###Instruction: "
+                        messages_string+="\n###Instruction:\n"
                     elif message['role'] == "user":
-                        messages_string+="\n###Instruction: "
+                        messages_string+="\n###Instruction:\n"
                     elif message['role'] == "assistant":
-                        messages_string+="\n###Response: "
+                        messages_string+="\n###Response:\n"
                     messages_string+=message['content']
-                messages_string+="\n###Response:"
+                messages_string+="\n###Response:\n"
                 genparams["prompt"] = messages_string
                 frqp = genparams.get('frequency_penalty', 0.1)
                 scaled_rep_pen = genparams.get('presence_penalty', frqp) + 1
@@ -982,10 +982,12 @@ def show_new_gui():
         x, y = root.winfo_pointerxy()
         tooltip.wm_geometry(f"+{x + 10}+{y + 10}")
         tooltip.deiconify()
+        
     def hide_tooltip(event):
         if hasattr(show_tooltip, "_tooltip"):
             tooltip = show_tooltip._tooltip
             tooltip.withdraw()
+            
     def setup_backend_tooltip(parent):
         num_backends_built = makelabel(parent, str(len(runopts)) + "/6", 5, 2)
         num_backends_built.grid(row=1, column=2, padx=0, pady=0)
