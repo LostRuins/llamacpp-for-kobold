@@ -372,7 +372,6 @@ totalgens = 0
 currentusergenkey = "" #store a special key so polled streaming works even in multiuser
 args = None #global args
 openaistreaming = False #store if using openai endpoint in streaming mode
-local_model_name = "koboldcpp" #store actual local model name for openai endpoint if it can be found, otherwise default to 'koboldcpp'
 
 class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
     sys_version = ""
@@ -398,18 +397,14 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
             if api_format==1:
                 genparams["prompt"] = genparams.get('text', "")
                 genparams["top_k"] = int(genparams.get('top_k', 120))
-                genparams["max_length"]=genparams.get('max', 80)
+                genparams["max_length"]=genparams.get('max', 50)
             elif api_format==3:
                 frqp = genparams.get('frequency_penalty', 0.1)
                 scaled_rep_pen = genparams.get('presence_penalty', frqp) + 1
-                genparams["max_length"] = genparams.get('max_tokens', 80)
+                genparams["max_length"] = genparams.get('max_tokens', 50)
                 genparams["rep_pen"] = scaled_rep_pen
-                # openai allows either a string or a list as a stop sequence
-                if isinstance(genparams.get('stop',[]), list):
-                    genparams["stop_sequence"] = genparams.get('stop', [])
-                else:
-                    genparams["stop_sequence"] = [genparams.get('stop')]
             elif api_format==4:
+                # TODO: translate other openai unique chat completion parameters to kobold parameters
                 # translate openai chat completion messages format into one big string.
                 messages_array = genparams.get('messages', [])
                 messages_string = ""
@@ -426,13 +421,8 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                 genparams["prompt"] = messages_string
                 frqp = genparams.get('frequency_penalty', 0.1)
                 scaled_rep_pen = genparams.get('presence_penalty', frqp) + 1
-                genparams["max_length"] = genparams.get('max_tokens', 80)
+                genparams["max_length"] = genparams.get('max_tokens', 50)
                 genparams["rep_pen"] = scaled_rep_pen
-                # openai allows either a string or a list as a stop sequence
-                if isinstance(genparams.get('stop',[]), list):
-                    genparams["stop_sequence"] = genparams.get('stop', [])
-                else:
-                    genparams["stop_sequence"] = [genparams.get('stop')]
 
             return generate(
                 prompt=genparams.get('prompt', ""),
@@ -472,10 +462,10 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
         if api_format==1:
             res = {"data": {"seqs":[recvtxt]}}
         elif api_format==3:
-            res = {"id": "cmpl-1", "object": "text_completion", "created": 1, "model": local_model_name,
+            res = {"id": "cmpl-1", "object": "text_completion", "created": 1, "model": "koboldcpp",
             "choices": [{"text": recvtxt, "index": 0, "finish_reason": "length"}]}
         elif api_format==4:
-            res = {"id": "cmpl-1", "object": "chat.completion", "created": 1, "model": local_model_name,
+            res = {"id": "cmpl-1", "object": "chat.completion", "created": 1, "model": "koboldcpp",
             "choices": [{"index": 0, "message":{"role": "assistant", "content": recvtxt,}, "finish_reason": "length"}]}
         else:
             res = {"results": [{"text": recvtxt}]}
@@ -527,7 +517,7 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                 event_str = ""
                 # if openaistreaming endpoint, set format to expected openai streaming response
                 if openaistreaming == True:
-                    event_data = {"id":"koboldcpp","object":"chat.completion.chunk","created":1,"model":local_model_name,"choices":[{"index":0,"finish_reason":"length","delta":{'role':'assistant','content':tokenStr},}],}
+                    event_data = {"id":"koboldcpp","object":"chat.completion.chunk","created":1,"model":"koboldcpp","choices":[{"index":0,"finish_reason":"length","delta":{'role':'assistant','content':tokenStr},}],}
                     event_str = json.dumps(event_data)
                 else:
                     event_str = json.dumps(event_data)
@@ -621,7 +611,7 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
             response_body = (json.dumps({"results": [{"text": pendtxtStr}]}).encode())
 
         elif self.path.endswith('/v1/models') or self.path.endswith('/models'):
-            response_body = (json.dumps({"object":"list","data":[{"id":local_model_name,"object":"model","created":1,"owned_by":"koboldcpp","permission":[],"root":"koboldcpp"}]}).encode())
+            response_body = (json.dumps({"object":"list","data":[{"id":"koboldcpp","object":"model","created":1,"owned_by":"koboldcpp","permission":[],"root":"koboldcpp"}]}).encode())
             force_json = True
 
         elif self.path.endswith(('/api')) or self.path.endswith(('/api/v1')):
@@ -1742,12 +1732,6 @@ def main(launch_args,start_server=True):
     print(f"==========\nLoading model: {modelname} \n[Threads: {args.threads}, BlasThreads: {args.blasthreads}, SmartContext: {args.smartcontext}]")
     loadok = load_model(modelname)
     print("Load Model OK: " + str(loadok))
-    # set local_model_name variable to model for use by openai api endpoints if possible, otherwise default to 'koboldcpp'
-    global local_model_name
-    full_model_path = os.path.abspath(args.model_param)
-    index_of_last_backslash = full_model_path.rfind('\\')
-    if index_of_last_backslash != -1:
-        local_model_name = full_model_path[index_of_last_backslash + 1:]
 
     if not loadok:
         print("Could not load model: " + modelname)
