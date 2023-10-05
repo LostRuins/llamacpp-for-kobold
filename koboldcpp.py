@@ -371,8 +371,6 @@ exitcounter = 0
 totalgens = 0
 currentusergenkey = "" #store a special key so polled streaming works even in multiuser
 args = None #global args
-openaistreaming = False #store if using openai endpoint in streaming mode
-local_model_name = "koboldcpp" #store actual local model name for openai endpoint if it can be found, otherwise default to 'koboldcpp'
 
 class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
     sys_version = ""
@@ -393,12 +391,12 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
         pass
 
     async def generate_text(self, genparams, api_format, stream_flag):
-
+        global friendlymodelname
         def run_blocking():
             if api_format==1:
                 genparams["prompt"] = genparams.get('text', "")
                 genparams["top_k"] = int(genparams.get('top_k', 120))
-                genparams["max_length"]=genparams.get('max', 80)
+                genparams["max_length"] = genparams.get('max', 80)
             elif api_format==3:
                 frqp = genparams.get('frequency_penalty', 0.1)
                 scaled_rep_pen = genparams.get('presence_penalty', frqp) + 1
@@ -414,15 +412,14 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                 messages_array = genparams.get('messages', [])
                 messages_string = ""
                 for message in messages_array:
-                    # TODO: use the template format of the model rather than generic Instruction/Response
                     if message['role'] == "system":
-                        messages_string+="\n###Instruction:\n"
+                        messages_string+="\n### Instruction:\n"
                     elif message['role'] == "user":
-                        messages_string+="\n###Instruction:\n"
+                        messages_string+="\n### Instruction:\n"
                     elif message['role'] == "assistant":
-                        messages_string+="\n###Response:\n"
+                        messages_string+="\n### Response:\n"
                     messages_string+=message['content']
-                messages_string+="\n###Response:\n"
+                messages_string += "\n### Response:\n"
                 genparams["prompt"] = messages_string
                 frqp = genparams.get('frequency_penalty', 0.1)
                 scaled_rep_pen = genparams.get('presence_penalty', frqp) + 1
@@ -472,10 +469,10 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
         if api_format==1:
             res = {"data": {"seqs":[recvtxt]}}
         elif api_format==3:
-            res = {"id": "cmpl-1", "object": "text_completion", "created": 1, "model": local_model_name,
+            res = {"id": "cmpl-1", "object": "text_completion", "created": 1, "model": friendlymodelname,
             "choices": [{"text": recvtxt, "index": 0, "finish_reason": "length"}]}
         elif api_format==4:
-            res = {"id": "cmpl-1", "object": "chat.completion", "created": 1, "model": local_model_name,
+            res = {"id": "chatcmpl-1", "object": "chat.completion", "created": 1, "model": friendlymodelname,
             "choices": [{"index": 0, "message":{"role": "assistant", "content": recvtxt,}, "finish_reason": "length"}]}
         else:
             res = {"results": [{"text": recvtxt}]}
@@ -486,23 +483,21 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
             print(f"Generate: Error while generating: {e}")
 
 
-    async def send_sse_event(self, event, data):
-        if openaistreaming == False:
-            self.wfile.write(f'event: {event}\n'.encode())
-            self.wfile.write(f'data: {data}\n\n'.encode())
-        else:
-            openai_sse_data = 'data: ' + data + '\r\n\r\n'
-            self.wfile.write(openai_sse_data.encode())
+    async def send_oai_sse_event(self, data):
+        self.wfile.write(f'data: {data}\r\n\r\n'.encode())
 
+    async def send_kai_sse_event(self, data):
+        self.wfile.write(f'event: message\n'.encode())
+        self.wfile.write(f'data: {data}\n\n'.encode())
 
-    async def handle_sse_stream(self):
+    async def handle_sse_stream(self, api_format):
+        global friendlymodelname
         self.send_response(200)
         self.send_header("Cache-Control", "no-cache")
         self.send_header("Connection", "keep-alive")
-        self.end_headers()
+        self.end_headers(force_json=True, sse_stream_flag=True)
 
         current_token = 0
-
         incomplete_token_buffer = bytearray()
         while True:
             streamDone = handle.has_finished() #exit next loop on done
@@ -523,27 +518,20 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                     tokenStr += tokenSeg
 
             if tokenStr!="":
-                event_data = {"token": tokenStr}
-                event_str = ""
-                # if openaistreaming endpoint, set format to expected openai streaming response
-                if openaistreaming == True:
-                    event_data = {"id":"koboldcpp","object":"chat.completion.chunk","created":1,"model":local_model_name,"choices":[{"index":0,"finish_reason":"length","delta":{'role':'assistant','content':tokenStr},}],}
-                    event_str = json.dumps(event_data)
+                if api_format == 4:  # if oai chat, set format to expected openai streaming response
+                    event_str = json.dumps({"id":"koboldcpp","object":"chat.completion.chunk","created":1,"model":friendlymodelname,"choices":[{"index":0,"finish_reason":"length","delta":{'role':'assistant','content':tokenStr}}]})
+                    await self.send_oai_sse_event(event_str)
                 else:
-                    event_str = json.dumps(event_data)
+                    event_str = json.dumps({"token": tokenStr})
+                    await self.send_kai_sse_event(event_str)
                 tokenStr = ""
-                print('\r\nSending event_str to SSE:')
-                print('\r\n' + event_str)
-                await self.send_sse_event("message", event_str)
-                if streamDone:
-                # if openai streaming chat endpoint, send last [DONE] message consistent with openai format
-                    if openaistreaming == True:
-                        print('\r\nevent stream done')
-                        await self.send_sse_event("message", '[DONE]')
+
             else:
                 await asyncio.sleep(0.02) #this should keep things responsive
 
             if streamDone:
+                if api_format == 4:  # if oai chat, send last [DONE] message consistent with openai format
+                    await self.send_oai_sse_event('[DONE]')
                 break
 
         # flush buffers, sleep a bit to make sure all data sent, and then force close the connection
@@ -556,7 +544,7 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
         tasks = []
 
         if stream_flag:
-            tasks.append(self.handle_sse_stream())
+            tasks.append(self.handle_sse_stream(api_format))
 
         generate_task = asyncio.create_task(self.generate_text(genparams, api_format, stream_flag))
         tasks.append(generate_task)
@@ -621,7 +609,7 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
             response_body = (json.dumps({"results": [{"text": pendtxtStr}]}).encode())
 
         elif self.path.endswith('/v1/models') or self.path.endswith('/models'):
-            response_body = (json.dumps({"object":"list","data":[{"id":local_model_name,"object":"model","created":1,"owned_by":"koboldcpp","permission":[],"root":"koboldcpp"}]}).encode())
+            response_body = (json.dumps({"object":"list","data":[{"id":friendlymodelname,"object":"model","created":1,"owned_by":"koboldcpp","permission":[],"root":"koboldcpp"}]}).encode())
             force_json = True
 
         elif self.path.endswith(('/api')) or self.path.endswith(('/api/v1')):
@@ -641,7 +629,7 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
         return
 
     def do_POST(self):
-        global modelbusy, requestsinqueue, currentusergenkey, totalgens, openaistreaming
+        global modelbusy, requestsinqueue, currentusergenkey, totalgens
         content_length = int(self.headers['Content-Length'])
         body = self.rfile.read(content_length)
         self.path = self.path.rstrip('/')
@@ -708,8 +696,7 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
             requestsinqueue = (requestsinqueue - 1) if requestsinqueue>0 else 0
 
         try:
-            kai_sse_stream_flag = False
-            openaistreaming = False
+            sse_stream_flag = False
 
             api_format = 0 #1=basic,2=kai,3=oai,4=oai-chat
 
@@ -721,7 +708,7 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
 
             if self.path.endswith('/api/extra/generate/stream'):
                 api_format = 2
-                kai_sse_stream_flag = True
+                sse_stream_flag = True
 
             if self.path.endswith('/v1/completions'):
                 api_format = 3
@@ -744,19 +731,16 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
 
                 if args.foreground:
                     bring_terminal_to_foreground()
+
                 # Check if streaming chat completions, if so, set stream mode to true
-                if api_format == 4 and "stream" in genparams:
-                    print(genparams["stream"])
-                    if genparams["stream"] == True:
-                        kai_sse_stream_flag = True
-                        openaistreaming = True
-                print(openaistreaming)
-                print(kai_sse_stream_flag)
-                gen = asyncio.run(self.handle_request(genparams, api_format, kai_sse_stream_flag))
+                if api_format == 4 and "stream" in genparams and genparams["stream"]:
+                    sse_stream_flag = True
+
+                gen = asyncio.run(self.handle_request(genparams, api_format, sse_stream_flag))
 
                 try:
                     # Headers are already sent when streaming
-                    if not kai_sse_stream_flag:
+                    if not sse_stream_flag:
                         self.send_response(200)
                         self.end_headers(force_json=force_json)
                     self.wfile.write(json.dumps(gen).encode())
@@ -779,12 +763,12 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.send_response(200)
         self.end_headers()
 
-    def end_headers(self, force_json=False):
+    def end_headers(self, force_json=False, sse_stream_flag=False):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', '*')
         self.send_header('Access-Control-Allow-Headers', '*')
-        if "/api" in self.path or force_json or openaistreaming == True:
-            if self.path.endswith("/stream") or openaistreaming == True:
+        if "/api" in self.path or force_json:
+            if sse_stream_flag:
                 self.send_header('Content-type', 'text/event-stream')
             self.send_header('Content-type', 'application/json')
         else:
@@ -982,12 +966,12 @@ def show_new_gui():
         x, y = root.winfo_pointerxy()
         tooltip.wm_geometry(f"+{x + 10}+{y + 10}")
         tooltip.deiconify()
-        
+
     def hide_tooltip(event):
         if hasattr(show_tooltip, "_tooltip"):
             tooltip = show_tooltip._tooltip
             tooltip.withdraw()
-            
+
     def setup_backend_tooltip(parent):
         num_backends_built = makelabel(parent, str(len(runopts)) + "/6", 5, 2)
         num_backends_built.grid(row=1, column=2, padx=0, pady=0)
@@ -1744,12 +1728,6 @@ def main(launch_args,start_server=True):
     print(f"==========\nLoading model: {modelname} \n[Threads: {args.threads}, BlasThreads: {args.blasthreads}, SmartContext: {args.smartcontext}]")
     loadok = load_model(modelname)
     print("Load Model OK: " + str(loadok))
-    # set local_model_name variable to model for use by openai api endpoints if possible, otherwise default to 'koboldcpp'
-    global local_model_name
-    full_model_path = os.path.abspath(args.model_param)
-    index_of_last_backslash = full_model_path.rfind('\\')
-    if index_of_last_backslash != -1:
-        local_model_name = full_model_path[index_of_last_backslash + 1:]
 
     if not loadok:
         print("Could not load model: " + modelname)
