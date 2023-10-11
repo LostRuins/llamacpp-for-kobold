@@ -1294,7 +1294,7 @@ def show_new_gui():
             args.noblas = True
             args.nommap = True
         if tensor_split_str_vars.get()!="":
-            args.tensor_split = [int(x) for x in tensor_split_str_vars.get().split(",")]
+            args.tensor_split = [float(x) for x in tensor_split_str_vars.get().split(",")]
 
         args.blasthreads = None if blas_threads_var.get()=="" else int(blas_threads_var.get())
 
