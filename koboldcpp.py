@@ -789,9 +789,10 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                 try:
                     # Headers are already sent when streaming
                     if not sse_stream_flag:
+                        payload = json.dumps(gen).encode()
                         self.send_response(200)
-                        self.end_headers(content_type='application/json')
-                        self.wfile.write(json.dumps(gen).encode())
+                        self.end_headers(content_type='application/json', payload_size=len(payload))
+                        self.wfile.write(payload)
                 except:
                     print("Generate: The response could not be sent, maybe connection was terminated?")
                 return
@@ -810,12 +811,14 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.send_response(200)
         self.end_headers(content_type='text/html')
 
-    def end_headers(self, content_type=None):
+    def end_headers(self, content_type=None, payload_size=None):
         self.send_header('access-control-allow-origin', '*')
         self.send_header('access-control-allow-methods', '*')
         self.send_header('access-control-allow-headers', '*, Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Client-Agent, X-Fields, Content-Type, Authorization, X-Requested-With, X-HTTP-Method-Override, apikey, genkey')
         if content_type is not None:
             self.send_header('content-type', content_type)
+        if payload_size is not None:
+            self.send_header('content-length', payload_size)
         return super(ServerRequestHandler, self).end_headers()
 
 
