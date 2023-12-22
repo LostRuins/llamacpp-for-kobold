@@ -480,7 +480,7 @@ void sample_grammar(FileFormat file_format, int32_t n_vocab, llama_token_data_ar
 }
 
 int SampleLogits(const float * logits, int n_ctx, int n_vocab, int rep_pen_range, float rep_pen, float presence_penalty, float top_k, float top_a, float top_p, float min_p, float typical_p, float tfs, float temp, std::mt19937 & rng,
-int mirostat, float mirostat_tau, float mirostat_eta, const std::vector<samplers> & sampler_order, llama_grammar * grammar)
+int mirostat, float mirostat_tau, float mirostat_eta, const std::vector<samplers> & sampler_order, llama_grammar * grammar, const std::unordered_map<llama_token, float> &logit_biases)
 {
     int id = 0;
     std::vector<llama_token_data> candidates;
@@ -488,6 +488,13 @@ int mirostat, float mirostat_tau, float mirostat_eta, const std::vector<samplers
     for (llama_token token_id = 0; token_id < n_vocab; token_id++) {
         candidates.emplace_back(llama_token_data{token_id, logits[token_id], 0.0f});
     }
+
+    std::for_each(logit_biases.begin(), logit_biases.end(),
+        [&candidates](const std::pair<const llama_token, float> &lb)
+        {
+            candidates[lb.first].logit += lb.second;
+        }
+    );
 
     llama_token_data_array candidates_p = { candidates.data(), candidates.size(), false };
 
@@ -1437,6 +1444,19 @@ generation_outputs gpttype_generate(const generation_inputs inputs, generation_o
         }
     }
 
+    for(int x=0;x<logit_bias_max;++x)
+    {
+        auto t_id = inputs.logit_biases[x].token_id;
+        if(t_id >= 0 && t_id < n_vocab)
+        {
+            params.sparams.logit_bias[t_id] = inputs.logit_biases[x].bias;
+        }
+        else
+        {
+            printf("\n%d is not a valid Token ID and will be skipped.", t_id);
+        }
+    }
+
     std::string addedmemory = inputs.memory;
     params.prompt = inputs.prompt;
     params.seed = inputs.seed;
@@ -1902,7 +1922,7 @@ generation_outputs gpttype_generate(const generation_inputs inputs, generation_o
 
             id = SampleLogits(logitsPtr, nctx, n_vocab, last_n_size, repeat_penalty, presence_penalty,
             top_k, top_a, top_p, min_p, typical_p, tfs_z, temp, rng,
-            params.mirostat, params.mirostat_tau, params.mirostat_eta, sampler_order, grammar);
+            params.mirostat, params.mirostat_tau, params.mirostat_eta, sampler_order, grammar, params.sparams.logit_bias);
 
             if (grammar != nullptr) {
                 grammar_accept_token(file_format, n_vocab, grammar, id);

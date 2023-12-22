@@ -18,6 +18,11 @@ sampler_order_max = 7
 stop_token_max = 16
 ban_token_max = 16
 tensor_split_max = 16
+logit_bias_max = 32
+
+bias_min_value = -100.0
+bias_max_value = 100.0
+default_logit_biases = [{ "0" : 0.0 } for _ in range(logit_bias_max)]
 
 class load_model_inputs(ctypes.Structure):
     _fields_ = [("threads", ctypes.c_int),
@@ -43,6 +48,10 @@ class load_model_inputs(ctypes.Structure):
                 ("rope_freq_base", ctypes.c_float),
                 ("banned_tokens", ctypes.c_char_p * ban_token_max),
                 ("tensor_split", ctypes.c_float * tensor_split_max)]
+
+class logit_bias(ctypes.Structure):
+    _fields_ = [("token_id", ctypes.c_int32),
+                ("bias", ctypes.c_float)]
 
 class generation_inputs(ctypes.Structure):
     _fields_ = [("seed", ctypes.c_int),
@@ -70,7 +79,8 @@ class generation_inputs(ctypes.Structure):
                 ("stream_sse", ctypes.c_bool),
                 ("grammar", ctypes.c_char_p),
                 ("grammar_retain_state", ctypes.c_bool),
-                ("quiet", ctypes.c_bool)]
+                ("quiet", ctypes.c_bool),
+                ("logit_biases", logit_bias * logit_bias_max)]
 
 class generation_outputs(ctypes.Structure):
     _fields_ = [("status", ctypes.c_int),
@@ -301,7 +311,7 @@ def load_model(model_filename):
     ret = handle.load_model(inputs)
     return ret
 
-def generate(prompt, memory="", max_length=32, max_context_length=512, temperature=0.7, top_k=100, top_a=0.0, top_p=0.92, min_p=0.0, typical_p=1.0, tfs=1.0, rep_pen=1.1, rep_pen_range=128, presence_penalty=0.0, mirostat=0, mirostat_tau=5.0, mirostat_eta=0.1, sampler_order=[6,0,1,3,4,2,5], seed=-1, stop_sequence=[], use_default_badwordsids=False, stream_sse=False, grammar='', grammar_retain_state=False, genkey='', trimstop=False, quiet=False):
+def generate(prompt, memory="", max_length=32, max_context_length=512, temperature=0.7, top_k=100, top_a=0.0, top_p=0.92, min_p=0.0, typical_p=1.0, tfs=1.0, rep_pen=1.1, rep_pen_range=128, presence_penalty=0.0, mirostat=0, mirostat_tau=5.0, mirostat_eta=0.1, sampler_order=[6,0,1,3,4,2,5], seed=-1, stop_sequence=[], use_default_badwordsids=False, stream_sse=False, grammar='', grammar_retain_state=False, genkey='', trimstop=False, quiet=False, logit_biases=default_logit_biases):
     global maxctx, args, currentusergenkey, totalgens
     inputs = generation_inputs()
     outputs = ctypes.create_unicode_buffer(ctypes.sizeof(generation_outputs))
@@ -355,6 +365,29 @@ def generate(prompt, memory="", max_length=32, max_context_length=512, temperatu
             inputs.stop_sequence[n] = "".encode("UTF-8")
         else:
             inputs.stop_sequence[n] = stop_sequence[n].encode("UTF-8")
+
+    for n in range(logit_bias_max):
+        if not logit_biases or n >= len(logit_biases):
+            inputs.logit_biases[n] = logit_bias(0, 0.0)
+        else:
+            t_id, bias = logit_biases[n].popitem()
+            try:
+                t_id = int(t_id)
+                if t_id > sys.maxsize or t_id < 0:
+                    print("WARNING: {} is too large or too small a number to be a token, skipping it..".format(t_id))
+                    inputs.logit_biases[n] = logit_bias(0, 0.0)
+                    continue
+            except ValueError:
+                print("WARNING: {} cannot be a token ID, skipping it..".format(t_id))
+                inputs.logit_biases[n] = logit_bias(0, 0.0)
+                continue
+
+            if not bias_min_value <= bias <= bias_max_value:
+                print("WARNING: clamping given bias, {}, to [-100.0, 100.0] range".format(bias))
+                bias = max(bias_min_value, min(bias, bias_max_value))
+
+            inputs.logit_biases[n] = logit_bias(t_id, bias)
+
     currentusergenkey = genkey
     totalgens += 1
     ret = handle.generate(inputs,outputs)
@@ -455,6 +488,7 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                 genparams["sampler_seed"] = genparams.get('seed', -1)
                 genparams["use_default_badwordsids"] = genparams.get('ignore_eos', False)
                 genparams["mirostat"] = genparams.get('mirostat_mode', 0)
+                genparams["logit_bias"] = genparams.get('logit_bias', default_logit_biases)
 
                 if api_format==4:
                     # translate openai chat completion messages format into one big string.
@@ -515,7 +549,8 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                 grammar_retain_state = genparams.get('grammar_retain_state', False),
                 genkey=genparams.get('genkey', ''),
                 trimstop=genparams.get('trim_stop', False),
-                quiet=is_quiet)
+                quiet=is_quiet,
+                logit_biases=genparams.get('logit_bias', default_logit_biases))
 
         recvtxt = ""
         if stream_flag:
