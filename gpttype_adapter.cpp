@@ -101,6 +101,7 @@ static int stopper_unused_tokens = 0;
 static std::mutex concat_output_mtx;
 static std::string concat_output = "";
 static std::string concat_output_reader_copy = "";
+static std::vector<logit_bias> logit_biases;
 
 const int extra_context_handle_fragmentation = 80;
 
@@ -480,7 +481,7 @@ void sample_grammar(FileFormat file_format, int32_t n_vocab, llama_token_data_ar
 }
 
 int SampleLogits(const float * logits, int n_ctx, int n_vocab, int rep_pen_range, float rep_pen, float presence_penalty, float top_k, float top_a, float top_p, float min_p, float typical_p, float tfs, float temp, std::mt19937 & rng,
-int mirostat, float mirostat_tau, float mirostat_eta, const std::vector<samplers> & sampler_order, llama_grammar * grammar, const std::unordered_map<llama_token, float> &logit_biases)
+int mirostat, float mirostat_tau, float mirostat_eta, const std::vector<samplers> & sampler_order, llama_grammar * grammar)
 {
     int id = 0;
     std::vector<llama_token_data> candidates;
@@ -489,12 +490,11 @@ int mirostat, float mirostat_tau, float mirostat_eta, const std::vector<samplers
         candidates.emplace_back(llama_token_data{token_id, logits[token_id], 0.0f});
     }
 
-    std::for_each(logit_biases.begin(), logit_biases.end(),
-        [&candidates](const std::pair<const llama_token, float> &lb)
-        {
-            candidates[lb.first].logit += lb.second;
-        }
-    );
+    for(int i=0;i<logit_biases.size();++i)
+    {
+        auto & itm = logit_biases[i];
+        candidates[itm.token_id].logit += itm.bias;
+    }
 
     llama_token_data_array candidates_p = { candidates.data(), candidates.size(), false };
 
@@ -1444,16 +1444,14 @@ generation_outputs gpttype_generate(const generation_inputs inputs, generation_o
         }
     }
 
+    logit_biases.clear();
     for(int x=0;x<logit_bias_max;++x)
     {
-        auto t_id = inputs.logit_biases[x].token_id;
-        if(t_id >= 0 && t_id < n_vocab)
+        int32_t t_id = inputs.logit_biases[x].token_id;
+        float bias = inputs.logit_biases[x].bias;
+        if(t_id >= 0 && t_id < n_vocab && bias!=0)
         {
-            params.sparams.logit_bias[t_id] = inputs.logit_biases[x].bias;
-        }
-        else
-        {
-            printf("\n%d is not a valid Token ID and will be skipped.", t_id);
+           logit_biases.push_back(inputs.logit_biases[x]);
         }
     }
 
@@ -1922,7 +1920,7 @@ generation_outputs gpttype_generate(const generation_inputs inputs, generation_o
 
             id = SampleLogits(logitsPtr, nctx, n_vocab, last_n_size, repeat_penalty, presence_penalty,
             top_k, top_a, top_p, min_p, typical_p, tfs_z, temp, rng,
-            params.mirostat, params.mirostat_tau, params.mirostat_eta, sampler_order, grammar, params.sparams.logit_bias);
+            params.mirostat, params.mirostat_tau, params.mirostat_eta, sampler_order, grammar);
 
             if (grammar != nullptr) {
                 grammar_accept_token(file_format, n_vocab, grammar, id);

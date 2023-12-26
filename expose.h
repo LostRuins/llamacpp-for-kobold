@@ -3,7 +3,7 @@
 const int stop_token_max = 16;
 const int ban_token_max = 16;
 const int tensor_split_max = 16;
-const int logit_bias_max = 32;
+const int logit_bias_max = 16;
 // match kobold's sampler list and order
 enum samplers
 {
