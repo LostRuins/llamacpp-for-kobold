@@ -15,12 +15,10 @@ jobs:
     - name: Install Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install git curl bzip2 -y
+        sudo apt-get install git curl bzip2 libclblast-dev libopenblas-dev nvidia-cuda-toolkit -y
     - name: Compiling libraries
       id: make_build
-      run: |
-        chmod +x koboldcpp_make_libs_only.sh
-        ./koboldcpp_make_libs_only.sh
+      run: make -j$((`nproc`+1)) LLAMA_OPENBLAS=1 LLAMA_CLBLAST=1 LLAMA_CUBLAS=1 LLAMA_PORTABLE=1
     - name: Packaging Libraries 
       run: |
         tar -czvf KoboldCPP_libraries.tar.gz *.so
