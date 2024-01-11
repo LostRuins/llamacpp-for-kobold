@@ -15,7 +15,7 @@ jobs:
     - name: Install Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install install libclblast-dev libopenblas-dev git curl bzip2 -y
+        sudo apt-get install libclblast-dev libopenblas-dev git curl bzip2 -y
     - name: Compiling libraries
       id: make_build
       run: ./koboldcpp_make_libs_only.sh
