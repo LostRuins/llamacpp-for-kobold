@@ -31,7 +31,8 @@ jobs:
     - name: Uploading Release
       uses: softprops/action-gh-release@v1
       with:
+        token: ${{ github.token }}
         prerelease: false
-        tag_name: ${{ env.TAG_NAME }}
+        tag_name: ${{ github.ref }}
         files: |
           ./KoboldCPP_libraries*
