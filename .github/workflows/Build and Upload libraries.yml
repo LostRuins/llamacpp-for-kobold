@@ -4,7 +4,7 @@ on: push
 
 jobs:
  build-libs:
-   name: Build Libs
+   name: Build Libraries And Upload Release
    runs-on: ubuntu-latest
    steps:
     - name: Clone
@@ -25,14 +25,11 @@ jobs:
       run: |
         tar -czvf KoboldCPP_libraries.tar.gz *.so
         zip KoboldCPP_libraries.zip *.so
-    - name: Creating Release
-      id: create_release
-      uses: actions/create-release@v1
-    - name: Uploading Release
+    - name: Make And Upload Release
       uses: softprops/action-gh-release@v1
       with:
-        token: ${{ github.token }}
         prerelease: false
-        tag_name: ${{ github.ref }}
+        name: Release ${{vars.VERSION}}
+        tag_name: ${{vars.VERSION}}-${{github.run_id}}
         files: |
           ./KoboldCPP_libraries*
