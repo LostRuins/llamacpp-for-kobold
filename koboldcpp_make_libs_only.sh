@@ -5,4 +5,4 @@ fi
 bin/micromamba create --no-shortcuts -r conda -n linux -f environment.yaml -y
 bin/micromamba create --no-shortcuts -r conda -n linux -f environment.yaml -y
 bin/micromamba run -r conda -n linux make clean
-bin/micromamba run -r conda -n linux make -j$((`nproc`+1)) LLAMA_OPENBLAS=1 LLAMA_CLBLAST=1 LLAMA_CUBLAS=1 LLAMA_PORTABLE=1
+bin/micromamba run -r conda -n linux make -j$((`nproc`+1)) LLAMA_OPENBLAS=1 LLAMA_CLBLAST=1 LLAMA_PORTABLE=1
