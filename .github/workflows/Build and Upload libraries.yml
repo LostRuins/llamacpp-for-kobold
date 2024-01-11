@@ -1,0 +1,35 @@
+name: Build and Upload libraries
+
+on: push
+
+jobs:
+ build-libs:
+   name: Build Libs
+   runs-on: ubuntu-latest
+   steps:
+    - name: Clone
+      id: checkout
+      uses: actions/checkout@v3
+      with:
+        ref: concedo
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install install libclblast-dev libopenblas-dev git curl bzip2 -y
+    - name: Compiling libraries
+      id: make_build
+      run: ./koboldcpp_make_libs_only.sh
+    - name: Packaging Libraries 
+      run: |
+        tar -czvf KoboldCPP_libraries.tar.gz *.so
+        zip KoboldCPP_libraries.zip *.so
+    - name: Creating Release
+      id: create_release
+      uses: actions/create-release@v1
+    - name: Uploading Release
+      uses: softprops/action-gh-release@v1
+      with:
+        prerelease: false
+        tag_name: ${{ env.TAG_NAME }}
+        files: |
+          ./KoboldCPP_libraries*
