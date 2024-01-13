@@ -19,13 +19,14 @@ jobs:
         sudo rm cuda-keyring_1.1-1_all.deb
         sudo apt-get update
         sudo apt-get install git curl bzip2 libclblast-dev libopenblas-dev cuda g++ freeglut3-dev build-essential libx11-dev libxmu-dev libxi-dev libglu1-mesa-dev libfreeimage-dev libglfw3-dev -y
-        sudo apt-get upgrade -y
+#        sudo apt-get upgrade -y
+    - name: Compiling libraries
+      id: make_build
+      run: |
         export PATH=/usr/local/cuda-12/bin${PATH:+:${PATH}}
         export LD_LIBRARY_PATH=/usr/local/cuda-12/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
         sudo ldconfig
-    - name: Compiling libraries
-      id: make_build
-      run: make -j$((`nproc`+1)) LLAMA_OPENBLAS=1 LLAMA_CLBLAST=1 LLAMA_CUBLAS=1 LLAMA_PORTABLE=1
+        make -j$((`nproc`+1)) LLAMA_OPENBLAS=1 LLAMA_CLBLAST=1 LLAMA_CUBLAS=1 LLAMA_PORTABLE=1
     - name: Packaging Libraries 
       run: |
         tar -czvf KoboldCPP_libraries.tar.gz *.so *.o
