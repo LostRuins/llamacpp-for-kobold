@@ -14,20 +14,28 @@ jobs:
         ref: concedo
     - name: Install Dependencies
       run: |
+        wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+        sudo dpkg -i cuda-keyring_1.1-1_all.deb
+        sudo rm cuda-keyring_1.1-1_all.deb
         sudo apt-get update
-        sudo apt-get install git curl bzip2 libclblast-dev libopenblas-dev nvidia-cuda-toolkit -y
+        sudo apt-get install git curl bzip2 libclblast-dev libopenblas-dev cuda g++ freeglut3-dev build-essential libx11-dev libxmu-dev libxi-dev libglu1-mesa-dev libfreeimage-dev libglfw3-dev -y
+        sudo apt-get upgrade -y
+        export PATH=/usr/local/cuda-12/bin${PATH:+:${PATH}}
+        export LD_LIBRARY_PATH=/usr/local/cuda-12/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+        sudo ldconfig
     - name: Compiling libraries
       id: make_build
       run: make -j$((`nproc`+1)) LLAMA_OPENBLAS=1 LLAMA_CLBLAST=1 LLAMA_CUBLAS=1 LLAMA_PORTABLE=1
     - name: Packaging Libraries 
       run: |
-        tar -czvf KoboldCPP_libraries.tar.gz *.so
-        zip KoboldCPP_libraries.zip *.so
+        tar -czvf KoboldCPP_libraries.tar.gz *.so *.o
+        tar -cJvf KoboldCPP_libraries.tar.xz *.so *.o
+        zip KoboldCPP_libraries.zip *.so *.o
     - name: Make And Upload Release
       uses: softprops/action-gh-release@v1
       with:
         prerelease: false
-        name: Release ${{vars.VERSION}}
+        name: KoboldCPP Libraries Release ${{vars.VERSION}}
         tag_name: ${{vars.VERSION}}-${{github.run_id}}
         files: |
           ./KoboldCPP_libraries*
