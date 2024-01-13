@@ -19,7 +19,7 @@ jobs:
         sudo rm cuda-keyring_1.1-1_all.deb
         sudo apt-get update
         sudo apt-get install git curl bzip2 libclblast-dev libopenblas-dev cuda g++ freeglut3-dev build-essential libx11-dev libxmu-dev libxi-dev libglu1-mesa-dev libfreeimage-dev libglfw3-dev -y
-#        sudo apt-get upgrade -y
+        sudo apt-get upgrade -y
     - name: Compiling libraries
       id: make_build
       run: |
