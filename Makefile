@@ -196,10 +196,18 @@ ggml_v2-cuda-legacy.o: otherarch/ggml_v2-cuda-legacy.cu otherarch/ggml_v2-cuda-l
 endif # LLAMA_CUBLAS
 
 ifdef LLAMA_HIPBLAS
-	ROCM_PATH	?= /opt/rocm
-	HCC         := $(ROCM_PATH)/llvm/bin/clang
-	HCXX        := $(ROCM_PATH)/llvm/bin/clang++
-	GPU_TARGETS ?= gfx803 gfx900 gfx906 gfx908 gfx90a gfx1030 gfx1100 $(shell $(ROCM_PATH)/llvm/bin/amdgpu-arch)
+
+	ifeq ($(wildcard /opt/rocm),)
+		ROCM_PATH	?= /usr
+		GPU_TARGETS ?= $(shell $(shell which amdgpu-arch))
+		HCC         := $(ROCM_PATH)/bin/hipcc
+		HCXX        := $(ROCM_PATH)/bin/hipcc
+	else
+		ROCM_PATH	?= /opt/rocm
+		GPU_TARGETS ?= gfx803 gfx900 gfx906 gfx908 gfx90a gfx1030 gfx1100 $(shell $(ROCM_PATH)/llvm/bin/amdgpu-arch)
+		HCC         := $(ROCM_PATH)/llvm/bin/clang
+		HCXX        := $(ROCM_PATH)/llvm/bin/clang++
+	endif
 	LLAMA_CUDA_DMMV_X ?= 32
 	LLAMA_CUDA_MMV_Y ?= 1
 	LLAMA_CUDA_KQUANTS_ITER ?= 2
