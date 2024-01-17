@@ -196,7 +196,6 @@ ggml_v2-cuda-legacy.o: otherarch/ggml_v2-cuda-legacy.cu otherarch/ggml_v2-cuda-l
 endif # LLAMA_CUBLAS
 
 ifdef LLAMA_HIPBLAS
-
 	ifeq ($(wildcard /opt/rocm),)
 		ROCM_PATH	?= /usr
 		GPU_TARGETS ?= $(shell $(shell which amdgpu-arch))
