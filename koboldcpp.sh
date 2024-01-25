@@ -9,7 +9,7 @@ if [[ ! -f "conda/envs/linux/bin/python" || $1 == "rebuild" ]]; then
 	bin/micromamba run -r conda -n linux make clean
 fi
 
-bin/micromamba run -r conda -n linux make LLAMA_OPENBLAS=1 LLAMA_CLBLAST=1 LLAMA_CUBLAS=1 LLAMA_PORTABLE=1 LLAMA_ADD_CONDA_PATHS=1
+bin/micromamba run -r conda -n linux make LLAMA_VULKAN=1 LLAMA_OPENBLAS=1 LLAMA_CLBLAST=1 LLAMA_CUBLAS=1 LLAMA_PORTABLE=1 LLAMA_ADD_CONDA_PATHS=1
 
 if [[ $1 == "rebuild" ]]; then
 	echo Rebuild complete, you can now try to launch Koboldcpp.
