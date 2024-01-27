@@ -1,6 +1,6 @@
 name: Build and Upload libraries
 
-on: push
+on: [push,workflow_dispatch]
 
 jobs:
  build-libs:
