@@ -2433,7 +2433,9 @@ def main(launch_args,start_server=True):
 
     modelname = os.path.abspath(args.model_param)
     print(args)
-    print(f"==========\nLoading model: {modelname} \n[Threads: {args.threads}, BlasThreads: {args.blasthreads}, SmartContext: {args.smartcontext}, ContextShift: {not (args.noshift)}]")
+    # Flush stdout for win32 issue with regards to piping in terminals,
+    # especially before handing over to C++ context.
+    print(f"==========\nLoading model: {modelname} \n[Threads: {args.threads}, BlasThreads: {args.blasthreads}, SmartContext: {args.smartcontext}, ContextShift: {not (args.noshift)}]", flush=True)
     loadok = load_model(modelname)
     print("Load Model OK: " + str(loadok))
 
@@ -2507,10 +2509,12 @@ def main(launch_args,start_server=True):
     if start_server:
         if args.remotetunnel:
             setuptunnel()
-        print(f"======\nPlease connect to custom endpoint at {epurl}")
+        # Flush stdout for previous win32 issue so the client can see output.
+        print(f"======\nPlease connect to custom endpoint at {epurl}", flush=True)
         asyncio.run(RunServerMultiThreaded(args.host, args.port, embedded_kailite, embedded_kcpp_docs))
     else:
-        print(f"Server was not started, main function complete. Idling.")
+        # Flush stdout for previous win32 issue so the client can see output.
+        print(f"Server was not started, main function complete. Idling.", flush=True)
 
 def run_in_queue(launch_args, input_queue, output_queue):
     main(launch_args, start_server=False)
