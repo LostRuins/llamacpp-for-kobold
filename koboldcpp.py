@@ -335,8 +335,9 @@ def generate(prompt, memory="", max_length=32, max_context_length=512, temperatu
     outputs = ctypes.create_unicode_buffer(ctypes.sizeof(generation_outputs))
     inputs.prompt = prompt.encode("UTF-8")
     inputs.memory = memory.encode("UTF-8")
-    if max_length >= max_context_length:
+    if max_length >= (max_context_length-1):
         max_length = max_context_length-1
+        print("\nWarning: You are trying to generate with max_length near or exceeding max_context_length. Most of the context will be removed, and your outputs will not be very coherent.")
     global showmaxctxwarning
     if max_context_length > maxctx:
         if showmaxctxwarning:
@@ -383,6 +384,8 @@ def generate(prompt, memory="", max_length=32, max_context_length=512, temperatu
     inputs.seed = seed
     for n in range(stop_token_max):
         if not stop_sequence or n >= len(stop_sequence):
+            inputs.stop_sequence[n] = "".encode("UTF-8")
+        elif stop_sequence[n]==None:
             inputs.stop_sequence[n] = "".encode("UTF-8")
         else:
             inputs.stop_sequence[n] = stop_sequence[n].encode("UTF-8")
@@ -2436,7 +2439,9 @@ def main(launch_args,start_server=True):
 
     modelname = os.path.abspath(args.model_param)
     print(args)
-    print(f"==========\nLoading model: {modelname} \n[Threads: {args.threads}, BlasThreads: {args.blasthreads}, SmartContext: {args.smartcontext}, ContextShift: {not (args.noshift)}]")
+    # Flush stdout for win32 issue with regards to piping in terminals,
+    # especially before handing over to C++ context.
+    print(f"==========\nLoading model: {modelname} \n[Threads: {args.threads}, BlasThreads: {args.blasthreads}, SmartContext: {args.smartcontext}, ContextShift: {not (args.noshift)}]", flush=True)
     loadok = load_model(modelname)
     print("Load Model OK: " + str(loadok))
 
@@ -2510,10 +2515,12 @@ def main(launch_args,start_server=True):
     if start_server:
         if args.remotetunnel:
             setuptunnel()
-        print(f"======\nPlease connect to custom endpoint at {epurl}")
+        # Flush stdout for previous win32 issue so the client can see output.
+        print(f"======\nPlease connect to custom endpoint at {epurl}", flush=True)
         asyncio.run(RunServerMultiThreaded(args.host, args.port, embedded_kailite, embedded_kcpp_docs))
     else:
-        print(f"Server was not started, main function complete. Idling.")
+        # Flush stdout for previous win32 issue so the client can see output.
+        print(f"Server was not started, main function complete. Idling.", flush=True)
 
 def run_in_queue(launch_args, input_queue, output_queue):
     main(launch_args, start_server=False)
@@ -2583,7 +2590,6 @@ if __name__ == '__main__':
     parser.add_argument("--preloadstory", help="Configures a prepared story json save file to be hosted on the server, which frontends (such as Kobold Lite) can access over the API.", default="")
     parser.add_argument("--quiet", help="Enable quiet mode, which hides generation inputs and outputs in the terminal. Quiet mode is automatically enabled when running --hordeconfig.", action='store_true')
     parser.add_argument("--ssl", help="Allows all content to be served over SSL instead. A valid UNENCRYPTED SSL cert and key .pem files must be provided", metavar=('[cert_pem]', '[key_pem]'), nargs='+')
-
 
     # #deprecated hidden args. they do nothing. do not use
     # parser.add_argument("--psutil_set_threads", action='store_true', help=argparse.SUPPRESS)

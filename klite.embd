@@ -3301,6 +3301,8 @@ Current version: 108
 	const default_a1111_base = "http://localhost:7860";
 	const default_xtts_base = " http://localhost:8020";
 
+	const XTTS_ID = 1000;
+
 	//all configurable globals
 	var perfdata = null; //if it's null, we are not connected
 	var models_data = [];
@@ -3398,7 +3400,8 @@ Current version: 108
 		instruct_has_markdown: true,
 		placeholder_tags: true,
 		persist_session: true,
-		speech_synth: 0, //0 is disabled, 100 is xtts
+		speech_synth: 0, //0 is disabled, 1000 is xtts
+		xtts_voice: "female_calm",
 		beep_on: false,
 		notify_on: false,
 		narrate_both_sides: false,
@@ -4263,6 +4266,15 @@ Current version: 108
 		{
 			fetch_image_models();
 		}
+		if(localsettings.speech_synth==XTTS_ID)
+		{
+			fetch_xtts_voices(true);
+		}
+		if(localsettings.generate_images_mode==2)
+		{
+			connect_to_a1111(true);
+		}
+
 		if(!initial_fetched_kudos && localsettings.my_api_key!=defaultsettings.my_api_key)
 		{
 			document.getElementById("apikey").value = localsettings.my_api_key;
@@ -6384,6 +6396,7 @@ Current version: 108
 	function confirm_dynatemp()
 	{
 		document.getElementById("dynatempcontainer").classList.add("hidden");
+		document.getElementById("dynatemp_overview").innerText = (document.getElementById("dynatemp_range").value>0?"ON":"OFF");
 	}
 	function show_dynatemp()
 	{
@@ -7700,6 +7713,7 @@ Current version: 108
 		document.getElementById("min_p").value = localsettings.min_p;
 		document.getElementById("dynatemp_range").value = localsettings.dynatemp_range;
 		document.getElementById("dynatemp_exponent").value = localsettings.dynatemp_exponent;
+		document.getElementById("dynatemp_overview").innerText = (localsettings.dynatemp_range>0?"ON":"OFF");
 		document.getElementById("smoothing_factor").value = localsettings.smoothing_factor;
 		document.getElementById("presence_penalty").value = localsettings.presence_penalty;
 		document.getElementById("sampler_seed").value = localsettings.sampler_seed;
@@ -7783,7 +7797,7 @@ Current version: 108
 		} else {
 			console.log("No speech synth available");
 		}
-		ttshtml += "<option value=\"100\">XTTS API Server</option>";
+		ttshtml += "<option value=\"1000\">XTTS API Server</option>";
 		document.getElementById("ttsselect").innerHTML = ttshtml;
 		document.getElementById("ttsselect").value = localsettings.speech_synth;
 		toggle_tts_mode();
@@ -7975,6 +7989,7 @@ Current version: 108
 		localsettings.miro_eta = document.getElementById("miro_eta").value;
 
 		localsettings.speech_synth = document.getElementById("ttsselect").value;
+		localsettings.xtts_voice = document.getElementById("xtts_voices").value;
 		localsettings.beep_on = (document.getElementById("beep_on").checked?true:false);
 		localsettings.notify_on = (document.getElementById("notify_on").checked?true:false);
 		localsettings.narrate_both_sides = (document.getElementById("narrate_both_sides").checked?true:false);
@@ -8732,10 +8747,13 @@ Current version: 108
 				let dropdown = document.getElementById("xtts_voices");
 					let selectionhtml = ``;
 					for (var i = 0; i < data.length; ++i) {
-						selectionhtml += `<option value="` + data[i] + `">`+data[i]+`</option>`;
+						// Check for XTTS voices if set
+						let sel = (localsettings.xtts_voice!=""&&localsettings.xtts_voice==data[i]);
+						selectionhtml += `<option value="` + data[i] + `"`+(sel?" selected":"")+`>`+data[i]+`</option>`;
 					}
 					dropdown.innerHTML = selectionhtml;
 					xtts_is_connected = true;
+
 			}).catch((error) => {
 				xtts_is_connected = false;
 				if(!silent)
@@ -8748,7 +8766,7 @@ Current version: 108
 
 	function toggle_tts_mode()
 	{
-		if(document.getElementById("ttsselect").value==100)
+		if(document.getElementById("ttsselect").value==XTTS_ID)
 		{
 			document.getElementById("xtts_container").classList.remove("hidden");
 			fetch_xtts_voices(true);
@@ -8778,7 +8796,11 @@ Current version: 108
 	}
 	function tts_speak(text)
 	{
-		if(localsettings.speech_synth==100) //xtts api server
+		if(!text || text=="" || text.trim()=="")
+		{
+			return;
+		}
+		if(localsettings.speech_synth==XTTS_ID) //xtts api server
 		{
 			if(xtts_is_connected)
 			{
@@ -13113,7 +13135,7 @@ Current version: 108
 								id="min_p"></td>
 								<td><input class="" type="text" inputmode="decimal" placeholder="0" value="0"
 								id="presence_penalty"></td>
-								<td><button type="button" class="btn btn-primary" style="padding:1px 3px;font-size:8px;" onclick="show_dynatemp()">Set</button></td>
+								<td><button type="button" class="btn btn-primary" style="padding:1px 3px;font-size:8px;" onclick="show_dynatemp()"><span id="dynatemp_overview">OFF</span></button></td>
 								</tr>
 
 

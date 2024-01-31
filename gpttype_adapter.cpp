@@ -1569,6 +1569,10 @@ generation_outputs gpttype_generate(const generation_inputs inputs, generation_o
     if (kcpp_params->seed <= 0 || kcpp_params->seed==0xFFFFFFFF)
     {
         kcpp_params->seed = (((uint32_t)time(NULL)) % 1000000u);
+        if(debugmode==1)
+        {
+            printf("\nUsing Seed: %d",kcpp_params->seed);
+        }
     }
 
     // tokenize the prompt
@@ -2081,10 +2085,12 @@ generation_outputs gpttype_generate(const generation_inputs inputs, generation_o
     }
     time2 = timer_check();
     float pt1 = (time1*1000.0/(embd_inp.size()==0?1:embd_inp.size()));
+    float ts1 = (1000.0/pt1);
     int realnpredict = kcpp_params->n_predict-stopper_unused_tokens;
     float pt2 = (time2*1000.0/(realnpredict==0?1:realnpredict));
+    float ts2 = (1000.0/pt2);
     float tokens_per_second = (realnpredict == 0 ? 0 : realnpredict / (time1 + time2));
-    printf("\nContextLimit: %d/%d, Processing:%.2fs (%.1fms/T), Generation:%.2fs (%.1fms/T), Total:%.2fs (%.1fms/T = %.2fT/s)",current_context_tokens.size(),nctx, time1, pt1, time2, pt2, (time1 + time2), (1000.0f/tokens_per_second) , tokens_per_second);
+    printf("\nContextLimit: %d/%d, Processing:%.2fs (%.1fms/T = %.2fT/s), Generation:%.2fs (%.1fms/T = %.2fT/s), Total:%.2fs (%.1fms/T = %.2fT/s)",current_context_tokens.size(),nctx, time1, pt1, ts1, time2, pt2, ts2, (time1 + time2), (1000.0f/tokens_per_second) , tokens_per_second);
     fflush(stdout);
     output.status = 1;
     generation_finished = true;
