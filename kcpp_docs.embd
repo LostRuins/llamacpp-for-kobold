@@ -145,6 +145,12 @@
                            "exclusiveMinimum": 0,
                            "type": "number"
                         },
+                         "smoothing_factor": {
+                            "default": 0,
+                             "description": "If greater than 0 uses smoothing factor."
+                             "exclusiveMinimum": 0,
+                             "type": "number"
+                         },
                         "mirostat": {
                            "description": "KoboldCpp ONLY. Sets the mirostat mode, 0=disabled, 1=mirostat_v1, 2=mirostat_v2",
                            "minimum": 0,

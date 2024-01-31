@@ -8841,21 +8841,87 @@ void llama_sample_entropy(struct llama_context * ctx, llama_token_data_array * c
     }
 }
 
-void llama_sample_temp(struct llama_context * ctx, llama_token_data_array * candidates_p, float temp) {
+void llama_sample_temp(struct llama_context * ctx, llama_token_data_array * candidates, float temp, float smoothing_factor) {
+    // Get current time
     const int64_t t_start_sample_us = ggml_time_us();
 
-    for (size_t i = 0; i < candidates_p->size; ++i) {
-        candidates_p->data[i].logit /= temp;
+    // Apply temperature scaling
+    for (size_t i = 0; i < candidates->size; ++i) {
+        candidates->data[i].logit /= temp;
+    }
+#ifdef DEBUG
+    // Print top and bottom 3 logits before normalization and smoothing
+    printf("Top 3 logits before normalization and smoothing:\n");
+    for (size_t i = 0; i < 3; ++i) {
+        printf("Logit[%zu] = %f\n", i, candidates->data[i].logit);
+    }
+    printf("Bottom 3 logits before normalization and smoothing:\n");
+    for (size_t i = candidates->size - 3; i < candidates->size; ++i) {
+        printf("Logit[%zu] = %f\n", i, candidates->data[i].logit);
     }
 
+    // Print top 5 tokens' softmax probabilities before smoothing
+    printf("Top 5 tokens' softmax probabilities before smoothing:\n");
+#endif
+    llama_sample_softmax(ctx, candidates);
+
+#ifdef DEBUG
+    for (size_t i = 0; i < 5; ++i) {
+        printf("Token[%zu] = %f\n", i, candidates->data[i].p);
+    }
+#endif
+    float h = candidates->data[0].logit; // Find the maximum logit for h
+    float k = h; // Maximum logit value to be added after the transformation
+
+#ifdef DEBUG
+    // Verbose print the smoothing_factor read
+    printf("Read smoothing_factor: %f\n", smoothing_factor);
+#endif
+    // Only apply smoothing if smoothing_factor is not 0
+    if (smoothing_factor != 0) {
+        // Apply quadratic transformation using the smoothing_factor
+        for (size_t i = 0; i < candidates->size; ++i) {
+            float logit_shifted = candidates->data[i].logit - h;
+            candidates->data[i].logit = -smoothing_factor * logit_shifted * logit_shifted + k;
+        }
+
+#ifdef DEBUG
+        // Verbose print top and bottom 3 logits after smoothing
+        printf("\nTop 3 logits after smoothing:\n");
+        for (size_t i = 0; i < 3; ++i) {
+            printf("Logit[%zu] = %f\n", i, candidates->data[i].logit);
+        }
+        printf("Bottom 3 logits after smoothing:\n");
+        for (size_t i = candidates->size - 3; i < candidates->size; ++i) {
+            printf("Logit[%zu] = %f\n", i, candidates->data[i].logit);
+        }
+
+        // Print top 5 tokens' softmax probabilities after smoothing
+        printf("Top 5 tokens' softmax probabilities after smoothing:\n");
+#endif
+        llama_sample_softmax(ctx, candidates);
+
+#ifdef DEBUG
+        for (size_t i = 0; i < 5; ++i) {
+            printf("Token[%zu] = %f\n", i, candidates->data[i].p);
+        }
+#endif
+    }
+#ifdef DEBUG
+    else {
+        // Print message indicating skipping of the smoothing
+        printf("--------\nSkipping smoothing as smoothing_factor is 0.\n--------");
+    }
+#endif
+    // Update timing in context if ctx is available
     if (ctx) {
         ctx->t_sample_us += ggml_time_us() - t_start_sample_us;
     }
 }
 
 
-void llama_sample_temperature(struct llama_context * ctx, llama_token_data_array * candidates_p, float temp) {
-    llama_sample_temp(ctx, candidates_p, temp);
+void llama_sample_temperature(struct llama_context * ctx, llama_token_data_array * candidates_p, float temp, float smoothing_factor) {
+    llama_sample_temp(ctx, candidates_p, temp, smoothing_factor);
 }
 
 // The llama.cpp repetition penalty code goes unused in kobold's API
