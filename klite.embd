@@ -6,7 +6,7 @@ It requires no dependencies, installation or setup.
 Just copy this single static HTML file anywhere and open it in a browser, or from a webserver.
 Please go to https://github.com/LostRuins/lite.koboldai.net for updates on Kobold Lite.
 Kobold Lite is under the AGPL v3.0 License unless otherwise exempted. Please do not remove this line.
-Current version: 108
+Current version: 109
 -Concedo
 -->
 
@@ -1748,6 +1748,31 @@ Current version: 108
 		background-image: var(--img_chat) !important;
 	}
 
+	.chat_btnmode_adventure{
+		background: #3263be none repeat scroll 0 0;
+		border:none;
+		border-radius: 50%;
+		color: #fff;
+		cursor: pointer;
+		font-size: 15px;
+		height: 33px;
+		position: relative;
+		vertical-align: top;
+		top: 11px;
+		width: 33px;
+		background-size: 50% !important;
+		background-repeat: no-repeat !important;
+ 		background-position: center !important;
+	}
+	.chat_btnmode_adventure.actionmode
+	{
+		background-image: var(--img_sword) !important;
+	}
+	.chat_btnmode_adventure.storymode
+	{
+		background-image: var(--img_paper) !important;
+	}
+
 	.chat_msg_send_btn {
 		background: #337ab7 none repeat scroll 0 0;
 		border:none;
@@ -3322,6 +3347,7 @@ Current version: 108
 	var horde_poll_nearly_completed = false; //if true, increase polling rate
 	var prev_hl_chunk = null; //will store the last highlighted element
 	var pending_context_preinjection = ""; //this will be injected before the AI's next RESPONSE
+	var pending_context_postinjection = ""; //this will be injected after the AI's next RESPONSE
 	var last_reply_was_empty = false; //set to true if last reply is empty
 	var current_memory = ""; //stored memory
 	var current_anote = ""; //stored author note
@@ -3405,6 +3431,7 @@ Current version: 108
 		beep_on: false,
 		notify_on: false,
 		narrate_both_sides: false,
+		narrate_only_dialog: false,
 		image_styles: "",
 		image_negprompt: "",
 		grammar:"",
@@ -3421,6 +3448,8 @@ Current version: 108
 		prompt_for_savename: false,
 		case_sensitive_wi: false,
 		last_selected_preset: 0,
+		gui_type_story: 0, //0=standard, 1=messenger, 2=aesthetic
+		gui_type_adventure: 0, //0=standard, 1=messenger, 2=aesthetic
 		gui_type_chat: 1, //0=standard, 1=messenger, 2=aesthetic
 		gui_type_instruct: 0, //0=standard, 1=messenger, 2=aesthetic
 		multiline_replies: true,
@@ -3503,346 +3532,7 @@ Current version: 108
 			rep_pen_slope: defaultsettings.rep_pen_slope,
 			sampler_order: [0, 1, 2, 3, 4, 5, 6]
 		},
-		{
-			"preset": "Godlike",
-			"description": "Makes AI give a descriptive and sensual output.",
-			"temp": 0.7,
-			"dynatemp_range": 0.0,
-			"dynatemp_exponent": 1.0,
-			"smoothing_factor": 0.0,
-			"genamt": 120,
-			"top_k": 0,
-			"top_p": 0.5,
-			"min_p": 0.0,
-			"presence_penalty": 0.0,
-			"top_a": 0.75,
-			"typical": 0.19,
-			"tfs": 0.97,
-			"rep_pen": 1.1,
-			"rep_pen_range": 1024,
-			"rep_pen_slope": 0.7,
-			"sampler_order": [6, 5, 4, 3, 2, 1, 0]
-		},
-		{
-			"preset": "Mayday",
-			"description": "Wacky plot, creativity from AI, crazy stories you want AI to weird out.",
-			"temp": 1.05,
-			"dynatemp_range": 0.0,
-			"dynatemp_exponent": 1.0,
-			"smoothing_factor": 0.0,
-			"genamt": 120,
-			"top_k": 0,
-			"top_p": 0.95,
-			"min_p": 0.0,
-			"presence_penalty": 0.0,
-			"top_a": 0,
-			"typical": 1,
-			"tfs": 1,
-			"rep_pen": 1.1,
-			"rep_pen_range": 1024,
-			"rep_pen_slope": 0.7,
-			"sampler_order": [6, 0, 1, 2, 3, 4, 5]
-		},
-		{
-			"preset": "Good Winds",
-			"description": "Let AI direct the plot, but still stay logical.",
-			"temp": 0.7,
-			"dynatemp_range": 0.0,
-			"dynatemp_exponent": 1.0,
-			"smoothing_factor": 0.0,
-			"genamt": 120,
-			"top_k": 0,
-			"top_p": 1,
-			"min_p": 0.0,
-			"presence_penalty": 0.0,
-			"top_a": 0,
-			"typical": 1,
-			"tfs": 0.9,
-			"rep_pen": 1.1,
-			"rep_pen_range": 1024,
-			"rep_pen_slope": 0.7,
-			"sampler_order": [6, 0, 1, 2, 3, 4, 5]
-		},
-		{
-			"preset": "Liminal Drift",
-			"description": "Drives coherent dialogue, responses, and behavior, sometimes surreal situations arise based on information already present in the story.",
-			"temp": 0.66,
-			"dynatemp_range": 0.0,
-			"dynatemp_exponent": 1.0,
-			"smoothing_factor": 0.0,
-			"genamt": 120,
-			"top_k": 0,
-			"top_p": 1,
-			"min_p": 0.0,
-			"presence_penalty": 0.0,
-			"top_a": 0.96,
-			"typical": 0.6,
-			"tfs": 1,
-			"rep_pen": 1.1,
-			"rep_pen_range": 1024,
-			"rep_pen_slope": 0.7,
-			"sampler_order": [6, 4, 5, 1, 0, 2, 3]
-		},
-		{
-			"preset": "TavernAI",
-			"description": "Preset used in TavernAI.",
-			"temp": 0.79,
-			"dynatemp_range": 0.0,
-			"dynatemp_exponent": 1.0,
-			"smoothing_factor": 0.0,
-			"genamt": 120,
-			"top_k": 0,
-			"top_p": 0.9,
-			"min_p": 0.0,
-			"presence_penalty": 0.0,
-			"top_a": 0,
-			"typical": 1,
-			"tfs": 0.95,
-			"rep_pen": 1.19,
-			"rep_pen_range": 1024,
-			"rep_pen_slope": 0.9,
-			"sampler_order": [6, 0, 1, 2, 3, 4, 5]
-		},
-		{
-			"preset": "Storywriter 6B",
-			"description": "Optimized settings for relevant output.",
-			"genamt": 120,
-			"rep_pen": 1.1,
-			"rep_pen_range": 2048,
-			"rep_pen_slope": 0.2,
-			"sampler_order": [6, 5, 0, 2, 3, 1, 4],
-			"temp": 0.72,
-			"dynatemp_range": 0.0,
-			"dynatemp_exponent": 1.0,
-			"smoothing_factor": 0.0,
-			"tfs": 1,
-			"top_a": 0,
-			"top_k": 0,
-			"top_p": 0.73,
-			"min_p": 0.0,
-			"presence_penalty": 0.0,
-			"typical": 1
-		},
-		{
-			"preset": "Coherent Creativity 6B",
-			"description": "A good balance between coherence, creativity, and quality of prose.",
-			"genamt": 120,
-			"rep_pen": 1.2,
-			"rep_pen_range": 2048,
-			"rep_pen_slope": 0,
-			"sampler_order": [6, 5, 0, 2, 3, 1, 4],
-			"temp": 0.51,
-			"dynatemp_range": 0.0,
-			"dynatemp_exponent": 1.0,
-			"smoothing_factor": 0.0,
-			"tfs": 0.99,
-			"top_a": 0,
-			"top_k": 0,
-			"top_p": 1,
-			"min_p": 0.0,
-			"presence_penalty": 0.0,
-			"typical": 1
-		},
-		{
-			"preset": "Luna Moth 6B",
-			"description": "A great degree of creativity without losing coherency.",
-			"temp": 1.5,
-			"dynatemp_range": 0.0,
-			"dynatemp_exponent": 1.0,
-			"smoothing_factor": 0.0,
-			"genamt": 120,
-			"top_k": 85,
-			"top_p": 0.24,
-			"min_p": 0.0,
-			"presence_penalty": 0.0,
-			"top_a": 0,
-			"typical": 1,
-			"tfs": 1,
-			"rep_pen": 1.1,
-			"rep_pen_range": 2048,
-			"rep_pen_slope": 0,
-			"sampler_order": [6, 5, 0, 2, 3, 1, 4]
-		},
-		{
-			"preset": "Pleasing Results 6B",
-			"description": "Expectable output with alternative context settings.",
-			"temp": 0.44,
-			"dynatemp_range": 0.0,
-			"dynatemp_exponent": 1.0,
-			"smoothing_factor": 0.0,
-			"genamt": 120,
-			"top_k": 0,
-			"top_p": 1,
-			"min_p": 0.0,
-			"presence_penalty": 0.0,
-			"top_a": 0,
-			"typical": 1,
-			"tfs": 0.9,
-			"rep_pen": 1.15,
-			"rep_pen_range": 2048,
-			"rep_pen_slope": 6.8,
-			"sampler_order": [6, 5, 0, 2, 3, 1, 4]
-		},
-		{
-			"preset": "Genesis 13B",
-			"description": "Stable and logical, but with scattered creativity.",
-			"temp": 0.63,
-			"dynatemp_range": 0.0,
-			"dynatemp_exponent": 1.0,
-			"smoothing_factor": 0.0,
-			"genamt": 120,
-			"top_k": 0,
-			"top_p": 0.98,
-			"min_p": 0.0,
-			"presence_penalty": 0.0,
-			"top_a": 0,
-			"typical": 1,
-			"tfs": 0.98,
-			"rep_pen": 1.05,
-			"rep_pen_range": 2048,
-			"rep_pen_slope": 0.1,
-			"sampler_order": [6, 2, 0, 3, 5, 1, 4]
-		},
-		{
-			"preset": "Basic Coherence 13B",
-			"description": "Keep things on track.",
-			"temp": 0.59,
-			"dynatemp_range": 0.0,
-			"dynatemp_exponent": 1.0,
-			"smoothing_factor": 0.0,
-			"genamt": 120,
-			"top_k": 0,
-			"top_p": 1,
-			"min_p": 0.0,
-			"presence_penalty": 0.0,
-			"top_a": 0,
-			"typical": 1,
-			"tfs": 0.87,
-			"rep_pen": 1.1,
-			"rep_pen_range": 2048,
-			"rep_pen_slope": 0.3,
-			"sampler_order": [6, 5, 0, 2, 3, 1, 4]
-		},
-		{
-			"preset": "Ouroboros 13B",
-			"description": "Versatile, conforms well to poems, lists, chat, etc.",
-			"temp": 1.07,
-			"dynatemp_range": 0.0,
-			"dynatemp_exponent": 1.0,
-			"smoothing_factor": 0.0,
-			"genamt": 120,
-			"top_k": 100,
-			"top_p": 1,
-			"min_p": 0.0,
-			"presence_penalty": 0.0,
-			"top_a": 0,
-			"typical": 1,
-			"tfs": 0.93,
-			"rep_pen": 1.05,
-			"rep_pen_range": 404,
-			"rep_pen_slope": 0.8,
-			"sampler_order": [6, 0, 5, 3, 2, 1, 4]
-		},
-		{
-			"preset": "Ace of Spades 13B",
-			"description": "Expressive, while still staying focused.",
-			"temp": 1.15,
-			"dynatemp_range": 0.0,
-			"dynatemp_exponent": 1.0,
-			"smoothing_factor": 0.0,
-			"genamt": 120,
-			"top_k": 0,
-			"top_p": 0.95,
-			"min_p": 0.0,
-			"presence_penalty": 0.0,
-			"top_a": 0,
-			"typical": 1,
-			"tfs": 0.8,
-			"rep_pen": 1.05,
-			"rep_pen_range": 2048,
-			"rep_pen_slope": 7,
-			"sampler_order": [6, 3, 2, 0, 5, 1, 4]
-		},
-		{
-			"preset": "Low Rider 13B",
-			"description": "Reliable, aimed at story development.",
-			"temp": 0.94,
-			"dynatemp_range": 0.0,
-			"dynatemp_exponent": 1.0,
-			"smoothing_factor": 0.0,
-			"genamt": 120,
-			"top_k": 12,
-			"top_p": 1,
-			"min_p": 0.0,
-			"presence_penalty": 0.0,
-			"top_a": 0,
-			"typical": 1,
-			"tfs": 0.94,
-			"rep_pen": 1.05,
-			"rep_pen_range": 2048,
-			"rep_pen_slope": 0.2,
-			"sampler_order": [6, 5, 0, 2, 3, 1, 4]
-		},
-		{
-			"preset": "Pro Writer 13B",
-			"description": "Optimal setting for readability, based on AI-powered mass statistical analysis of Euterpe output.",
-			"temp": 1.35,
-			"dynatemp_range": 0.0,
-			"dynatemp_exponent": 1.0,
-			"smoothing_factor": 0.0,
-			"genamt": 120,
-			"top_k": 0,
-			"top_p": 1,
-			"min_p": 0.0,
-			"presence_penalty": 0.0,
-			"top_a": 0,
-			"typical": 1,
-			"tfs": 0.69,
-			"rep_pen": 1.15,
-			"rep_pen_range": 2048,
-			"rep_pen_slope": 0.1,
-			"sampler_order": [6, 3, 2, 5, 0, 1, 4]
-		},
-		{
-			"preset": "Default 20B",
-			"description": "Good starting settings for NeoX 20B.",
-			"temp": 0.6,
-			"dynatemp_range": 0.0,
-			"dynatemp_exponent": 1.0,
-			"smoothing_factor": 0.0,
-			"genamt": 120,
-			"top_k": 0,
-			"top_p": 0.9,
-			"min_p": 0.0,
-			"presence_penalty": 0.0,
-			"top_a": 0,
-			"typical": 1,
-			"tfs": 1,
-			"rep_pen": 1.04,
-			"rep_pen_range": 1024,
-			"rep_pen_slope": 0.7,
-			"sampler_order": [6, 0, 1, 2, 3, 4, 5]
-		},
-		{
-			"preset": "Min-P",
-			"description": "A good default for Min-P, only works on backends with min-p.",
-			"temp": 1.25,
-			"dynatemp_range": 0.0,
-			"dynatemp_exponent": 1.0,
-			"smoothing_factor": 0.0,
-			"genamt": 120,
-			"top_k": 0,
-			"top_p": 1,
-			"min_p": 0.1,
-			"presence_penalty": 0.0,
-			"top_a": 0,
-			"typical": 1,
-			"tfs": 1,
-			"rep_pen": 1.03,
-			"rep_pen_range": 320,
-			"rep_pen_slope": 0.7,
-			"sampler_order": [6, 5, 0, 1, 3, 4, 2]
-		}
+		{"preset":"Godlike","description":"Makes AI give a descriptive and sensual output.","temp":0.7,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":120,"top_k":0,"top_p":0.5,"min_p":0.0,"presence_penalty":0.0,"top_a":0.75,"typical":0.19,"tfs":0.97,"rep_pen":1.1,"rep_pen_range":1024,"rep_pen_slope":0.7,"sampler_order":[6,5,4,3,2,1,0]},{"preset":"Mayday","description":"Wacky plot, creativity from AI, crazy stories you want AI to weird out.","temp":1.05,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":120,"top_k":0,"top_p":0.95,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.1,"rep_pen_range":1024,"rep_pen_slope":0.7,"sampler_order":[6,0,1,2,3,4,5]},{"preset":"Good Winds","description":"Let AI direct the plot, but still stay logical.","temp":0.7,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":120,"top_k":0,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.9,"rep_pen":1.1,"rep_pen_range":1024,"rep_pen_slope":0.7,"sampler_order":[6,0,1,2,3,4,5]},{"preset":"Liminal Drift","description":"Drives coherent dialogue, responses, and behavior, sometimes surreal situations arise based on information already present in the story.","temp":0.66,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":120,"top_k":0,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"top_a":0.96,"typical":0.6,"tfs":1,"rep_pen":1.1,"rep_pen_range":1024,"rep_pen_slope":0.7,"sampler_order":[6,4,5,1,0,2,3]},{"preset":"TavernAI","description":"Preset used in TavernAI.","temp":0.79,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":120,"top_k":0,"top_p":0.9,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.95,"rep_pen":1.19,"rep_pen_range":1024,"rep_pen_slope":0.9,"sampler_order":[6,0,1,2,3,4,5]},{"preset":"Storywriter 6B","description":"Optimized settings for relevant output.","genamt":120,"rep_pen":1.1,"rep_pen_range":2048,"rep_pen_slope":0.2,"sampler_order":[6,5,0,2,3,1,4],"temp":0.72,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"tfs":1,"top_a":0,"top_k":0,"top_p":0.73,"min_p":0.0,"presence_penalty":0.0,"typical":1},{"preset":"Coherent Creativity 6B","description":"A good balance between coherence, creativity, and quality of prose.","genamt":120,"rep_pen":1.2,"rep_pen_range":2048,"rep_pen_slope":0,"sampler_order":[6,5,0,2,3,1,4],"temp":0.51,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"tfs":0.99,"top_a":0,"top_k":0,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"typical":1},{"preset":"Luna Moth 6B","description":"A great degree of creativity without losing coherency.","temp":1.5,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":120,"top_k":85,"top_p":0.24,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.1,"rep_pen_range":2048,"rep_pen_slope":0,"sampler_order":[6,5,0,2,3,1,4]},{"preset":"Pleasing Results 6B","description":"Expectable output with alternative context settings.","temp":0.44,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":120,"top_k":0,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.9,"rep_pen":1.15,"rep_pen_range":2048,"rep_pen_slope":6.8,"sampler_order":[6,5,0,2,3,1,4]},{"preset":"Genesis 13B","description":"Stable and logical, but with scattered creativity.","temp":0.63,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":120,"top_k":0,"top_p":0.98,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.98,"rep_pen":1.05,"rep_pen_range":2048,"rep_pen_slope":0.1,"sampler_order":[6,2,0,3,5,1,4]},{"preset":"Basic Coherence 13B","description":"Keep things on track.","temp":0.59,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":120,"top_k":0,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.87,"rep_pen":1.1,"rep_pen_range":2048,"rep_pen_slope":0.3,"sampler_order":[6,5,0,2,3,1,4]},{"preset":"Ouroboros 13B","description":"Versatile, conforms well to poems, lists, chat, etc.","temp":1.07,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":120,"top_k":100,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.93,"rep_pen":1.05,"rep_pen_range":404,"rep_pen_slope":0.8,"sampler_order":[6,0,5,3,2,1,4]},{"preset":"Ace of Spades 13B","description":"Expressive, while still staying focused.","temp":1.15,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":120,"top_k":0,"top_p":0.95,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.8,"rep_pen":1.05,"rep_pen_range":2048,"rep_pen_slope":7,"sampler_order":[6,3,2,0,5,1,4]},{"preset":"Low Rider 13B","description":"Reliable, aimed at story development.","temp":0.94,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":120,"top_k":12,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.94,"rep_pen":1.05,"rep_pen_range":2048,"rep_pen_slope":0.2,"sampler_order":[6,5,0,2,3,1,4]},{"preset":"Pro Writer 13B","description":"Optimal setting for readability, based on AI-powered mass statistical analysis of Euterpe output.","temp":1.35,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":120,"top_k":0,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.69,"rep_pen":1.15,"rep_pen_range":2048,"rep_pen_slope":0.1,"sampler_order":[6,3,2,5,0,1,4]},{"preset":"Default 20B","description":"Good starting settings for NeoX 20B.","temp":0.6,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":120,"top_k":0,"top_p":0.9,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.04,"rep_pen_range":1024,"rep_pen_slope":0.7,"sampler_order":[6,0,1,2,3,4,5]},{"preset":"Min-P","description":"A good default for Min-P, only works on backends with min-p.","temp":1.25,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":120,"top_k":0,"top_p":1,"min_p":0.1,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.03,"rep_pen_range":320,"rep_pen_slope":0.7,"sampler_order":[6,5,0,1,3,4,2]}
 	];
 
 	function polyfills()
@@ -6396,7 +6086,7 @@ Current version: 108
 	function confirm_dynatemp()
 	{
 		document.getElementById("dynatempcontainer").classList.add("hidden");
-		document.getElementById("dynatemp_overview").innerText = (document.getElementById("dynatemp_range").value>0?"ON":"OFF");
+		document.getElementById("dynatemp_overview").innerText = ((document.getElementById("dynatemp_range").value>0||document.getElementById("smoothing_factor").value>0)?"ON":"OFF");
 	}
 	function show_dynatemp()
 	{
@@ -7713,8 +7403,8 @@ Current version: 108
 		document.getElementById("min_p").value = localsettings.min_p;
 		document.getElementById("dynatemp_range").value = localsettings.dynatemp_range;
 		document.getElementById("dynatemp_exponent").value = localsettings.dynatemp_exponent;
-		document.getElementById("dynatemp_overview").innerText = (localsettings.dynatemp_range>0?"ON":"OFF");
 		document.getElementById("smoothing_factor").value = localsettings.smoothing_factor;
+		document.getElementById("dynatemp_overview").innerText = ((localsettings.dynatemp_range>0||localsettings.smoothing_factor>0)?"ON":"OFF");
 		document.getElementById("presence_penalty").value = localsettings.presence_penalty;
 		document.getElementById("sampler_seed").value = localsettings.sampler_seed;
 		document.getElementById("top_k").value = localsettings.top_k;
@@ -7804,6 +7494,7 @@ Current version: 108
 		document.getElementById("beep_on").checked = localsettings.beep_on;
 		document.getElementById("notify_on").checked = localsettings.notify_on;
 		document.getElementById("narrate_both_sides").checked = localsettings.narrate_both_sides;
+		document.getElementById("narrate_only_dialog").checked = localsettings.narrate_only_dialog;
 		toggle_opmode();
 
 		//sd models display
@@ -7937,7 +7628,15 @@ Current version: 108
 		localsettings.compressnewlines = (document.getElementById("compressnewlines").checked ? true : false);
 		localsettings.eos_ban_mode = document.getElementById("eos_ban_mode").value;
 		localsettings.persist_session = (document.getElementById("persist_session").checked ? true : false);
-		if(document.getElementById("opmode").value==3)
+		if(document.getElementById("opmode").value==1)
+		{
+			localsettings.gui_type_story = document.getElementById("gui_type").value;
+		}
+		else if(document.getElementById("opmode").value==2)
+		{
+			localsettings.gui_type_adventure = document.getElementById("gui_type").value;
+		}
+		else if(document.getElementById("opmode").value==3)
 		{
 			localsettings.gui_type_chat = document.getElementById("gui_type").value;
 		}
@@ -7993,6 +7692,7 @@ Current version: 108
 		localsettings.beep_on = (document.getElementById("beep_on").checked?true:false);
 		localsettings.notify_on = (document.getElementById("notify_on").checked?true:false);
 		localsettings.narrate_both_sides = (document.getElementById("narrate_both_sides").checked?true:false);
+		localsettings.narrate_only_dialog = (document.getElementById("narrate_only_dialog").checked?true:false);
 		localsettings.auto_ctxlen = (document.getElementById("auto_ctxlen").checked ? true : false);
 		localsettings.auto_genamt = (document.getElementById("auto_genamt").checked ? true : false);
 
@@ -8025,7 +7725,10 @@ Current version: 108
 			localsettings.img_cfgscale = defaultsettings.img_cfgscale;
 		}
 
-		if((localsettings.gui_type_chat!=0 && localsettings.opmode==3)||(localsettings.gui_type_instruct!=0 && localsettings.opmode==4))
+		if((localsettings.gui_type_story!=0 && localsettings.opmode==1)
+		||(localsettings.gui_type_adventure!=0 && localsettings.opmode==2)
+		||(localsettings.gui_type_chat!=0 && localsettings.opmode==3)
+		||(localsettings.gui_type_instruct!=0 && localsettings.opmode==4))
 		{
 			//kick out of edit mode
 			if(document.getElementById("allowediting"))
@@ -8051,7 +7754,7 @@ Current version: 108
 		localsettings.dynatemp_range = cleannum(localsettings.dynatemp_range, 0.0, 5);
 		localsettings.dynatemp_range = (localsettings.dynatemp_range>localsettings.temperature?localsettings.temperature:localsettings.dynatemp_range);
 		localsettings.dynatemp_exponent = cleannum(localsettings.dynatemp_exponent, 0.0, 10.0);
-        localsettings.smoothing_factor = cleannum(localsettings.smoothing_factor, 0, 10)
+		localsettings.smoothing_factor = cleannum(localsettings.smoothing_factor, 0.0, 10.0);
 		localsettings.presence_penalty = cleannum(localsettings.presence_penalty, -2, 2);
 		localsettings.top_k = cleannum(Math.floor(localsettings.top_k), 0, 300);
 		localsettings.top_a = cleannum(localsettings.top_a, 0, 1);
@@ -8180,12 +7883,14 @@ Current version: 108
 		document.getElementById('uipicker_aesthetic').classList.add('hidden');
 
 		if (document.getElementById('opmode').value == 1) {
-			document.getElementById('gui_type').value = 0;
+			document.getElementById('gui_type').value = localsettings.gui_type_story;
+			document.getElementById('uipicker_aesthetic').classList.remove('hidden');
 		}
 		if (document.getElementById('opmode').value == 2) {
-			document.getElementById('gui_type').value = 0;
+			document.getElementById('gui_type').value = localsettings.gui_type_adventure;
 			document.getElementById('adventuresection1').classList.remove('hidden');
 			document.getElementById('adventuresection2').classList.remove('hidden');
+			document.getElementById('uipicker_aesthetic').classList.remove('hidden');
 		}
 		if (document.getElementById('opmode').value == 3) {
 			document.getElementById('gui_type').value = localsettings.gui_type_chat;
@@ -8414,6 +8119,7 @@ Current version: 108
 		waiting_for_autosummary = false;
 		last_reply_was_empty = false;
 		pending_context_preinjection = "";
+		pending_context_postinjection = "";
 		document.getElementById("input_text").value = "";
 		document.getElementById("cht_inp").value = "";
 		chat_resize_input();
@@ -8800,6 +8506,28 @@ Current version: 108
 		{
 			return;
 		}
+		if(localsettings.narrate_only_dialog)
+		{
+			// Remove text within asterisks and the asterisks, then trim
+			text = text.replace(italics_regex,"").trim();
+			let strippedtxt = "";
+			// Simply remove escaped quotes
+			text = replaceAll(text,"\\\"","");
+			//match and extract remaining quotes
+			let matches = text.match(/"(.*?)"/g);
+			for(let m in matches)
+			{
+				if(matches[m]!="" && matches[m].trim()!="")
+				{
+					strippedtxt += matches[m].trim() +" \n"; //newline for a break.
+				}
+			}
+			if(strippedtxt.trim()!="")
+			{
+				text = strippedtxt;
+			}
+		}
+
 		if(localsettings.speech_synth==XTTS_ID) //xtts api server
 		{
 			if(xtts_is_connected)
@@ -8847,6 +8575,7 @@ Current version: 108
 		let newgen = document.getElementById("input_text").value;
 		const user_input_empty = (newgen.trim()=="");
 		let doNotGenerate = false;
+		pending_context_postinjection = "";
 
 		if (!user_input_empty || gametext_arr.length > 0 || current_memory != "" || current_anote != "")
 		{
@@ -8875,11 +8604,23 @@ Current version: 108
 				}
 				else //may be continuting existing instruction OR starting a brand new session. check if first action
 				{
-					if (gametext_arr.length == 0) {
+					if (is_impersonate_user) {
+						is_impersonate_user = false;
 						if (!localsettings.placeholder_tags) {
-							newgen = get_instruct_endtag(false); //bot response as first msg
+							pending_context_preinjection = get_instruct_starttag(false); //bot response as first msg
+							pending_context_postinjection = get_instruct_endtag(false);
 						} else {
-							newgen = instructendplaceholder;
+							pending_context_preinjection = instructstartplaceholder;
+							pending_context_postinjection = instructendplaceholder;
+						}
+
+					} else {
+						if (gametext_arr.length == 0) {
+							if (!localsettings.placeholder_tags) {
+								newgen = get_instruct_endtag(false); //bot response as first msg
+							} else {
+								newgen = instructendplaceholder;
+							}
 						}
 					}
 				}
@@ -9100,6 +8841,10 @@ Current version: 108
 					truncated_context += pending_context_preinjection;
 				}
 
+			}
+
+			if (localsettings.opmode == 4) {
+				truncated_context += pending_context_preinjection;
 			}
 
 
@@ -9844,7 +9589,7 @@ Current version: 108
 				submit_payload.params.min_p = localsettings.min_p;
 				submit_payload.params.dynatemp_range = localsettings.dynatemp_range;
 				submit_payload.params.dynatemp_exponent = localsettings.dynatemp_exponent;
-				submit_payload.params.smoothing_facftor = localsettings.smoothing_factor;
+				submit_payload.params.smoothing_factor = localsettings.smoothing_factor;
 			}
 
 			last_request_str = JSON.stringify(submit_payload);
@@ -10282,13 +10027,19 @@ Current version: 108
 			gentxt = pending_context_preinjection + gentxt;
 			pending_context_preinjection = "";
 		}
+		if(pending_context_postinjection!="")
+		{
+			gentxt = gentxt + pending_context_postinjection;
+			pending_context_postinjection = "";
+		}
 
 		if (localsettings.speech_synth > 0)
 		{
-			if(localsettings.narrate_both_sides)
+			if(localsettings.narrate_both_sides && !localsettings.narrate_only_dialog)
 			{
 				gentxtspeak = gentxt;
 			}
+
 			tts_speak(gentxtspeak);
 		}
 
@@ -10985,7 +10736,7 @@ Current version: 108
 			}
 			document.getElementById("btnmode_adventure").classList.remove("hidden");
 		}
-		else if(localsettings.opmode==3 && localsettings.chatopponent!="")
+		else if((localsettings.opmode == 3 && localsettings.chatopponent != "")||localsettings.opmode == 4)
 		{
 			document.getElementById("inputrow").classList.add("show_mode");
 			document.getElementById("btnmode_chat").classList.remove("hidden");
@@ -11250,7 +11001,11 @@ Current version: 108
 		update_submit_button(true); //full update for submit button, otherwise just text when not generating
 
 		// Render onto enhanced chat interface if selected. Currently only applicable to Chat & Instruct modes.
-		let isStyleApplicable = ((localsettings.opmode==3 && localsettings.gui_type_chat!=0) || (localsettings.opmode==4 && localsettings.gui_type_instruct!=0));
+		let isStyleApplicable = (
+			(localsettings.opmode==1 && localsettings.gui_type_story!=0) ||
+			(localsettings.opmode==2 && localsettings.gui_type_adventure!=0) ||
+			(localsettings.opmode==3 && localsettings.gui_type_chat!=0) ||
+			(localsettings.opmode==4 && localsettings.gui_type_instruct!=0));
 
 		if (!inEditMode && isStyleApplicable)
 		{
@@ -11265,11 +11020,30 @@ Current version: 108
 			{
 				document.getElementById("chat_msg_body").innerHTML = render_enhanced_chat_instruct(textToRender,false);
 			}
-			if (localsettings.opmode == 3 && localsettings.chatopponent != "") {
-				document.getElementById("chat_btnmode_chat").classList.remove("hidden");
+			if ((localsettings.opmode == 3 && localsettings.chatopponent != "")||localsettings.opmode == 4||localsettings.opmode==2) {
 				document.getElementById("cht_inp_bg").classList.add("shorter");
+				if(localsettings.opmode==2)
+				{
+					document.getElementById("chat_btnmode_chat").classList.add("hidden");
+					document.getElementById("chat_btnmode_adventure").classList.remove("hidden");
+					if(localsettings.adventure_is_action)
+					{
+						document.getElementById("chat_btnmode_adventure").classList.add("actionmode");
+						document.getElementById("chat_btnmode_adventure").classList.remove("storymode");
+					}else{
+						document.getElementById("chat_btnmode_adventure").classList.remove("actionmode");
+						document.getElementById("chat_btnmode_adventure").classList.add("storymode");
+					}
+				}
+				else
+				{
+					document.getElementById("chat_btnmode_chat").classList.remove("hidden");
+					document.getElementById("chat_btnmode_adventure").classList.add("hidden");
+				}
+
 			} else {
 				document.getElementById("chat_btnmode_chat").classList.add("hidden");
+				document.getElementById("chat_btnmode_adventure").classList.add("hidden");
 				document.getElementById("cht_inp_bg").classList.remove("shorter");
 			}
 
@@ -11814,24 +11588,30 @@ Current version: 108
 	{
 		document.getElementById("groupselectcontainer").classList.remove("hidden");
 		let gs = ``;
-		if (localsettings.chatopponent != "" && localsettings.chatopponent.includes("||$||")) {
-			gs = `Selected participants will reply randomly, unless you address them directly by name.`
-			+`<br><br>Unselected participants will not reply in group chats.<br>`
-			+`<table style="width:90%; margin:8px auto;">`;
-			let grouplist = localsettings.chatopponent.split("||$||");
-			for (let i = 0; i < grouplist.length; ++i) {
-				let show = !groupchat_removals.includes(grouplist[i]);
-				gs += `<tr><td width='184px'><span style="vertical-align: middle;">` + grouplist[i] + `</span></td>`
-					+`<td width='24px'><button type="button" class="btn btn-primary widelbtn" id="widel0" onclick="impersonate_message(`+i+`)">+</button></td>`
-					+`<td width='24px'><input type="checkbox" id="groupselectitem_` + i + `" style=" vertical-align: top;" ` + (show ? "checked" : "") + `></td></tr>`;
-			}
-			gs += `</table>`;
-		}
-		else if(localsettings.chatopponent != "")
+		if(localsettings.opmode==3)
 		{
-			gs = `You're having a one-on-one chat with <b>`+localsettings.chatopponent+`</b>.<br><br>`
-			+`<a href='#' class='color_blueurl' onclick='hide_popups();display_settings()'>Turn it into a <b>group chat</b> by <b>adding more AI characters</b> (one per line)</a>.<br><br>`
-			+ `<a href='#' class='color_blueurl' onclick='impersonate_message(0)'>Impersonate `+localsettings.chatopponent+` speaking as them</a>`;
+			if (localsettings.chatopponent != "" && localsettings.chatopponent.includes("||$||")) {
+				gs = `Selected participants will reply randomly, unless you address them directly by name.`
+				+`<br><br>Unselected participants will not reply in group chats.<br>`
+				+`<table style="width:90%; margin:8px auto;">`;
+				let grouplist = localsettings.chatopponent.split("||$||");
+				for (let i = 0; i < grouplist.length; ++i) {
+					let show = !groupchat_removals.includes(grouplist[i]);
+					gs += `<tr><td width='184px'><span style="vertical-align: middle;">` + grouplist[i] + `</span></td>`
+						+`<td width='24px'><button type="button" class="btn btn-primary widelbtn" id="widel0" onclick="impersonate_message(`+i+`)">+</button></td>`
+						+`<td width='24px'><input type="checkbox" id="groupselectitem_` + i + `" style=" vertical-align: top;" ` + (show ? "checked" : "") + `></td></tr>`;
+				}
+				gs += `</table>`;
+			}
+			else if(localsettings.chatopponent != "")
+			{
+				gs = `You're having a one-on-one chat with <b>`+localsettings.chatopponent+`</b>.<br><br>`
+				+`<a href='#' class='color_blueurl' onclick='hide_popups();display_settings()'>Turn it into a <b>group chat</b> by <b>adding more AI characters</b> (one per line)</a>.<br><br>`
+				+ `<a href='#' class='color_blueurl' onclick='impersonate_message(0)'>Impersonate `+localsettings.chatopponent+` speaking as them</a>`;
+			}
+		}else{
+			gs = `You're in Instruct Mode.<br><br>`
+				+ `<a href='#' class='color_blueurl' onclick='impersonate_message(0)'>Impersonate the AI Assistant</a>`;
 		}
 
 		gs += `<br><a href='#' class='color_blueurl' onclick='impersonate_user()'>Make the AI write a response as me (for 1 turn)</a>`;
@@ -11855,18 +11635,44 @@ Current version: 108
 	function impersonate_message(index)
 	{
 		hide_popups();
-		let grouplist = localsettings.chatopponent.split("||$||");
-		let target = grouplist[index];
-		inputBox("Add a messsage speaking as "+target+":","Impersonate "+target,"",target+" says...", ()=>{
-			let userinput = getInputBoxValue();
-			userinput = userinput.trim();
-			if(userinput!="")
-			{
-				gametext_arr.push("\n"+target+": "+userinput);
-				render_gametext();
-			}
-			hide_popups();
-		},false);
+
+		if(localsettings.opmode==3)
+		{
+			let grouplist = localsettings.chatopponent.split("||$||");
+			let target = grouplist[index];
+			inputBox("Add a messsage speaking as "+target+":","Impersonate "+target,"",target+" says...", ()=>{
+				let userinput = getInputBoxValue();
+				userinput = userinput.trim();
+				if(userinput!="")
+				{
+					gametext_arr.push("\n"+target+": "+userinput);
+					render_gametext();
+				}
+				hide_popups();
+			},false);
+		}
+		else
+		{
+			inputBox("Add a messsage speaking as the AI Assistant:","Impersonate the AI","","The AI says...", ()=>{
+				let userinput = getInputBoxValue();
+				userinput = userinput.trim();
+				if(userinput!="")
+				{
+					let txt = "";
+					//append instruction for instruct mode
+					if (!localsettings.placeholder_tags) {
+						txt =  get_instruct_endtag(false) + userinput;
+					}
+					else {
+						txt = instructendplaceholder + userinput;
+					}
+
+					gametext_arr.push(txt);
+					render_gametext();
+				}
+				hide_popups();
+			},false);
+		}
 	}
 	function confirm_groupchat_select()
 	{
@@ -12223,7 +12029,12 @@ Current version: 108
 	{
 		let classSuffixStr = isPreview ? "prv" : "";
 		const contextDict = { sysOpen: '<sys_context_koboldlite_internal>', youOpen: '<user_context_koboldlite_internal>', AIOpen: '<AI_context_koboldlite_internal>', closeTag: '<end_of_context_koboldlite_internal>' }
-		let you = get_instruct_starttag(); let bot = get_instruct_endtag(); // Instruct tags will be used to wrap text in styled bubbles.
+		let you = "$UnusedTagMatch$"; let bot = "$UnusedTagMatch$"; // Instruct tags will be used to wrap text in styled bubbles.
+		if(localsettings.opmode==3||localsettings.opmode==4)
+		{
+			you = get_instruct_starttag();
+			bot = get_instruct_endtag();
+		}
 
 		let as = aestheticInstructUISettings;								// ..and use this as shortcut to avoid typing it each time.
 		if(localsettings.opmode==3)
@@ -12309,7 +12120,13 @@ Current version: 108
 
 		// Helper functions to allow styling the chat log properly. These affect both the background of the chat bubbles and its content.
 		function style(role) {
-			return `${contextDict.closeTag}</div></div><div style='display:flex; align-items:stretch; flex-direction: row;'>${image(role)}<div style='flex: 1; display:flex; color: ${as[`text_tcolor_${as.use_uniform_colors ? 'uniform' : role}`]}; background-color:${as[`bubbleColor_${role}`]}; padding: ${as.padding()}; margin: ${as.margin()}; min-height:${as.background_minHeight}px; font-size: ${as.font_size}px; flex-direction:column; align-items: ${as.centerHorizontally ? 'center' : 'flex-start'}; justify-content: center; border-radius: ${as.rounded_bubbles ? '15px' : '0px'}'>${contextDict[`${role}Open`]}`;
+			let showavatar = false;
+			if(localsettings.opmode==3 || localsettings.opmode==4)
+			{
+				showavatar = true;
+			}
+			return `${contextDict.closeTag}</div></div><div style='display:flex; align-items:stretch; flex-direction: row;'>${(showavatar?image(role):"")}<div style='flex: 1; display:flex; color: ${as[`text_tcolor_${as.use_uniform_colors ? 'uniform' : role}`]}; background-color:${as[`bubbleColor_${role}`]}; padding: ${as.padding()}; margin: ${as.margin()}; min-height:${as.background_minHeight}px; font-size: ${as.font_size}px; flex-direction:column; align-items: ${as.centerHorizontally ? 'center' : 'flex-start'}; justify-content: center; border-radius: ${as.rounded_bubbles ? '15px' : '0px'}'>${contextDict[`${role}Open`]}`;
+
 		}
 		function wrapperSpan(role, type) {
 			let fontStyle = type=='action'?'italic':'normal';
@@ -12339,6 +12156,15 @@ Current version: 108
 		function transformInputToAestheticStyle(bodyStr, isPreview) { // Trim unnecessary empty space and new lines, and append * or " to each bubble if start/end sequence ends with * or ", to preserve styling.
 			bodyStr = bodyStr.replaceAll(you + '\n', you).replaceAll(you + ' ', you).replaceAll(you, style('you') + `${you.endsWith('*') ? '*' : ''}` + `${you.endsWith('"') ? '"' : ''}`);
 			bodyStr = bodyStr.replaceAll(bot + '\n', bot).replaceAll(bot + ' ', bot).replaceAll(bot, style('AI') + `${bot.endsWith('*') ? '*' : ''}` + `${bot.endsWith('"') ? '"' : ''}`);
+
+			//for adventure mode, highlight our actions with blockquotes
+			if (localsettings.opmode == 2) {
+				bodyStr = bodyStr.replace(/\n\n\> .+?\n/g, function (m) {
+					let inner = m.substring(3);
+					return `\n\n<blockquote>` + inner + `</blockquote>`;
+				});
+			}
+
 			if(gametext_arr.length==0 && !isPreview)
 			{
 				return bodyStr; //to allow html in the welcome text
@@ -12347,6 +12173,7 @@ Current version: 108
 			{
 				return bodyStr.replaceAll('"', '&quot;');
 			}
+
 		}
 		function getStreamingText() {
 			let isChatBotReply = (localsettings.opmode==3 && pending_context_preinjection.startsWith("\n") && pending_context_preinjection.endsWith(":"));
@@ -12366,10 +12193,15 @@ Current version: 108
 				preview = replaceAll(preview,'\n[AI_REPLY]\n', "{{botplaceholder}}");
 			}
 		}
-		else
+		else if(localsettings.opmode==4)
 		{
 			preview = replaceAll(preview,'\n[USER_REPLY]\n', get_instruct_starttag());
 			preview = replaceAll(preview,'\n[AI_REPLY]\n', get_instruct_endtag());
+		}
+		else
+		{
+			preview = replaceAll(preview,'\n[USER_REPLY]\n', "");
+			preview = replaceAll(preview,'\n[AI_REPLY]\n', "");
 		}
 		document.getElementById('aesthetic_text_preview').innerHTML = render_enhanced_chat_instruct(preview,true);
 	}
@@ -12479,7 +12311,7 @@ Current version: 108
 					</button>
 					<button type="button" class="btn btn-primary btn-secondary" style="line-height: 1;" id="btnmode_chat" onclick="show_groupchat_select()">
 						<img class="input_chat">
-						<br><b style="font-size: 10px;">Group<br>Chat</b>
+						<br><b style="font-size: 10px;">Chat<br>Select</b>
 					</button>
 				</div>
 				<div id="inputrowleft" class="tokens-in-box">
@@ -12517,6 +12349,7 @@ Current version: 108
 			<div class="cht_inp_hold_outer">
 			  <div class="cht_inp_hold">
 				<button onclick="show_groupchat_select()" id="chat_btnmode_chat" class="chat_btnmode_chat hidden" type="button"></button>
+				<button onclick="btn_adventure_mode()" id="chat_btnmode_adventure" class="chat_btnmode_adventure actionmode hidden" type="button"></button>
 				<div id="cht_inp_bg" class="cht_inp_bg">
 				<div class="cht_inp_bg_inner" id="cht_inp_lengthtester" style="white-space: nowrap; visibility: hidden; height: 0px; position:absolute; width: auto;"></div>
 				<textarea class="cht_inp_bg_inner" id="cht_inp" type="text" name="chtchtinp"  role="presentation" autocomplete="noppynop" spellcheck="true" rows="1" wrap="on" placeholder="Type a message" value="" oninput="update_submit_button();chat_resize_input();" onkeypress="return chat_handle_typing(event)"/></textarea>
@@ -13125,7 +12958,6 @@ Current version: 108
 								<th title="Min-P Sampling. 0 to Deactivate.">Min-P</th>
 								<th title="Presence Penalty. 0 to Deactivate.">PrPen.</th>
 								<th title="DynaTemp Configs. Range 0 to Deactivate.">DyTmp.</th>
-
 								</tr>
 								<tr>
 
@@ -13166,13 +12998,6 @@ Current version: 108
 									id="miro_tau"></td>
 									<td><input class="" type="text" placeholder="0.0" value="0.0"
 									id="miro_eta"></td>
-									</tr>
-									<tr>
-									<th title="Smoothing Factor. 0 to Deactivate.">SmtFtr.</th>
-									</tr>
-									<tr>
-									<td><input class="" type="text" inputmode="decimal" placeholder="0" value="0"
-									id="smoothing_factor"></td>
 									</tr>
 								</table>
 							</div>
@@ -13285,6 +13110,10 @@ Current version: 108
 						<div class="settinglabel">
 							<div class="justifyleft settingsmall"  title="If unchecked, only speak AI replies, not other text.">Narrate Both Sides </div>
 						   <input type="checkbox" id="narrate_both_sides" style="margin:0px 0 0;">
+						</div>
+						<div class="settinglabel">
+							<div class="justifyleft settingsmall"  title="If unchecked, only speak AI replies, not other text.">Narrate Only Dialog </div>
+						   <input type="checkbox" id="narrate_only_dialog" style="margin:0px 0 0;">
 						</div>
 						<div class="settinglabel">
 							<div class="justifyleft settingsmall"  title="Play a sound when generation is complete">Beep on Done </div>
@@ -13638,6 +13467,10 @@ Current version: 108
 				<div class="justifyleft" style="padding:4px">DynaTemp-Exponent:</div>
 				<input type="text" oninput="preview_dynatemp(false)" inputmode="decimal" id="dynatemp_exponent" style="width:60px" >
 			</div>
+			<div class="inlinelabel">
+				<div class="justifyleft" style="padding:4px">Smoothing-Factor:</div>
+				<input type="text" oninput="preview_dynatemp(false)" inputmode="decimal" id="smoothing_factor" style="width:60px" >
+			</div>
 
 			<div class="popupfooter">
 				<button type="button" class="btn btn-primary" onclick="confirm_dynatemp()">Ok</button>
@@ -13682,7 +13515,7 @@ Current version: 108
 		<div class="popupbg flex"></div>
 		<div class="nspopup fixsize">
 			<div class="popuptitlebar">
-				<div class="popuptitletext">Group Chat Selector</div>
+				<div class="popuptitletext">Chat Selectors</div>
 			</div>
 			<div class="aidgpopuplistheader anotelabel">
 				<div id="groupselectitems">
@@ -13699,7 +13532,7 @@ Current version: 108
 		<div class="popupbg flex"></div>
 		<div class="nspopup evenhigher" style="margin-left: 20px; margin-right: 20px;">
 			<div class="popuptitlebar" id="aesthetic_customization_panel">
-				<div class="popuptitletext">Aesthetic Instruct UI customization panel</div>
+				<div class="popuptitletext">Aesthetic UI customization panel</div>
 			</div>
 			<div class="aidgpopuplistheader" style="display: flex; flex-direction: row; height:max(70vh, 480px);">
 				<!-- Settings panel -->
