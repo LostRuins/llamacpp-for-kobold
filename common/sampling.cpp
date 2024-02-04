@@ -150,9 +150,9 @@ static void sampler_queue(
                 if (dynatemp_range > 0) {
                     float dynatemp_min = std::max(0.0f, temp - dynatemp_range);
                     float dynatemp_max = std::max(0.0f, temp + dynatemp_range);
-                    llama_sample_entropy(ctx_main, &cur_p, dynatemp_min, dynatemp_max, dynatemp_exponent);
+                    llama_sample_entropy(ctx_main, &cur_p, dynatemp_min, dynatemp_max, dynatemp_exponent, 0);
                 } else {
-                    llama_sample_temp(ctx_main, &cur_p, temp);
+                    llama_sample_temp(ctx_main, &cur_p, temp, 0);
                 }
                 break;
             default : break;

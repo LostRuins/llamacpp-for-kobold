@@ -83,9 +83,7 @@ static int n_batch = 8;
 static bool useSmartContext = false;
 static bool useContextShift = false;
 static int blasbatchsize = 512;
-static int dontblasbatchsize = 16;
-static int normalbatchsize = 32;
-static int smallbatchsize = 8;
+static int smallbatchsize = 16;
 static int debugmode = 0; //-1 = hide all, 0 = normal, 1 = showall
 static std::string modelname;
 static std::vector<gpt_vocab::id> last_n_tokens;
@@ -433,7 +431,7 @@ void sample_temperature(llama_token_data_array * candidates_p, float temp, float
     {
         // Imitate greedy sampling
         temp = 0.00390625f; //cannot be zero else div0, this is 1/256
-        llama_sample_temperature(nullptr, candidates_p, temp, smoothing_factor);
+        llama_sample_temperature(nullptr, candidates_p, temp, 0);
         llama_sample_top_k(nullptr, candidates_p, 1, 1); //only want first candidate
     }
     else
@@ -549,7 +547,7 @@ int mirostat, float mirostat_tau, float mirostat_eta, const std::vector<samplers
                         dynatemp_min = dynatemp_min<0?0:dynatemp_min;
                         dynatemp_max = dynatemp_max<0?0:dynatemp_max;
                         dynatemp_exponent = dynatemp_exponent<0?0:dynatemp_exponent;
-                        llama_sample_entropy(nullptr, &candidates_p, dynatemp_min, dynatemp_max, dynatemp_exponent);
+                        llama_sample_entropy(nullptr, &candidates_p, dynatemp_min, dynatemp_max, dynatemp_exponent, smoothing_factor);
                     }
                     else
                     {
@@ -698,7 +696,7 @@ ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in
     n_blasthreads = kcpp_params->n_threads_batch = inputs.blasthreads;
     bool isGguf = (file_format == FileFormat::GGUF_GENERIC);
 
-    n_batch = kcpp_params->n_batch = (isGguf?normalbatchsize:smallbatchsize);
+    n_batch = kcpp_params->n_batch = smallbatchsize;
     modelname = kcpp_params->model = inputs.model_filename;
     useSmartContext = inputs.use_smartcontext;
     useContextShift = inputs.use_contextshift;
@@ -706,7 +704,7 @@ ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in
     blasbatchsize = inputs.blasbatchsize;
     if(blasbatchsize<=0)
     {
-        blasbatchsize = (isGguf?dontblasbatchsize:smallbatchsize);
+        blasbatchsize = smallbatchsize;
     }
 
     auto clamped_max_context_length = inputs.max_context_length;
@@ -1676,7 +1674,7 @@ generation_outputs gpttype_generate(const generation_inputs inputs, generation_o
                             file_format == FileFormat::GPTJ_2 ||
                             file_format == FileFormat::RWKV_1 ||
                             file_format==FileFormat::RWKV_2);
-    bool blasmode = (approved_format && embd_inp.size() >= 32 && ggml_cpu_has_blas() && blasbatchsize!=-1);
+    bool blasmode = (approved_format && embd_inp.size() >= 32 && ggml_cpu_has_blas() && blasbatchsize>=32);
     // bool blasmode = false;
     int original_batch = kcpp_params->n_batch;
     int original_threads = kcpp_params->n_threads;

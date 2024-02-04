@@ -8769,7 +8769,7 @@ void llama_sample_typical(struct llama_context * ctx, llama_token_data_array * c
     }
 }
 
-void llama_sample_entropy(struct llama_context * ctx, llama_token_data_array * candidates_p, float min_temp, float max_temp, float exponent_val) {
+void llama_sample_entropy(struct llama_context * ctx, llama_token_data_array * candidates_p, float min_temp, float max_temp, float exponent_val, float smoothing_factor) {
     const int64_t t_start_sample_us = ggml_time_us();
 
     // no need to do anything if there is only one (or zero) candidates
@@ -8797,15 +8797,6 @@ void llama_sample_entropy(struct llama_context * ctx, llama_token_data_array * c
     // Map the normalized entropy to the desired temperature range using the power function
     float dyn_temp = min_temp + (max_temp - min_temp) * powf(normalized_entropy, exponent_val);
 
-#ifdef DEBUG
-    LLAMA_LOG_INFO("Your text maxtemp value is: %f\n", max_temp);
-    LLAMA_LOG_INFO("Entropy: %f\n", entropy);
-    LLAMA_LOG_INFO("Max Possible Entropy: %f\n", max_entropy);
-    LLAMA_LOG_INFO("Normalized Entropy: %f\n", normalized_entropy);
-    LLAMA_LOG_INFO("Exponent: %f\n", exponent_val);
-    LLAMA_LOG_INFO("Dynamic Temperature (dyn_temp): %f\n", dyn_temp);
-#endif
-
     // Apply the dynamically calculated temperature scaling
     for (size_t i = 0; i < candidates_p->size; ++i) {
         candidates_p->data[i].logit /= dyn_temp;
@@ -8823,13 +8814,19 @@ void llama_sample_entropy(struct llama_context * ctx, llama_token_data_array * c
         candidates_p->data[i].p /= cum_sum_double; // Re-normalize the probabilities
     }
 
-#ifdef DEBUG
-    // Print the updated top 25 probabilities after temperature scaling
-    LLAMA_LOG_INFO("\nUpdated Top 25 Probabilities After Dynamic Temperature Scaling (in percentages):\n");
-    for (size_t i = 0; i < 25 && i < candidates_p->size; ++i) {
-        LLAMA_LOG_INFO("Token %zu: %f%%\n", i + 1, candidates_p->data[i].p * 100.0f);
+    // Only apply smoothing if smoothing_factor is > 0. Do not change base implementation otherwise.
+    if (smoothing_factor > 0 && candidates_p->size > 1) {
+
+        llama_sample_softmax(ctx, candidates_p);
+        float h = candidates_p->data[0].logit; // Find the maximum logit for h to be added after the transformation
+        // Apply quadratic transformation using the smoothing_factor
+        for (size_t i = 0; i < candidates_p->size; ++i)
+        {
+            float logit_shifted = candidates_p->data[i].logit - h;
+            candidates_p->data[i].logit = -smoothing_factor * logit_shifted * logit_shifted + h;
+        }
+        llama_sample_softmax(ctx, candidates_p);
     }
-#endif
 
     if (ctx) {
         ctx->t_sample_us += ggml_time_us() - t_start_sample_us;
@@ -8847,13 +8844,12 @@ void llama_sample_temp(struct llama_context * ctx, llama_token_data_array * cand
     if (smoothing_factor > 0 && candidates_p->size > 1) {
 
         llama_sample_softmax(ctx, candidates_p);
-        float h = candidates_p->data[0].logit; // Find the maximum logit for h
-        float k = h;                           // Maximum logit value to be added after the transformation
+        float h = candidates_p->data[0].logit; // Find the maximum logit for h to be added after the transformation
         // Apply quadratic transformation using the smoothing_factor
         for (size_t i = 0; i < candidates_p->size; ++i)
         {
             float logit_shifted = candidates_p->data[i].logit - h;
-            candidates_p->data[i].logit = -smoothing_factor * logit_shifted * logit_shifted + k;
+            candidates_p->data[i].logit = -smoothing_factor * logit_shifted * logit_shifted + h;
         }
         llama_sample_softmax(ctx, candidates_p);
     }
