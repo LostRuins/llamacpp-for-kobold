@@ -13,6 +13,7 @@ struct llama_sampling_context * llama_sampling_init(const struct llama_sampling_
         // will be empty (default) if there are parse errors
         if (result->parsed_grammar.rules.empty()) {
             fprintf(stderr, "%s: failed to parse grammar\n", __func__);
+            delete result;
             return nullptr;
         }
 
@@ -131,7 +132,7 @@ static void sampler_queue(
     const float         temp              = params.temp;
     const float         dynatemp_range    = params.dynatemp_range;
     const float         dynatemp_exponent = params.dynatemp_exponent;
-    const int32_t       top_k             = params.top_k <= 0 ? n_vocab : params.top_k;
+    const int32_t       top_k             = params.top_k;
     const float         top_p             = params.top_p;
     const float         min_p             = params.min_p;
     const float         tfs_z             = params.tfs_z;
@@ -149,9 +150,9 @@ static void sampler_queue(
                 if (dynatemp_range > 0) {
                     float dynatemp_min = std::max(0.0f, temp - dynatemp_range);
                     float dynatemp_max = std::max(0.0f, temp + dynatemp_range);
-                    llama_sample_entropy(ctx_main, &cur_p, dynatemp_min, dynatemp_max, dynatemp_exponent);
+                    llama_sample_entropy(ctx_main, &cur_p, dynatemp_min, dynatemp_max, dynatemp_exponent, 0);
                 } else {
-                    llama_sample_temp(ctx_main, &cur_p, temp);
+                    llama_sample_temp(ctx_main, &cur_p, temp, 0);
                 }
                 break;
             default : break;
@@ -248,10 +249,10 @@ static llama_token llama_sampling_sample_impl(
     } else {
         if (mirostat == 1) {
             const int mirostat_m = 100;
-            llama_sample_temp(ctx_main, &cur_p, temp);
+            llama_sample_temp(ctx_main, &cur_p, temp, 0);
             id = llama_sample_token_mirostat(ctx_main, &cur_p, mirostat_tau, mirostat_eta, mirostat_m, &ctx_sampling->mirostat_mu);
         } else if (mirostat == 2) {
-            llama_sample_temp(ctx_main, &cur_p, temp);
+            llama_sample_temp(ctx_main, &cur_p, temp, 0);
             id = llama_sample_token_mirostat_v2(ctx_main, &cur_p, mirostat_tau, mirostat_eta, &ctx_sampling->mirostat_mu);
         } else {
             // temperature sampling

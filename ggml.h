@@ -360,6 +360,7 @@ extern "C" {
         GGML_TYPE_Q8_K = 15,
         GGML_TYPE_IQ2_XXS = 16,
         GGML_TYPE_IQ2_XS  = 17,
+        GGML_TYPE_IQ3_XXS = 18,
         GGML_TYPE_I8,
         GGML_TYPE_I16,
         GGML_TYPE_I32,
@@ -396,6 +397,7 @@ extern "C" {
         GGML_FTYPE_MOSTLY_Q6_K = 14, // except 1d tensors
         GGML_FTYPE_MOSTLY_IQ2_XXS = 15, // except 1d tensors
         GGML_FTYPE_MOSTLY_IQ2_XS  = 16, // except 1d tensors
+        GGML_FTYPE_MOSTLY_IQ3_XXS = 17, // except 1d tensors
     };
 
     // available tensor operations:
@@ -1500,7 +1502,8 @@ extern "C" {
             int                  p1,
             int                  d0,
             int                  d1,
-            bool                 is_2D);
+            bool                 is_2D,
+            enum ggml_type       dst_type);
 
     GGML_API struct ggml_tensor * ggml_conv_depthwise_2d(
             struct ggml_context * ctx,
@@ -2271,9 +2274,11 @@ extern "C" {
     GGML_API int ggml_cpu_has_cublas     (void);
     GGML_API int ggml_cpu_has_clblast    (void);
     GGML_API int ggml_cpu_has_vulkan     (void);
+    GGML_API int ggml_cpu_has_kompute    (void);
     GGML_API int ggml_cpu_has_gpublas    (void);
     GGML_API int ggml_cpu_has_sse3       (void);
     GGML_API int ggml_cpu_has_ssse3      (void);
+    GGML_API int ggml_cpu_has_sycl       (void);
     GGML_API int ggml_cpu_has_vsx        (void);
 
     //

@@ -37,40 +37,39 @@
 int32_t get_num_physical_cores();
 
 struct gpt_params {
-    uint32_t seed                           = -1;    // RNG seed
+    uint32_t seed                 = -1;    // RNG seed
 
-    int32_t n_threads                       = get_num_physical_cores();
-    int32_t n_threads_draft                 = -1;
-    int32_t n_threads_batch                 = -1;    // number of threads to use for batch processing (-1 = use n_threads)
-    int32_t n_threads_batch_draft           = -1;
-    int32_t n_predict                       = -1;    // new tokens to predict
-    int32_t n_ctx                           = 512;   // context size
-    int32_t n_batch                         = 512;   // batch size for prompt processing (must be >=32 to use BLAS)
-    int32_t n_keep                          = 0;     // number of tokens to keep from initial prompt
-    int32_t n_draft                         = 8;     // number of tokens to draft during speculative decoding
-    int32_t n_chunks                        = -1;    // max number of chunks to process (-1 = unlimited)
-    int32_t n_parallel                      = 1;     // number of parallel sequences to decode
-    int32_t n_sequences                     = 1;     // number of sequences to decode
-    float   p_accept                        = 0.5f;  // speculative decoding accept probability
-    float   p_split                         = 0.1f;  // speculative decoding split probability
-    int32_t n_gpu_layers                    = -1;    // number of layers to store in VRAM (-1 - use default)
-    int32_t n_gpu_layers_draft              = -1;    // number of layers to store in VRAM for the draft model (-1 - use default)
-    llama_split_mode split_mode             = LLAMA_SPLIT_LAYER; // how to split the model across GPUs
-    int32_t main_gpu                        = 0;     // the GPU that is used for scratch and small tensors
-    float   tensor_split[LLAMA_MAX_DEVICES] = {0};   // how split tensors should be distributed across GPUs
-    int32_t n_beams                         = 0;     // if non-zero then use beam search of given width.
-    int32_t grp_attn_n                      = 1;     // group-attention factor
-    int32_t grp_attn_w                      = 512;   // group-attention width
-    int32_t n_print                         = -1;    // print token count every n tokens (-1 = disabled)
-    float   rope_freq_base                  = 0.0f;  // RoPE base frequency
-    float   rope_freq_scale                 = 0.0f;  // RoPE frequency scaling factor
-    float   yarn_ext_factor                 = -1.0f; // YaRN extrapolation mix factor
-    float   yarn_attn_factor                = 1.0f;  // YaRN magnitude scaling factor
-    float   yarn_beta_fast                  = 32.0f; // YaRN low correction dim
-    float   yarn_beta_slow                  = 1.0f;  // YaRN high correction dim
-    int32_t yarn_orig_ctx                   = 0;     // YaRN original context length
-    int8_t  rope_scaling_type               = LLAMA_ROPE_SCALING_UNSPECIFIED; // TODO: better to be int32_t for alignment
-                                                                              //       pinging @cebtenzzre
+    int32_t n_threads             = get_num_physical_cores();
+    int32_t n_threads_draft       = -1;
+    int32_t n_threads_batch       = -1;    // number of threads to use for batch processing (-1 = use n_threads)
+    int32_t n_threads_batch_draft = -1;
+    int32_t n_predict             = -1;    // new tokens to predict
+    int32_t n_ctx                 = 512;   // context size
+    int32_t n_batch               = 512;   // batch size for prompt processing (must be >=32 to use BLAS)
+    int32_t n_keep                = 0;     // number of tokens to keep from initial prompt
+    int32_t n_draft               = 8;     // number of tokens to draft during speculative decoding
+    int32_t n_chunks              = -1;    // max number of chunks to process (-1 = unlimited)
+    int32_t n_parallel            = 1;     // number of parallel sequences to decode
+    int32_t n_sequences           = 1;     // number of sequences to decode
+    float   p_accept              = 0.5f;  // speculative decoding accept probability
+    float   p_split               = 0.1f;  // speculative decoding split probability
+    int32_t n_gpu_layers          = -1;    // number of layers to store in VRAM (-1 - use default)
+    int32_t n_gpu_layers_draft    = -1;    // number of layers to store in VRAM for the draft model (-1 - use default)
+    llama_split_mode split_mode   = LLAMA_SPLIT_LAYER; // how to split the model across GPUs
+    int32_t main_gpu              = 0;     // the GPU that is used for scratch and small tensors
+    float   tensor_split[128]     = {0};   // how split tensors should be distributed across GPUs
+    int32_t n_beams               = 0;     // if non-zero then use beam search of given width.
+    int32_t grp_attn_n            = 1;     // group-attention factor
+    int32_t grp_attn_w            = 512;   // group-attention width
+    int32_t n_print               = -1;    // print token count every n tokens (-1 = disabled)
+    float   rope_freq_base        = 0.0f;  // RoPE base frequency
+    float   rope_freq_scale       = 0.0f;  // RoPE frequency scaling factor
+    float   yarn_ext_factor       = -1.0f; // YaRN extrapolation mix factor
+    float   yarn_attn_factor      = 1.0f;  // YaRN magnitude scaling factor
+    float   yarn_beta_fast        = 32.0f; // YaRN low correction dim
+    float   yarn_beta_slow        = 1.0f;  // YaRN high correction dim
+    int32_t yarn_orig_ctx         = 0;     // YaRN original context length
+    int32_t rope_scaling_type     = LLAMA_ROPE_SCALING_UNSPECIFIED;
 
     // sampling parameters
     int32_t top_k             = 40;    // <= 0 to use vocab size
@@ -79,6 +78,7 @@ struct gpt_params {
     float   tfs_z             = 1.00f; // 1.0 = disabled
     float   typical_p         = 1.00f; // 1.0 = disabled
     float   temp              = 0.80f; // 1.0 = disabled
+    float   smoothing_factor  = 0.00f; // 0.00 = disabled
     float   repeat_penalty    = 1.10f; // 1.0 = disabled
     int32_t repeat_last_n     = 64;    // last n tokens to penalize (0 = disable penalty, -1 = context size)
     float   frequency_penalty = 0.00f; // 0.0 = disabled

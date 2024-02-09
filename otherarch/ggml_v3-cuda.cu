@@ -9396,6 +9396,7 @@ static void ggml_v3_cuda_mul_mat(const ggml_v3_tensor * src0, const ggml_v3_tens
 #endif // defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)
 
     use_mul_mat_q = use_mul_mat_q && ggml_v3_cuda_supports_mmq(src0->type);
+    const bool use_tensor_cores = fp16_performance_good && !g_mul_mat_q_v3;
 
     // debug helpers
     //printf("src0: %8d %8d %8d %8d\n", src0->ne[0], src0->ne[1], src0->ne[2], src0->ne[3]);
@@ -9405,13 +9406,13 @@ static void ggml_v3_cuda_mul_mat(const ggml_v3_tensor * src0, const ggml_v3_tens
     //printf("src0 is contiguous %d, transposed %d, type = %s, name = %s\n", ggml_v3_is_contiguous(src0), ggml_v3_is_transposed(src0), ggml_v3_type_name(src0->type), src0->name);
     //printf("src1 is contiguous %d, transposed %d, type = %s, name = %s\n", ggml_v3_is_contiguous(src1), ggml_v3_is_transposed(src1), ggml_v3_type_name(src1->type), src1->name);
 
-    if (!split && all_on_device && !fp16_performance_good && src0->type == GGML_V3_TYPE_F16 && ggml_v3_is_permuted(src0) && ggml_v3_is_permuted(src1) && src1->ne[1] == 1) {
+    if (!split && all_on_device && !use_tensor_cores && src0->type == GGML_V3_TYPE_F16 && ggml_v3_is_permuted(src0) && ggml_v3_is_permuted(src1) && src1->ne[1] == 1) {
         // KQ single-batch
         ggml_v3_cuda_mul_mat_vec_p021(src0, src1, dst);
-    } else if (!split && all_on_device && !fp16_performance_good && src0->type == GGML_V3_TYPE_F16 && !ggml_v3_is_contiguous(src0) && !ggml_v3_is_transposed(src1) && src1->ne[1] == 1) {
+    } else if (!split && all_on_device && !use_tensor_cores && src0->type == GGML_V3_TYPE_F16 && !ggml_v3_is_contiguous(src0) && !ggml_v3_is_transposed(src1) && src1->ne[1] == 1) {
         // KQV single-batch
         ggml_v3_cuda_mul_mat_vec_nc(src0, src1, dst);
-    } else if (!split && all_on_device && fp16_performance_good && src0->type == GGML_V3_TYPE_F16 && !ggml_v3_is_transposed(src0) && !ggml_v3_is_transposed(src1)) {
+    } else if (!split && all_on_device && use_tensor_cores && src0->type == GGML_V3_TYPE_F16 && !ggml_v3_is_transposed(src0) && !ggml_v3_is_transposed(src1)) {
         // KQ + KQV multi-batch
         ggml_v3_cuda_mul_mat_mat_batched_cublas(src0, src1, dst);
     } else if (src0->type == GGML_V3_TYPE_F32) {

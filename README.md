@@ -58,7 +58,7 @@ when you can't use the precompiled binary directly, we provide an automated buil
   - For Arch Linux: Install `cblas` `openblas` and `clblast`.
   - For Debian: Install `libclblast-dev` and `libopenblas-dev`.
 - You can attempt a CuBLAS build with `LLAMA_CUBLAS=1`. You will need CUDA Toolkit installed. Some have also reported success with the CMake file, though that is more for windows.
-- For a full featured build, do `make LLAMA_OPENBLAS=1 LLAMA_CLBLAST=1 LLAMA_CUBLAS=1`
+- For a full featured build (all backends), do `make LLAMA_OPENBLAS=1 LLAMA_CLBLAST=1 LLAMA_CUBLAS=1 LLAMA_VULKAN=1`
 - After all binaries are built, you can run the python script with the command `koboldcpp.py [ggml_model.bin] [port]`
 
 - Note: Many OSX users have found that the using Accelerate is actually faster than OpenBLAS. To try, you may wish to run with `--noblas` and compare speeds.
@@ -110,6 +110,7 @@ You can then run koboldcpp anywhere from the terminal by running `koboldcpp` to 
 - Start the python server `python koboldcpp.py --model phi-2.Q2_K.gguf`
 - Connect to `http://localhost:5001` on your mobile browser
 - If you encounter any errors, make sure your packages are up-to-date with `pkg up`
+- GPU acceleration for Termux may be possible but I have not explored it. If you find a good cross-device solution, do share or PR it.
 
 ## AMD
 - Please check out https://github.com/YellowRoseCx/koboldcpp-rocm

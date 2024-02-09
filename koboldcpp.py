@@ -38,7 +38,7 @@ class load_model_inputs(ctypes.Structure):
                 ("use_contextshift", ctypes.c_bool),
                 ("clblast_info", ctypes.c_int),
                 ("cublas_info", ctypes.c_int),
-                ("vulkan_info", ctypes.c_int),
+                ("vulkan_info", ctypes.c_char_p),
                 ("blasbatchsize", ctypes.c_int),
                 ("debugmode", ctypes.c_int),
                 ("forceversion", ctypes.c_int),
@@ -81,6 +81,7 @@ class generation_inputs(ctypes.Structure):
                 ("quiet", ctypes.c_bool),
                 ("dynatemp_range", ctypes.c_float),
                 ("dynatemp_exponent", ctypes.c_float),
+                ("smoothing_factor", ctypes.c_float),
                 ("logit_biases", logit_bias * logit_bias_max)]
 
 class generation_outputs(ctypes.Structure):
@@ -128,9 +129,10 @@ lib_clblast_noavx2 = pick_existant_file("koboldcpp_clblast_noavx2.dll","koboldcp
 lib_cublas = pick_existant_file("koboldcpp_cublas.dll","koboldcpp_cublas.so")
 lib_hipblas = pick_existant_file("koboldcpp_hipblas.dll","koboldcpp_hipblas.so")
 lib_vulkan = pick_existant_file("koboldcpp_vulkan.dll","koboldcpp_vulkan.so")
+libname = ""
 
 def init_library():
-    global handle, args
+    global handle, args, libname
     global lib_default,lib_failsafe,lib_openblas,lib_noavx2,lib_clblast,lib_clblast_noavx2,lib_cublas,lib_hipblas,lib_vulkan
 
     libname = ""
@@ -254,6 +256,7 @@ def load_model(model_filename):
     inputs.threads = args.threads
     inputs.low_vram = (True if (args.usecublas and "lowvram" in args.usecublas) else False)
     inputs.use_mmq = (True if (args.usecublas and "mmq" in args.usecublas) else False)
+    inputs.vulkan_info = "0".encode("UTF-8")
     inputs.blasthreads = args.blasthreads
     inputs.use_mmap = (not args.nommap)
     inputs.use_mlock = args.usemlock
@@ -313,9 +316,14 @@ def load_model(model_filename):
             inputs.cublas_info = 3
 
     if args.usevulkan:
-        inputs.vulkan_info = int(args.usevulkan)
+        s = ""
+        for l in range(0,len(args.usevulkan)):
+            s += str(args.usevulkan[l])
+        if s=="":
+            s = "0"
+        inputs.vulkan_info = s.encode("UTF-8")
     else:
-        inputs.vulkan_info = 0
+        inputs.vulkan_info = "0".encode("UTF-8")
 
     inputs.executable_path = (getdirpath()+"/").encode("UTF-8")
     inputs.debugmode = args.debugmode
@@ -328,14 +336,15 @@ def load_model(model_filename):
     ret = handle.load_model(inputs)
     return ret
 
-def generate(prompt, memory="", max_length=32, max_context_length=512, temperature=0.7, top_k=100, top_a=0.0, top_p=0.92, min_p=0.0, typical_p=1.0, tfs=1.0, rep_pen=1.0, rep_pen_range=128, presence_penalty=0.0, mirostat=0, mirostat_tau=5.0, mirostat_eta=0.1, sampler_order=[6,0,1,3,4,2,5], seed=-1, stop_sequence=[], use_default_badwordsids=False, stream_sse=False, grammar='', grammar_retain_state=False, genkey='', trimstop=False, quiet=False, dynatemp_range=0.0, dynatemp_exponent=1.0, logit_biases={}):
-    global maxctx, args, currentusergenkey, totalgens
+def generate(prompt, memory="", max_length=32, max_context_length=512, temperature=0.7, top_k=100, top_a=0.0, top_p=0.92, min_p=0.0, typical_p=1.0, tfs=1.0, rep_pen=1.0, rep_pen_range=128, presence_penalty=0.0, mirostat=0, mirostat_tau=5.0, mirostat_eta=0.1, sampler_order=[6,0,1,3,4,2,5], seed=-1, stop_sequence=[], use_default_badwordsids=False, stream_sse=False, grammar='', grammar_retain_state=False, genkey='', trimstop=False, quiet=False, dynatemp_range=0.0, dynatemp_exponent=1.0, smoothing_factor=0.0, logit_biases={}):
+    global maxctx, args, currentusergenkey, totalgens, pendingabortkey
     inputs = generation_inputs()
     outputs = ctypes.create_unicode_buffer(ctypes.sizeof(generation_outputs))
     inputs.prompt = prompt.encode("UTF-8")
     inputs.memory = memory.encode("UTF-8")
-    if max_length >= max_context_length:
+    if max_length >= (max_context_length-1):
         max_length = max_context_length-1
+        print("\nWarning: You are trying to generate with max_length near or exceeding max_context_length. Most of the context will be removed, and your outputs will not be very coherent.")
     global showmaxctxwarning
     if max_context_length > maxctx:
         if showmaxctxwarning:
@@ -358,6 +367,7 @@ def generate(prompt, memory="", max_length=32, max_context_length=512, temperatu
     inputs.quiet = quiet
     inputs.dynatemp_range = dynatemp_range
     inputs.dynatemp_exponent = dynatemp_exponent
+    inputs.smoothing_factor = smoothing_factor
     inputs.grammar = grammar.encode("UTF-8")
     inputs.grammar_retain_state = grammar_retain_state
     inputs.unban_tokens_rt = not use_default_badwordsids
@@ -381,6 +391,8 @@ def generate(prompt, memory="", max_length=32, max_context_length=512, temperatu
     inputs.seed = seed
     for n in range(stop_token_max):
         if not stop_sequence or n >= len(stop_sequence):
+            inputs.stop_sequence[n] = "".encode("UTF-8")
+        elif stop_sequence[n]==None:
             inputs.stop_sequence[n] = "".encode("UTF-8")
         else:
             inputs.stop_sequence[n] = stop_sequence[n].encode("UTF-8")
@@ -408,16 +420,23 @@ def generate(prompt, memory="", max_length=32, max_context_length=512, temperatu
 
     currentusergenkey = genkey
     totalgens += 1
-    ret = handle.generate(inputs,outputs)
-    outstr = ""
-    if ret.status==1:
-        outstr = ret.text.decode("UTF-8","ignore")
-    if trimstop:
-        for trim_str in stop_sequence:
-            sindex = outstr.find(trim_str)
-            if sindex != -1 and trim_str!="":
-                outstr = outstr[:sindex]
-    return outstr
+    #early exit if aborted
+
+    if pendingabortkey!="" and pendingabortkey==genkey:
+        print(f"\nDeferred Abort for GenKey: {pendingabortkey}")
+        pendingabortkey = ""
+        return ""
+    else:
+        ret = handle.generate(inputs,outputs)
+        outstr = ""
+        if ret.status==1:
+            outstr = ret.text.decode("UTF-8","ignore")
+        if trimstop:
+            for trim_str in stop_sequence:
+                sindex = outstr.find(trim_str)
+                if sindex != -1 and trim_str!="":
+                    outstr = outstr[:sindex]
+        return outstr
 
 def utfprint(str):
     try:
@@ -445,7 +464,7 @@ maxhordelen = 256
 modelbusy = threading.Lock()
 requestsinqueue = 0
 defaultport = 5001
-KcppVersion = "1.56"
+KcppVersion = "1.57"
 showdebug = True
 showsamplerwarning = True
 showmaxctxwarning = True
@@ -457,11 +476,13 @@ punishcounter = 0 #causes a timeout if too many errors
 rewardcounter = 0 #reduces error counts for successful jobs
 totalgens = 0
 currentusergenkey = "" #store a special key so polled streaming works even in multiuser
+pendingabortkey = "" #if an abort is received for the non-active request, remember it (at least 1) to cancel later
 args = None #global args
 gui_layers_untouched = True
 runmode_untouched = True
 preloaded_story = None
 sslvalid = False
+start_time = time.time()
 
 class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
     sys_version = ""
@@ -577,6 +598,7 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                 quiet=is_quiet,
                 dynatemp_range=genparams.get('dynatemp_range', 0.0),
                 dynatemp_exponent=genparams.get('dynatemp_exponent', 1.0),
+                smoothing_factor=genparams.get('smoothing_factor', 0.0),
                 logit_biases=genparams.get('logit_bias', {})
                 )
 
@@ -831,7 +853,8 @@ Enter Prompt:<br>
             totalgens = handle.get_total_gens()
             stopreason = handle.get_last_stop_reason()
             lastseed = handle.get_last_seed()
-            response_body = (json.dumps({"last_process":lastp,"last_eval":laste,"last_token_count":lastc, "last_seed":lastseed, "total_gens":totalgens, "stop_reason":stopreason, "queue":requestsinqueue, "idle":(0 if modelbusy.locked() else 1), "hordeexitcounter":exitcounter}).encode())
+            uptime = time.time() - start_time
+            response_body = (json.dumps({"last_process":lastp,"last_eval":laste,"last_token_count":lastc, "last_seed":lastseed, "total_gens":totalgens, "stop_reason":stopreason, "queue":requestsinqueue, "idle":(0 if modelbusy.locked() else 1), "hordeexitcounter":exitcounter, "uptime":uptime}).encode())
 
         elif self.path.endswith('/api/extra/generate/check'):
             pendtxtStr = ""
@@ -879,7 +902,7 @@ Enter Prompt:<br>
         return
 
     def do_POST(self):
-        global modelbusy, requestsinqueue, currentusergenkey, totalgens
+        global modelbusy, requestsinqueue, currentusergenkey, totalgens, pendingabortkey
         content_length = int(self.headers['content-length'])
         body = self.rfile.read(content_length)
         self.path = self.path.rstrip('/')
@@ -914,10 +937,13 @@ Enter Prompt:<br>
             if (multiuserkey=="" and requestsinqueue==0) or (multiuserkey!="" and multiuserkey==currentusergenkey):
                 ag = handle.abort_generate()
                 time.sleep(0.1) #short delay before replying
-                response_body = (json.dumps({"success": ("true" if ag else "false")}).encode())
+                response_body = (json.dumps({"success": ("true" if ag else "false"), "done":"true"}).encode())
                 print("\nGeneration Aborted")
+            elif (multiuserkey!="" and requestsinqueue>0):
+                pendingabortkey = multiuserkey
+                response_body = (json.dumps({"success": "true", "done":"false"}).encode())
             else:
-                response_body = (json.dumps({"success": "false"}).encode())
+                response_body = (json.dumps({"success": "false", "done":"false"}).encode())
 
         elif self.path.endswith('/api/extra/generate/check'):
             pendtxtStr = ""
@@ -1747,7 +1773,7 @@ def show_new_gui():
             if mmq_var.get()==1:
                 args.usecublas.append("mmq")
         if runopts_var.get() == "Use Vulkan":
-            args.usevulkan = int(gpuchoiceidx)
+            args.usevulkan = [int(gpuchoiceidx)]
         if gpulayers_var.get():
             args.gpulayers = int(gpulayers_var.get())
         if runopts_var.get()=="Use No BLAS":
@@ -1830,7 +1856,11 @@ def show_new_gui():
         elif "usevulkan" in dict:
             if vulkan_option is not None:
                 runopts_var.set(vulkan_option)
-                gpu_choice_var.set(str(int(dict["usevulkan"])+1))
+                gpu_choice_var.set("1")
+                for opt in range(0,4):
+                    if opt in dict["usevulkan"]:
+                        gpu_choice_var.set(str(opt+1))
+                        break
 
         elif  "noavx2" in dict and "noblas" in dict and dict["noblas"] and dict["noavx2"]:
             if failsafe_option is not None:
@@ -1915,6 +1945,8 @@ def show_new_gui():
 
     def load_config():
         file_type = [("KoboldCpp Settings", "*.kcpps")]
+        global runmode_untouched
+        runmode_untouched = False
         filename = askopenfilename(filetypes=file_type, defaultextension=file_type)
         if not filename or filename=="":
             return
@@ -2422,7 +2454,9 @@ def main(launch_args,start_server=True):
 
     modelname = os.path.abspath(args.model_param)
     print(args)
-    print(f"==========\nLoading model: {modelname} \n[Threads: {args.threads}, BlasThreads: {args.blasthreads}, SmartContext: {args.smartcontext}, ContextShift: {not (args.noshift)}]")
+    # Flush stdout for win32 issue with regards to piping in terminals,
+    # especially before handing over to C++ context.
+    print(f"==========\nLoading model: {modelname} \n[Threads: {args.threads}, BlasThreads: {args.blasthreads}, SmartContext: {args.smartcontext}, ContextShift: {not (args.noshift)}]", flush=True)
     loadok = load_model(modelname)
     print("Load Model OK: " + str(loadok))
 
@@ -2493,13 +2527,62 @@ def main(launch_args,start_server=True):
         timer_thread = threading.Timer(1, onready_subprocess) #1 second delay
         timer_thread.start()
 
+    if args.benchmark is not None:
+        from datetime import datetime, timezone
+        global libname
+        start_server = False
+        save_to_file = (args.benchmark!="stdout" and args.benchmark!="")
+        benchmaxctx =  (2048 if maxctx>2048 else maxctx)
+        benchlen = 100
+        benchmodel = sanitize_string(os.path.splitext(os.path.basename(modelname))[0])
+        if save_to_file:
+            print(f"\nRunning benchmark (Save to File: {args.benchmark})...")
+        else:
+            print(f"\nRunning benchmark (Not Saved)...")
+
+        benchprompt = "11111111"
+        for i in range(0,10): #generate massive prompt
+            benchprompt += benchprompt
+        result = generate(benchprompt,memory="",max_length=benchlen,max_context_length=benchmaxctx)
+        resultok = (len(result)>5 and result[:5]=="11111")
+        t_pp = float(handle.get_last_process_time())*float(benchmaxctx-benchlen)*0.001
+        t_gen = float(handle.get_last_eval_time())*float(benchlen)*0.001
+        s_pp = float(benchmaxctx-benchlen)/t_pp
+        s_gen = float(benchlen)/t_gen
+        datetimestamp = datetime.now(timezone.utc)
+        print(f"\nBenchmark Completed - Results:\n======")
+        print(f"Timestamp: {datetimestamp}")
+        print(f"Backend: {libname}")
+        print(f"Layers: {args.gpulayers}")
+        print(f"Model: {benchmodel}")
+        print(f"MaxCtx: {benchmaxctx}")
+        print(f"GenAmount: {benchlen}\n-----")
+        print(f"ProcessingTime: {t_pp:.2f}s")
+        print(f"ProcessingSpeed: {s_pp:.2f}T/s")
+        print(f"GenerationTime: {t_gen:.2f}s")
+        print(f"GenerationSpeed: {s_gen:.2f}T/s")
+        print(f"TotalTime: {(t_pp+t_gen):.2f}s")
+        print(f"Coherent: {resultok}\n-----")
+        if save_to_file:
+            try:
+                with open(args.benchmark, "a") as file:
+                    file.seek(0, 2)
+                    if file.tell() == 0: #empty file
+                        file.write(f"Timestamp,Backend,Layers,Model,MaxCtx,GenAmount,ProcessingTime,ProcessingSpeed,GenerationTime,GenerationSpeed,TotalTime,Coherent\n")
+                    file.write(f"{datetimestamp},{libname},{args.gpulayers},{benchmodel},{benchmaxctx},{benchlen},{t_pp:.2f},{s_pp:.2f},{t_gen:.2f},{s_gen:.2f},{(t_pp+t_gen):.2f},{resultok}")
+            except Exception as e:
+                print(f"Error writing benchmark to file: {e}")
+
+
     if start_server:
         if args.remotetunnel:
             setuptunnel()
-        print(f"======\nPlease connect to custom endpoint at {epurl}")
+        # Flush stdout for previous win32 issue so the client can see output.
+        print(f"======\nPlease connect to custom endpoint at {epurl}", flush=True)
         asyncio.run(RunServerMultiThreaded(args.host, args.port, embedded_kailite, embedded_kcpp_docs))
     else:
-        print(f"Server was not started, main function complete. Idling.")
+        # Flush stdout for previous win32 issue so the client can see output.
+        print(f"Server was not started, main function complete. Idling.", flush=True)
 
 def run_in_queue(launch_args, input_queue, output_queue):
     main(launch_args, start_server=False)
@@ -2559,17 +2642,17 @@ if __name__ == '__main__':
     compatgroup.add_argument("--noblas", help="Do not use OpenBLAS for accelerated prompt ingestion", action='store_true')
     compatgroup.add_argument("--useclblast", help="Use CLBlast for GPU Acceleration. Must specify exactly 2 arguments, platform ID and device ID (e.g. --useclblast 1 0).", type=int, choices=range(0,9), nargs=2)
     compatgroup.add_argument("--usecublas", help="Use CuBLAS for GPU Acceleration. Requires CUDA. Select lowvram to not allocate VRAM scratch buffer. Enter a number afterwards to select and use 1 GPU. Leaving no number will use all GPUs. For hipBLAS binaries, please check YellowRoseCx rocm fork.", nargs='*',metavar=('[lowvram|normal] [main GPU ID] [mmq]'), choices=['normal', 'lowvram', '0', '1', '2', '3', 'mmq'])
-    compatgroup.add_argument("--usevulkan", help="Use Vulkan for GPU Acceleration. Can optionally specify GPU Device ID (e.g. --usevulkan 0).", metavar=('[Device ID]'), nargs='?', const=0, type=int, default=None)
+    compatgroup.add_argument("--usevulkan", help="Use Vulkan for GPU Acceleration. Can optionally specify GPU Device ID (e.g. --usevulkan 0).", metavar=('[Device ID]'), nargs='*', type=int, default=None)
     parser.add_argument("--gpulayers", help="Set number of layers to offload to GPU when using GPU. Requires GPU.",metavar=('[GPU layers]'), nargs='?', const=1, type=int, default=0)
     parser.add_argument("--tensor_split", help="For CUDA with ALL GPU set only, ratio to split tensors across multiple GPUs, space-separated list of proportions, e.g. 7 3", metavar=('[Ratios]'), type=float, nargs='+')
     parser.add_argument("--onready", help="An optional shell command to execute after the model has been loaded.", metavar=('[shell command]'), type=str, default="",nargs=1)
+    parser.add_argument("--benchmark", help="Do not start server, instead run benchmarks. If filename is provided, appends results to provided file.", metavar=('[filename]'), nargs='?', const="stdout", type=str, default=None)
     parser.add_argument("--multiuser", help="Runs in multiuser mode, which queues incoming requests instead of blocking them.", metavar=('limit'), nargs='?', const=1, type=int, default=0)
     parser.add_argument("--remotetunnel", help="Uses Cloudflare to create a remote tunnel, allowing you to access koboldcpp remotely over the internet even behind a firewall.", action='store_true')
     parser.add_argument("--foreground", help="Windows only. Sends the terminal to the foreground every time a new prompt is generated. This helps avoid some idle slowdown issues.", action='store_true')
     parser.add_argument("--preloadstory", help="Configures a prepared story json save file to be hosted on the server, which frontends (such as Kobold Lite) can access over the API.", default="")
     parser.add_argument("--quiet", help="Enable quiet mode, which hides generation inputs and outputs in the terminal. Quiet mode is automatically enabled when running --hordeconfig.", action='store_true')
     parser.add_argument("--ssl", help="Allows all content to be served over SSL instead. A valid UNENCRYPTED SSL cert and key .pem files must be provided", metavar=('[cert_pem]', '[key_pem]'), nargs='+')
-
 
     # #deprecated hidden args. they do nothing. do not use
     # parser.add_argument("--psutil_set_threads", action='store_true', help=argparse.SUPPRESS)

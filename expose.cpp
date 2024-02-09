@@ -59,8 +59,20 @@ extern "C"
         putenv((char*)platformenv.c_str());
         putenv((char*)deviceenv.c_str());
 
-        int vulkan_info = inputs.vulkan_info;
-        vulkandeviceenv = "GGML_VULKAN_DEVICE="+std::to_string(vulkan_info);
+        std::string vulkan_info_raw = inputs.vulkan_info;
+        std::string vulkan_info_str = "";
+        for (size_t i = 0; i < vulkan_info_raw.length(); ++i) {
+            vulkan_info_str += vulkan_info_raw[i];
+            if (i < vulkan_info_raw.length() - 1) {
+                vulkan_info_str += ",";
+            }
+        }
+        if(vulkan_info_str=="")
+        {
+            vulkan_info_str = "0";
+        }
+
+        vulkandeviceenv = "GGML_VK_VISIBLE_DEVICES="+vulkan_info_str;
         putenv((char*)vulkandeviceenv.c_str());
 
         executable_path = inputs.executable_path;
