@@ -464,7 +464,7 @@ maxhordelen = 256
 modelbusy = threading.Lock()
 requestsinqueue = 0
 defaultport = 5001
-KcppVersion = "1.57"
+KcppVersion = "1.57.1"
 showdebug = True
 showsamplerwarning = True
 showmaxctxwarning = True
@@ -2535,6 +2535,9 @@ def main(launch_args,start_server=True):
         benchmaxctx =  (2048 if maxctx>2048 else maxctx)
         benchlen = 100
         benchmodel = sanitize_string(os.path.splitext(os.path.basename(modelname))[0])
+        if os.path.exists(args.benchmark) and os.path.getsize(args.benchmark) > 1000000:
+            print(f"\nWarning: The benchmark CSV output file you selected exceeds 1MB. This is probably not what you want, did you select the wrong CSV file?\nFor safety, benchmark output will not be saved.")
+            save_to_file = False
         if save_to_file:
             print(f"\nRunning benchmark (Save to File: {args.benchmark})...")
         else:
@@ -2644,7 +2647,7 @@ if __name__ == '__main__':
     compatgroup.add_argument("--usecublas", help="Use CuBLAS for GPU Acceleration. Requires CUDA. Select lowvram to not allocate VRAM scratch buffer. Enter a number afterwards to select and use 1 GPU. Leaving no number will use all GPUs. For hipBLAS binaries, please check YellowRoseCx rocm fork.", nargs='*',metavar=('[lowvram|normal] [main GPU ID] [mmq]'), choices=['normal', 'lowvram', '0', '1', '2', '3', 'mmq'])
     compatgroup.add_argument("--usevulkan", help="Use Vulkan for GPU Acceleration. Can optionally specify GPU Device ID (e.g. --usevulkan 0).", metavar=('[Device ID]'), nargs='*', type=int, default=None)
     parser.add_argument("--gpulayers", help="Set number of layers to offload to GPU when using GPU. Requires GPU.",metavar=('[GPU layers]'), nargs='?', const=1, type=int, default=0)
-    parser.add_argument("--tensor_split", help="For CUDA with ALL GPU set only, ratio to split tensors across multiple GPUs, space-separated list of proportions, e.g. 7 3", metavar=('[Ratios]'), type=float, nargs='+')
+    parser.add_argument("--tensor_split", help="For CUDA and Vulkan only, ratio to split tensors across multiple GPUs, space-separated list of proportions, e.g. 7 3", metavar=('[Ratios]'), type=float, nargs='+')
     parser.add_argument("--onready", help="An optional shell command to execute after the model has been loaded.", metavar=('[shell command]'), type=str, default="",nargs=1)
     parser.add_argument("--benchmark", help="Do not start server, instead run benchmarks. If filename is provided, appends results to provided file.", metavar=('[filename]'), nargs='?', const="stdout", type=str, default=None)
     parser.add_argument("--multiuser", help="Runs in multiuser mode, which queues incoming requests instead of blocking them.", metavar=('limit'), nargs='?', const=1, type=int, default=0)

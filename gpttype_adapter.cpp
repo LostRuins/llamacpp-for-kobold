@@ -875,6 +875,7 @@ ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in
         }
         if(!ts_all_zero)
         {
+            printf("\nApplying Tensor Split...");
             llama_ctx_params.tensor_split = inputs.tensor_split;
         }
         #endif
@@ -960,7 +961,12 @@ ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in
         }
         #endif
         model_params.main_gpu = cu_parseinfo_maindevice;
+
+        #if defined(GGML_USE_CUBLAS)
         model_params.split_mode = llama_split_mode::LLAMA_SPLIT_ROW;
+        #else
+        model_params.split_mode = llama_split_mode::LLAMA_SPLIT_LAYER;
+        #endif
 
         llama_ctx_params.n_batch = kcpp_params->n_batch;
         llama_ctx_params.n_threads = kcpp_params->n_threads;
@@ -976,6 +982,7 @@ ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in
         }
         if(!ts_all_zero)
         {
+            printf("\nApplying Tensor Split...");
             model_params.tensor_split = inputs.tensor_split;
         }
         #endif

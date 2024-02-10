@@ -6,7 +6,7 @@ It requires no dependencies, installation or setup.
 Just copy this single static HTML file anywhere and open it in a browser, or from a webserver.
 Please go to https://github.com/LostRuins/lite.koboldai.net for updates on Kobold Lite.
 Kobold Lite is under the AGPL v3.0 License unless otherwise exempted. Please do not remove this line.
-Current version: 109
+Current version: 110
 -Concedo
 -->
 
@@ -3036,12 +3036,14 @@ Current version: 109
 			})
 			.catch((error) => {
 				console.error('Error:', error);
-				clear_poll_flags();
-				render_gametext();
 				if(error.name!="AbortError") //aborts are silent
 				{
+					flush_streaming_text();
 					msgbox("Error while submitting prompt: " + error);
 				}
+				clear_poll_flags();
+				render_gametext();
+
 			});
 		}
 	}
@@ -3110,28 +3112,26 @@ Current version: 109
 					}
 				},
 				abort(error) {
-
 					console.error('Error:', error);
-					clear_poll_flags();
-					render_gametext();
-
 					if(error.name!="AbortError") //aborts are silent. slightly diff logic
 					{
+						flush_streaming_text();
 						msgbox("Error while submitting prompt: " + error);
-
 					}
+					clear_poll_flags();
+					render_gametext();
 				},
 			}));
 		})
 		.catch((error) => {
 			console.error('Error:', error);
-			clear_poll_flags();
-			render_gametext();
 			if(error.name!="AbortError") //aborts are silent. slightly diff logic
 			{
+				flush_streaming_text();
 				msgbox("Error while submitting prompt: " + error);
-
 			}
+			clear_poll_flags();
+			render_gametext();
 		});
 	}
 
@@ -8371,10 +8371,8 @@ Current version: 109
 		}
 	}
 
-	function abort_generation() {
-		let id_to_cancel = pending_response_id;
-
-		//flush any streaming text first
+	function flush_streaming_text()
+	{
 		if(is_using_custom_ep() && pending_response_id != "" && (synchro_pending_stream != "" || synchro_polled_response != ""))
 		{
 			//apply a short delay of 1s before button reenables
@@ -8391,6 +8389,13 @@ Current version: 109
 			horde_poll_nearly_completed = false;
 			poll_pending_response();
 		}
+	}
+
+	function abort_generation() {
+		let id_to_cancel = pending_response_id;
+
+		//flush any streaming text first
+		flush_streaming_text();
 
 		console.log("Generation " + pending_response_id + " aborted");
 		clear_poll_flags();
@@ -8908,9 +8913,15 @@ Current version: 109
 			}
 
 			if (localsettings.opmode == 4) {
-				if(localsettings.inject_timestamps_instruct)
+
+				if(localsettings.inject_timestamps_instruct && pending_context_preinjection=="" && truncated_context!="")
 				{
-					pending_context_preinjection += "["+(new Date().toLocaleTimeString([], {year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'}))+"] ";
+					let endmatcher = (localsettings.placeholder_tags?instructendplaceholder:get_instruct_endtag(false));
+
+					if(truncated_context.toLowerCase().trim().endsWith(endmatcher.toLowerCase().trim()))
+					{
+						pending_context_preinjection += "["+(new Date().toLocaleTimeString([], {year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'}))+"] ";
+					}
 				}
 				truncated_context += pending_context_preinjection;
 			}
