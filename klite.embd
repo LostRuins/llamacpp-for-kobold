@@ -6,7 +6,7 @@ It requires no dependencies, installation or setup.
 Just copy this single static HTML file anywhere and open it in a browser, or from a webserver.
 Please go to https://github.com/LostRuins/lite.koboldai.net for updates on Kobold Lite.
 Kobold Lite is under the AGPL v3.0 License unless otherwise exempted. Please do not remove this line.
-Current version: 110
+Current version: 113
 -Concedo
 -->
 
@@ -175,18 +175,6 @@ Current version: 110
 			color: #ffffff;
 			font-size: 12pt;
 			font-family: "Helvetica";
-		}
-		@media (max-width: 720px) {
-			#gamescreen
-			{
-				height: 58vh;
-			}
-		}
-		@media (max-width: 406px) {
-			#gamescreen
-			{
-				height: 52vh;
-			}
 		}
 
 
@@ -1521,6 +1509,7 @@ Current version: 110
 			max-height: 120px;
 			overflow-y: auto;
 			overflow-x: hidden;
+			font-size: 12px;
 		}
 		.mdlpicker::-webkit-calendar-picker-indicator {
               opacity: 100;
@@ -1853,6 +1842,30 @@ Current version: 110
 	.normal_viewport_height
 	{
 		height: 66vh;
+	}
+	@media (max-width: 720px) {
+		.normal_viewport_height
+		{
+			height: 58vh;
+		}
+	}
+	@media (max-width: 406px) {
+		.normal_viewport_height
+		{
+			height: 52vh;
+		}
+	}
+	@media print {
+		#inputrow, #actionmenu, #actionmenu2,#topmenu,.lastreq,.cht_inp_hold_outer
+		{
+			display: none;
+		}
+		#gamescreen, .chat_msg_history
+		{
+			display: inline;
+			height: auto;
+			overflow-y: hidden;
+		}
 	}
 	.aesthetic_viewport_height
 	{
@@ -3141,6 +3154,29 @@ Current version: 110
 		console.log("beep sound");
 	}
 
+	var bg_silence = null;
+	var run_in_background = false;
+	function background_audio_loop(play=false) {
+		if(play)
+		{
+			if(!bg_silence)
+			{
+				bg_silence = new Audio("data:audio/wav;base64,UklGRmQBAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YUABAAAAAAEABQAKABEAHAAoADYARQBaAGoAhQCYALYAzQDuAAgBLAFKAW0BkgGyAdwB/gEnAkwCdAKbAsIC6wIPAzkDXQOEA6gDywPxAw4EMgRPBGwEigSgBLkEzwThBPMEAQUMBRYFHAUfBSEFHAUYBQ8FAwX0BOAEtgSKBFkELgT0A8oDjQNcAyID6QKwAnUCOAL8Ab0BgAFAAQEBwgB+AEQA/f/B/3//Pv8B/77+gf5C/gb+xv2N/U/9F/3e/Kb8bvw9/AX81/ul+3X7Tfsy+yX7EvsK+wD7+/r7+vj6APsD+xD7Gvsp+zn7T/th+337k/uv+8/76fsN/C78Tvx1/Jf8vvzj/An9Mf1V/YD9ov3O/e/9GP46/mL+gv6p/sP+7P4C/yj/Pf9b/3L/if+g/7D/xf/P/+H/6f/y//v//P8CAA==");
+				bg_silence.loop = true;
+				bg_silence.play();
+			}
+		}
+		else
+		{
+			if(bg_silence)
+			{
+				bg_silence.loop = false;
+				bg_silence.pause();
+				bg_silence = null;
+			}
+		}
+	}
+
 	let notify_allowed = false;
 	function shownotify()
 	{
@@ -3282,6 +3318,8 @@ Current version: 110
 	const stablehorde_poll_endpoint = stablehorde_url + "/api/v2/generate/check";
 	const stablehorde_output_endpoint = stablehorde_url + "/api/v2/generate/status";
 	const stablehorde_model_endpoint = stablehorde_url + "/api/v2/status/models";
+	const stablehorde_submit_interrogate_endpoint = stablehorde_url + "/api/v2/interrogate/async";
+	const stablehorde_output_interrogate_endpoint = stablehorde_url + "/api/v2/interrogate/status";
 
 	const kobold_custom_gen_endpoint = "/api/v1/generate";
 	const kobold_custom_gen_stream_endpoint = "/api/extra/generate/stream";
@@ -3315,6 +3353,7 @@ Current version: 110
 	const a1111_models_endpoint = "/sdapi/v1/sd-models";
     const a1111_options_endpoint = "/sdapi/v1/options";
     const a1111_txt2img_endpoint = "/sdapi/v1/txt2img";
+	const a1111_interrogate_endpoint = "/sdapi/v1/interrogate";
 
 	const xtts_gen_endpoint = "/tts_to_audio/";
 	const xtts_voices_endpoint = "/speakers_list";
@@ -3333,6 +3372,8 @@ Current version: 110
 	const default_xtts_base = " http://localhost:8020";
 
 	const XTTS_ID = 1000;
+	const HD_RES_PX = 400;
+	const NO_HD_RES_PX = 256;
 
 	//all configurable globals
 	var perfdata = null; //if it's null, we are not connected
@@ -3367,6 +3408,7 @@ Current version: 110
 	var generateimagesinterval = 650; //if generated images is enabled, it will trigger after every 600 new characters in context.
 	var nextgeneratedimagemilestone = generateimagesinterval; //used to keep track of when to generate the next image
 	var image_db = {}; //stores a dictionary of pending images
+	var interrogation_db = {};
 	var completed_imgs_meta = {}; //stores temp info on completed images like alt text
 	//key is ID, body is {done:false,queue:10,result:""}
 	var stablemodels = [{"name": "stable_diffusion","count": 1}]; //stored as {name,count}
@@ -3988,6 +4030,7 @@ Current version: 110
 		const foundStory = urlParams.get('s');
 		const foundScenario = urlParams.get('scenario');
 		const foundChub = urlParams.get('chub');
+		const foundPyg = urlParams.get('pyg');
 
 		if (foundStory && foundStory != "") {
 			let safe_to_overwrite = (gametext_arr.length == 0 && current_memory == "" && current_anote == "" && current_wi.length == 0 && redo_arr.length == 0);
@@ -4012,6 +4055,11 @@ Current version: 110
 		} else if (foundChub && foundChub != "") {
 			display_scenarios();
 			get_chubai_scenario(foundChub);
+			//purge url params
+			window.history.replaceState(null, null, window.location.pathname);
+		} else if (foundPyg && foundPyg != "") {
+			display_scenarios();
+			get_pygchat_scenario(foundPyg);
 			//purge url params
 			window.history.replaceState(null, null, window.location.pathname);
 		}
@@ -4691,12 +4739,29 @@ Current version: 110
 		let new_save_storyobj = generate_base_storyobj();
 
 		let export_arr = gametext_arr;
+		let export_hashes = {};
 		if(!save_images)
 		{
 			export_arr = [];
 			for (let i = 0; i < gametext_arr.length; ++i) {
 				export_arr.push(gametext_arr[i].replace(/\[<\|p\|.+?\|p\|>\]/g, "").replace(/\[<\|d\|.+?\|d\|>\]/g, ""));
 			}
+		}
+		else
+		{
+			//bake used image metas into savefile
+			for (let i = 0; i < gametext_arr.length; ++i) {
+				let matches = gametext_arr[i].match(/\[<\|d\|.+?\|d\|>\]/g);
+				for(let m in matches)
+				{
+					let inner = matches[m].substring(5, matches[m].length - 5);
+					let imghash = cyrb_hash(inner);
+					if (completed_imgs_meta[imghash] != null) {
+						export_hashes[imghash] = completed_imgs_meta[imghash];
+					}
+				}
+			}
+			new_save_storyobj.completed_imgs_meta = export_hashes;
 		}
 
 		if (export_arr.length > 0) {
@@ -4789,7 +4854,7 @@ Current version: 110
 
 					//check for tavernai fields
 					if (new_loaded_storyobj.name != null || new_loaded_storyobj.description != null ||
-						new_loaded_storyobj.personality != null) {
+						new_loaded_storyobj.personality != null || new_loaded_storyobj.spec=="chara_card_v2") {
 						load_tavern_obj(new_loaded_storyobj);
 					}
 					else if (new_loaded_storyobj.char_name != null || new_loaded_storyobj.char_persona != null) {
@@ -5061,6 +5126,14 @@ Current version: 110
 						}
 					}
 				}
+
+				if(storyobj.completed_imgs_meta)
+				{
+					for (var key in storyobj.completed_imgs_meta)
+					{
+						completed_imgs_meta[key] = storyobj.completed_imgs_meta[key];
+					}
+				}
 			}
 
 			//port over old images to the new format
@@ -5293,6 +5366,68 @@ Current version: 110
 		},false);
 	}
 
+	function load_temp_scenario_from_tavernobj(obj,loadall)
+	{
+		if(obj!=null)
+		{
+			//a lightweight tavern card loader, not fully compliant
+			if(obj.spec=="chara_card_v2" && obj.data!=null)
+			{
+				obj = obj.data;
+			}
+
+			if(loadall)
+			{
+				let chatopponent = obj.name?obj.name:"Bot";
+				let memory = obj.description?("Persona: "+obj.description):"";
+				memory += obj.personality?("\nPersonality: "+obj.personality):"";
+				let scenario = obj.scenario?obj.scenario:"";
+				let examplemsg = obj.mes_example?obj.mes_example:"";
+				let greeting = obj.first_mes?obj.first_mes:"";
+				let sysprompt = obj.system_prompt?obj.system_prompt:"";
+
+				//aliases
+				if(examplemsg=="" && obj.mesExample!="")
+				{
+					examplemsg = obj.mesExample;
+				}
+				if(greeting=="" && obj.firstMes!="")
+				{
+					greeting = obj.firstMes;
+				}
+
+				if(scenario!="")
+				{
+					scenario = "\n[Scenario: "+scenario+"]";
+				}
+				if(examplemsg!="")
+				{
+					examplemsg = "\n"+examplemsg;
+				}
+				if(sysprompt!="")
+				{
+					sysprompt = sysprompt+"\n";
+				}
+				let combinedmem = sysprompt + memory + scenario + examplemsg;
+				temp_scenario.title = chatopponent;
+				let prev2 = replaceAll(obj.description,"{{char}}",chatopponent,true);
+				prev2 = replaceAll(prev2,"{{user}}","You",true);
+				temp_scenario.desc = prev2;
+				temp_scenario.chatopponent = chatopponent;
+				temp_scenario.prompt = ("\n{{char}}: "+ greeting);
+				temp_scenario.memory = combinedmem;
+			}
+
+			//since cai format has no wi, try to grab it from tavern format
+			if(obj.character_book && obj.character_book.entries && obj.character_book.entries.length>0)
+			{
+				let myname = ((localsettings.chatname && localsettings.chatname!="")?localsettings.chatname:"You");
+				temp_scenario.worldinfo = load_tavern_wi(obj.character_book,chatopponent,myname);
+			}
+			preview_temp_scenario();
+		}
+	}
+
 	function get_chubai_portrait(userinput, card_is_defective, original_no_exist)
 	{
 		//try to obtain the full portrait image
@@ -5320,55 +5455,7 @@ Current version: 110
 				preview_temp_scenario();
 
 				readTavernPngFromBlob(blob,(obj)=>{
-					if(obj!=null)
-					{
-						//a lightweight tavern card loader, not fully compliant
-						if(obj.spec=="chara_card_v2" && obj.data!=null)
-						{
-							obj = obj.data;
-						}
-
-						if(card_is_defective)
-						{
-							let chatopponent = obj.name?obj.name:"Bot";
-							let memory = obj.description?("Persona: "+obj.description):"";
-							memory += obj.personality?("\nPersonality: "+obj.personality):"";
-							let scenario = obj.scenario?obj.scenario:"";
-							let examplemsg = obj.mes_example?obj.mes_example:"";
-							let greeting = obj.first_mes?obj.first_mes:"";
-							let sysprompt = obj.system_prompt?obj.system_prompt:"";
-
-							if(scenario!="")
-							{
-								scenario = "\n[Scenario: "+scenario+"]";
-							}
-							if(examplemsg!="")
-							{
-								examplemsg = "\n"+examplemsg;
-							}
-							if(sysprompt!="")
-							{
-								sysprompt = sysprompt+"\n";
-							}
-							let combinedmem = sysprompt + memory + scenario + examplemsg;
-							temp_scenario.title = chatopponent;
-							let prev2 = replaceAll(obj.description,"{{char}}",chatopponent,true);
-							prev2 = replaceAll(prev2,"{{user}}","You",true);
-							temp_scenario.desc = prev2;
-							temp_scenario.chatopponent = chatopponent;
-							temp_scenario.prompt = ("\n{{char}}: "+ greeting);
-							temp_scenario.memory = combinedmem;
-						}
-
-						//since cai format has no wi, try to grab it from tavern format
-						if(obj.character_book && obj.character_book.entries && obj.character_book.entries.length>0)
-						{
-							let myname = ((localsettings.chatname && localsettings.chatname!="")?localsettings.chatname:"You");
-							temp_scenario.worldinfo = load_tavern_wi(obj.character_book,chatopponent,myname);
-						}
-						preview_temp_scenario();
-					}
-
+					load_temp_scenario_from_tavernobj(obj,card_is_defective);
 				});
 
 				const objectURL = URL.createObjectURL(blob);
@@ -5392,6 +5479,102 @@ Current version: 110
 				}
 
 		});
+	}
+
+	function get_pygchat_scenario(charstr="")
+	{
+		const loadpyg = function(userinput)
+		{
+			if(userinput=="")
+			{
+				//pass
+			}
+			else
+			{
+				if (userinput.match(/pygmalion\.chat\//i)) {
+					const urlParams = new URLSearchParams(userinput);
+					const cid = urlParams.get('id');
+					if(cid && cid!="")
+					{
+						userinput = cid;
+					}
+				}
+				userinput = userinput.endsWith('/') ? userinput.slice(0, -1) : userinput;
+				if(userinput!="")
+				{
+					temp_scenario = {
+						"title":"",
+						"desc": "",
+						"opmode":3,
+						"chatname": "You",
+						"chatopponent": "",
+						"gui_type":1,
+						"prefmodel1":chatmodels1,
+						"prefmodel2":chatmodels2,
+						"prompt":"",
+						"memory": "",
+						"authorsnote": "",
+						"worldinfo": [],
+					};
+
+					document.getElementById("scenariodesc").innerText = "Loading scenario from Pygmalion.Chat...";
+					fetch(cors_proxy+"?https://server.pygmalion.chat/galatea.v1.PublicCharacterService/CharacterExport", {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({ "character_id": userinput }),
+					referrerPolicy: 'no-referrer',
+					})
+					.then(x => {
+						if(x.ok)
+						{
+							return x.json();
+						}else{
+							console.log('Cannot fetch pyg scenario: try fallback to tavern image');
+							throw new Error('Cannot fetch character from pygmalion.chat');
+							return null;
+						}
+					})
+					.then(data => {
+						console.log(data);
+						if(data && data.card) //if fetch was successful
+						{
+							load_temp_scenario_from_tavernobj(data.card,true);
+							if(data.card.data && data.card.data.avatar)
+							{
+								const compressedImg = compressImage(data.card.data.avatar, (compressedImageURI, aspectratio)=>{
+									temp_scenario.image = compressedImageURI;
+									temp_scenario.image_aspect = aspectratio;
+									preview_temp_scenario();
+								}, true);
+							}
+						}else{
+							temp_scenario = null;
+							document.getElementById("scenariodesc").innerText = "Error: Selected scenario is invalid.";
+						}
+
+					}).catch((error) => {
+						temp_scenario = null;
+						document.getElementById("scenariodesc").innerText = "Error: Selected scenario is invalid.";
+						console.log("Error: " + error);
+					});
+				}else{
+					temp_scenario = null;
+					document.getElementById("scenariodesc").innerText = "Error: User input is invalid\n\n Please ensure you have input a valid Pygmalion.Chat UUID.";
+				}
+			}
+		}
+
+		if(charstr=="")
+		{
+			inputBox("Enter pygmalion.chat character UUID","Import from pygmalion.chat","","d7950ca8-c241-4725-8de1-42866e389ebf", ()=>{
+				let userinput = getInputBoxValue().trim();
+				loadpyg(userinput);
+			},false);
+		}else{
+			loadpyg(charstr);
+		}
 	}
 
 	function get_chubai_scenario(chubstr="")
@@ -5761,7 +5944,8 @@ Current version: 110
 		document.getElementById("quickstartcontainer").classList.remove("hidden");
 
 		let scenarios = `<button type="button" name="" class="scenarioitem purple btn btn-primary" onclick="get_aetherroom_scenario()">Import from<br>aetherroom.club</button>`+
-		`<button type="button" name="" class="scenarioitem purple btn btn-primary" onclick="get_chubai_scenario()">Import from<br>chub.ai</button>`;
+		`<button type="button" name="" class="scenarioitem purple btn btn-primary" onclick="get_chubai_scenario()">Import from<br>chub.ai</button>` +
+		`<button type="button" name="" class="scenarioitem purple btn btn-primary" onclick="get_pygchat_scenario()">Import from<br>pygmalion.chat</button>`;
 		for(let i=0;i<scenario_db.length;++i)
 		{
 			let curr = scenario_db[i];
@@ -6064,6 +6248,7 @@ Current version: 110
 			document.getElementById("zoomedimgcontainer").classList.contains("hidden") &&
 			document.getElementById("groupselectcontainer").classList.contains("hidden") &&
 			document.getElementById("imagestylecontainer").classList.contains("hidden") &&
+			document.getElementById("addimgcontainer").classList.contains("hidden") &&
 			document.getElementById("advancedloadfile").classList.contains("hidden")
 		);
 	}
@@ -6084,6 +6269,7 @@ Current version: 110
 		document.getElementById("zoomedimgcontainer").classList.add("hidden");
 		document.getElementById("groupselectcontainer").classList.add("hidden");
 		document.getElementById("imagestylecontainer").classList.add("hidden");
+		document.getElementById("addimgcontainer").classList.add("hidden");
 		document.getElementById("advancedloadfile").classList.add("hidden");
 	}
 
@@ -6322,7 +6508,7 @@ Current version: 110
 	{
 		let isOpenrouter = (document.getElementById("customapidropdown").value==5);
 		let dropdown = (isOpenrouter?document.getElementById("custom_openrouter_model"):document.getElementById("custom_oai_model"));
-		let non_completions = (dropdown.value.includes("text-davinci-003") || dropdown.value.includes("text-davinci-002")
+		let non_completions = (dropdown.value.includes("davinci-002") || dropdown.value.includes("text-davinci-003") || dropdown.value.includes("text-davinci-002")
 		|| dropdown.value.includes("text-davinci-001") || dropdown.value.includes("gpt-3.5-turbo-instruct") || dropdown.value == "davinci");
 		if(isOpenrouter || dropdown.selectedIndex==dropdown.options.length-1)
 		{
@@ -7497,6 +7683,7 @@ Current version: 110
 		document.getElementById("adventure_context_mod").checked = localsettings.adventure_context_mod;
 		document.getElementById("instruct_has_markdown").checked = localsettings.instruct_has_markdown;
 		document.getElementById("placeholder_tags").checked = localsettings.placeholder_tags;
+		document.getElementById("run_in_background").checked = run_in_background;
 		document.getElementById("auto_ctxlen").checked = localsettings.auto_ctxlen;
 		document.getElementById("auto_genamt").checked = localsettings.auto_genamt;
 		if(localflag)
@@ -7703,6 +7890,8 @@ Current version: 110
 		localsettings.adventure_context_mod = (document.getElementById("adventure_context_mod").checked ? true : false);
 		localsettings.instruct_has_markdown = (document.getElementById("instruct_has_markdown").checked ? true : false);
 		localsettings.placeholder_tags = (document.getElementById("placeholder_tags").checked ? true : false);
+		run_in_background = (document.getElementById("run_in_background").checked ? true : false);
+		background_audio_loop(run_in_background);
 		localsettings.generate_images_model = document.getElementById("generate_images_model").value;
 		localsettings.generate_images_mode = document.getElementById("generate_images_mode").value;
 		localsettings.opmode = document.getElementById("opmode").value;
@@ -8175,6 +8364,7 @@ Current version: 110
 		document.getElementById("cht_inp").value = "";
 		chat_resize_input();
 		image_db = {};
+		interrogation_db = {};
 		completed_imgs_meta = {};
 		localsettings.adventure_is_action = false;
 		prev_hl_chunk = null;
@@ -8297,12 +8487,17 @@ Current version: 110
 		if (p2 > 0 && p2 < first) { first = p2; }
 		if (p3 > 0 && p3 < first) { first = p3; }
 		if (p4 > 0 && p4 < first) { first = p4; skip1 = true; }
+		let ret = input;
 		if (first > 0) {
 			if (skip1) {
-				return input.substring(first + 1);
+				ret = input.substring(first + 1);
 			} else {
-				return input.substring(first + 2);
+				ret = input.substring(first + 2);
 			}
+		}
+		if(ret!="")
+		{
+			return ret;
 		}
 		return input;
 	}
@@ -8444,29 +8639,6 @@ Current version: 110
 		show_abort_button(false);
 	}
 
-	var addimgLongPressTimer = null;
-	function btn_addimg_longpress_start()
-	{
-		addimgLongPressTimer = setTimeout(()=>{
-			popup_manual_image();
-		}, 2000);
-	}
-	function btn_addimg_longpress_end()
-	{
-		clearTimeout(addimgLongPressTimer);
-	}
-	function popup_manual_image()
-	{
-		inputBox("Tip: You can generate images manually by long-pressing the 'Add Img' button.\n\nEnter a prompt to generate an image with.","Generate Image Manually","","Enter a Prompt",()=>{
-			let userinput = getInputBoxValue();
-			if(userinput.trim()!="")
-			{
-				var sentence = userinput.trim().substring(0, 300);
-				do_manual_gen_image(sentence);
-			}
-		},false);
-	}
-
 	function do_manual_gen_image(sentence)
 	{
 		generate_new_image(sentence);
@@ -8479,21 +8651,77 @@ Current version: 110
 		}, 10000);
 	}
 
-	function manual_gen_image() {
+	function do_auto_gen_image(truncated_context)
+	{
+		var tclen = truncated_context.length;
+		var sentence = truncated_context.substring(tclen - 300, tclen);
+		sentence = start_trim_to_sentence(sentence);
+		sentence = end_trim_to_sentence(sentence,true);
+		if (sentence.length > 0) {
+			nextgeneratedimagemilestone = tclen + generateimagesinterval;
+			do_manual_gen_image(sentence);
+		}
+	}
+
+	function add_img_btn_auto() {
 		let truncated_context = concat_gametext(true, "");
 		truncated_context = replace_placeholders(truncated_context);
 		var tclen = truncated_context.length;
 		if (tclen > 0) {
-			var sentence = truncated_context.substring(tclen - 300, tclen);
-			sentence = start_trim_to_sentence(sentence);
-			sentence = end_trim_to_sentence(sentence,true);
-			if (sentence.length > 0) {
-				nextgeneratedimagemilestone = tclen + generateimagesinterval;
+			do_auto_gen_image(truncated_context);
+		}
+		else
+		{
+			msgbox("Error: Your current story is blank.\nAdd some text, or try generating from custom prompt instead.","Story is Blank")
+		}
+		document.getElementById("addimgcontainer").classList.add("hidden");
+	}
+
+	function add_img_btn_custom()
+	{
+		inputBox("Enter a custom prompt to generate an image with.","Generate Image Manually","","Enter a Prompt",()=>{
+			let userinput = getInputBoxValue();
+			if(userinput.trim()!="")
+			{
+				var sentence = userinput.trim().substring(0, 300);
 				do_manual_gen_image(sentence);
 			}
-		}else{
-			popup_manual_image();
-		}
+		},false);
+		document.getElementById("addimgcontainer").classList.add("hidden");
+	}
+
+	function add_img_btn_upload()
+	{
+		let finput = document.getElementById('addimgfileinput');
+		finput.click();
+		finput.onchange = (event) => {
+			if (event.target.files.length > 0 && event.target.files[0]) {
+				const file = event.target.files[0];
+				const reader = new FileReader();
+				reader.onload = function(img) {
+
+					let imgid = "selfuploadimg"+(Math.floor(10000 + Math.random() * 90000)).toString();
+					let nimgtag = "[<|p|" + imgid + "|p|>]";
+					gametext_arr.push(nimgtag);
+					image_db[imgid] = { done: false, queue: "Generating", result: "", prompt:"", local:true };
+
+					let imgres = localsettings.img_allowhd?HD_RES_PX:NO_HD_RES_PX;
+					compressImage(img.target.result, (newDataUri) => {
+						image_db[imgid].done = true;
+						image_db[imgid].result = newDataUri;
+					}, true, true, imgres,0.35,true);
+
+				}
+				reader.readAsDataURL(file);
+			}
+			finput.value = "";
+		};
+		document.getElementById("addimgcontainer").classList.add("hidden");
+	}
+
+	function add_img_btn_menu()
+	{
+		document.getElementById("addimgcontainer").classList.remove("hidden");
 	}
 
 	var xtts_is_connected = false;
@@ -8776,7 +9004,7 @@ Current version: 110
 				}
 			}
 
-			let truncated_context = concat_gametext(true, ""); //no need to truncate if memory is empty
+			let truncated_context = concat_gametext(true, "","","",false,true); //no need to truncate if memory is empty
 			truncated_context = truncated_context.replace(/\xA0/g,' '); //replace non breaking space nbsp
 
 			//this is a hack since we dont have a proper tokenizer, but we can estimate 1 token per 3 characters
@@ -8920,7 +9148,7 @@ Current version: 110
 
 					if(truncated_context.toLowerCase().trim().endsWith(endmatcher.toLowerCase().trim()))
 					{
-						pending_context_preinjection += "["+(new Date().toLocaleTimeString([], {year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'}))+"] ";
+						pending_context_preinjection += "["+(new Date().toLocaleTimeString([], {year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'}))+"]";
 					}
 				}
 				truncated_context += pending_context_preinjection;
@@ -8934,12 +9162,7 @@ Current version: 110
 					//generate every few hundred chars
 					var tclen = truncated_context.length;
 					if (tclen > nextgeneratedimagemilestone) {
-						nextgeneratedimagemilestone = tclen + generateimagesinterval; //set next milestone and trigger generation, using the last 300 characters advanced to the nearest sentence.
-						var sentence = truncated_context.substring(tclen - 300, tclen);
-						sentence = start_trim_to_sentence(sentence);
-						sentence = end_trim_to_sentence(sentence, true);
-						generate_new_image(sentence);
-
+						do_auto_gen_image(truncated_context);
 					}
 				}
 			}
@@ -9798,7 +10021,7 @@ Current version: 110
 					//for now, append the new image directly into the gtarr
 					let nimgtag = "[<|p|" + data.id + "|p|>]";
 					gametext_arr.push(nimgtag);
-					image_db[data.id] = { done: false, queue: "Starting", result: "", alt:sentence, local:false };
+					image_db[data.id] = { done: false, queue: "Starting", result: "", prompt:sentence, local:false };
 					console.log("New image queued " + nimgtag);
 				}
 				else {
@@ -9815,16 +10038,16 @@ Current version: 110
 		{
 			let desired_model = document.getElementById("generate_images_local_model").value;
 			genimg_payload.models = [desired_model];
-			let imgid = "A111img"+(Math.floor(10000 + Math.random() * 90000)).toString();
+			let imgid = "A1111img"+(Math.floor(10000 + Math.random() * 90000)).toString();
 			let nimgtag = "[<|p|" + imgid + "|p|>]";
 			gametext_arr.push(nimgtag);
-			image_db[imgid] = { done: false, queue: "Generating", result: "", alt:sentence, local:true };
+			image_db[imgid] = { done: false, queue: "Generating", result: "", prompt:sentence, local:true };
 			generate_a1111_image(genimg_payload,(outputimg)=>{
 				if(outputimg)
 				{
 					//console.log(outputimg);
 					let origImg = "data:image/jpeg;base64," + outputimg;
-					let imgres = localsettings.img_allowhd?400:256;
+					let imgres = localsettings.img_allowhd?HD_RES_PX:NO_HD_RES_PX;
 					compressImage(origImg, (newDataUri) => {
 						image_db[imgid].done = true;
 						image_db[imgid].result = newDataUri;
@@ -9846,13 +10069,13 @@ Current version: 110
 				let imgid = "DALLEimg"+(Math.floor(10000 + Math.random() * 90000)).toString();
 				let nimgtag = "[<|p|" + imgid + "|p|>]";
 				gametext_arr.push(nimgtag);
-				image_db[imgid] = { done: false, queue: "Generating", result: "", alt:sentence, local:true };
+				image_db[imgid] = { done: false, queue: "Generating", result: "", prompt:sentence, local:true };
 				generate_dalle_image(genimg_payload,(outputimg)=>{
 					if(outputimg)
 					{
 						//console.log(outputimg);
 						let origImg = "data:image/jpeg;base64," + outputimg;
-						let imgres = localsettings.img_allowhd?380:256;
+						let imgres = localsettings.img_allowhd?HD_RES_PX:NO_HD_RES_PX;
 						compressImage(origImg, (newDataUri) => {
 							image_db[imgid].done = true;
 							image_db[imgid].result = newDataUri;
@@ -9866,7 +10089,129 @@ Current version: 110
 		}
 	}
 
-	function click_image(target)
+	function interrogate_new_image(base64img, imghash)
+	{
+		let parts = base64img.split(',');
+		if (parts.length === 2 && parts[0].startsWith('data:image')) {
+			base64img = parts[1];
+		}
+
+		if(localsettings.generate_images_mode==2) //a1111
+		{
+			let payload = {
+			"image": base64img,
+			"model": "clip"
+			};
+			let imgid = "A1111interrogate"+(Math.floor(10000 + Math.random() * 90000)).toString();
+			fetch(localsettings.saved_a1111_url + a1111_interrogate_endpoint, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(payload),
+			})
+			.then(x => x.json())
+			.then(resp => {
+				console.log(resp);
+				if(resp && resp.caption)
+				{
+					let caption = resp.caption;
+					let savedmeta = completed_imgs_meta[imghash];
+					if(caption && savedmeta)
+					{
+						savedmeta.desc = caption;
+						update_clicked_image(imghash);
+					}
+				}
+			}).catch((error) => {
+				console.log("Interrogate Error: " + error);
+			});
+		}
+		else
+		{
+			//horde
+			let payload = {
+				"forms": [
+					{
+					"name": "caption"
+					}
+				],
+				"source_image": base64img
+			};
+			fetch(stablehorde_submit_interrogate_endpoint, {
+				method: 'POST', // or 'PUT'
+				headers: {
+					'Content-Type': 'application/json',
+					'Client-Agent': default_client_agent,
+					'apikey': localsettings.my_api_key,
+				},
+				body: JSON.stringify(payload),
+			})
+			.then((response) => response.json())
+			.then((data) => {
+				console.log('interrogate img result:', data);
+				if (data.id && data.id != "") {
+					interrogation_db[data.id] = { done: false, result: "", imghash:imghash, local:false };
+					console.log("New interrogate queued: " + data.id);
+				}
+				else {
+					//something went wrong.	do nothing.
+					msgbox("Image interrogation failed: " + data.message);
+				}
+			})
+			.catch((error) => {
+				console.error('Error:', error);
+				msgbox("Image interrogation error: " + error);
+			});
+		}
+
+	}
+
+	function toggle_ai_vision(imghash)
+	{
+		let savedmeta = completed_imgs_meta[imghash];
+		if(savedmeta)
+		{
+			savedmeta.enabled = !savedmeta.enabled;
+			if(!savedmeta.desc && savedmeta.enabled)
+			{
+				//request a new interrogation
+				var alreadysent = Object.values(interrogation_db).some(item => item.imghash === imghash);
+				if(!alreadysent)
+				{
+					let b64 = document.getElementById("zoomedimg").src;
+					interrogate_new_image(b64,imghash);
+				}
+			}
+			update_clicked_image(imghash);
+		}
+		else
+		{
+			console.log("IMG META NOT FOUND!");
+		}
+
+	}
+	function update_clicked_image(imghash)
+	{
+		let savedmeta = completed_imgs_meta[imghash];
+		if(!savedmeta)
+		{
+			document.getElementById("zoomedimgdesc").innerText = "No Saved Data";
+		}
+		else
+		{
+			let origprompt = (savedmeta.prompt?replaceAll(savedmeta.prompt,"\n"," ") : "No Saved Description");
+			origprompt = escapeHtml(origprompt);
+			let visionstatus = (savedmeta.enabled?(savedmeta.desc?`<span class="color_green">Active</span>`:`<span class="color_yellow">Analyzing...</span>`):`<span class="color_red">Inactive</span>`);
+			let togglebtn = (savedmeta.enabled?`<button type="button" class="bg_red btn btn-primary" style="width: 84px; padding: 2px; margin: 3px; font-size:12px;" onclick="toggle_ai_vision(\'`+imghash+`\')">Disable</button>`:`<button type="button" class="bg_green btn btn-primary" style="width: 84px; padding: 2px; margin: 3px; font-size:12px;" onclick="toggle_ai_vision(\'`+imghash+`\')">👁️ Enable 👁️</button>`);
+			document.getElementById("zoomedimgdesc").innerHTML = `
+			AI Vision: `+visionstatus+` <span class="helpicon">?<span class="helptext">This allows the AI to visually recognize this image, to see and react to this image. Uses Horde or Local A1111 for image interrogation if enabled.</span></span>
+			`+togglebtn+`
+			<br><button type="button" class="btn btn-primary" style="width: 140px; padding: 2px; margin: 3px; font-size:12px;" onclick="msgbox('`+origprompt+`','Original Prompt')">View Original Prompt</button>
+			`;
+		}
+	}
+	function click_image(target,imghash)
 	{
 		if(target)
 		{
@@ -9878,16 +10223,9 @@ Current version: 110
 			}
 			document.getElementById("zoomedimgcontainer").classList.remove("hidden");
 			document.getElementById("zoomedimg").src = target.src;
-			let tmpdsc = target.title;
-			if(tmpdsc && tmpdsc!="")
-			{
-				tmpdsc = replaceAll(tmpdsc,"<br>"," ");
-				document.getElementById("zoomedimgdesc").innerText = tmpdsc;
-			}
-			else
-			{
-				document.getElementById("zoomedimgdesc").innerText = "No Saved Description";
-			}
+
+			update_clicked_image(imghash);
+
 		}
 	}
 	function delete_curr_image()
@@ -9917,7 +10255,7 @@ Current version: 110
 			let waittime = "Unavailable";
 			if (image_db[pend_txt] != null) {
 				let qq = image_db[pend_txt].queue;
-				alttxt = image_db[pend_txt].alt?escapeHtml(image_db[pend_txt].alt):"";
+				alttxt = image_db[pend_txt].prompt?escapeHtml(image_db[pend_txt].prompt):"";
 				waittime = (qq == 0 ? "Generating" : (qq=="Starting"?qq:"Queue: " + qq));
 			} else {
 				console.log("Cannot render " + pend_txt);
@@ -9925,11 +10263,11 @@ Current version: 110
 
 			return `<div class="`+siclass+reinvertcolor+`" contenteditable="false"><img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDABsSFBcUERsXFhceHBsgKEIrKCUlKFE6PTBCYFVlZF9VXVtqeJmBanGQc1tdhbWGkJ6jq62rZ4C8ybqmx5moq6T/2wBDARweHigjKE4rK06kbl1upKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKT/wAARCAEAAQADASIAAhEBAxEB/8QAGQABAQEBAQEAAAAAAAAAAAAAAAEDAgQF/8QAIBABAAIBBQEBAQEAAAAAAAAAAAECEgMRMVKRIWFBof/EABQBAQAAAAAAAAAAAAAAAAAAAAD/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwD7AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABETPENNPT3je3jUHm22HpmInljqUx+xwDgAAAAAAAAAAAAAAAAAAAAAAAAABaxvaIRaztaJB6AAEmN4mFSZ2iZB5wAAAAAAAAAAAAAAAAAAAAAAAAAAAaaeptG1vWrzETMcSD0zMRyx1L5fI4cb7gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA7rpzNd/HAAAAAAAAAAAAAAAAAAAAAAAAAAAAADTT09/s8Gnp7/Z4agONSmX2OXYDzDbUpl9jliAAAAAAAAAAAAAAAAAAAsVmd9o4KVm0/jeIiI2gHnGupp/2vjIAABpp6e/2TT09/s8NQAAAAHGpTL7HLsB5htqUy+xyxAAAAAAAAAAAAAAAWlZtP4UrNp/G8RFY2gCIiI2hQAZ6mn/a+NAHmaaenv8AZ4dzp1m2/wDjoAAAAAAAABxqUy+xy7AeYbalMvscsQAAAAAAAAAAFpWbT+FKzafxvEREbQBEREbQoAAAAAAAAAAAAAAAAAONSmX2OXYDzDbUpl9jliAAAAAAAtKzafxaVm0/jaIiI2gCIiI2hQAAAAAAAAAAAAAAAAAAAAAcalMvscuwHmG2pTL7HLEAAAAFi0xxMwZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6kzvyAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/Z" width=` + dim + ` height=` + dim + ` style="border-radius: 6%;" title="`+alttxt+`" alt="` + pend_txt + `"><div class=\"loader2\"></div><div class=\"imagelabel\">` + waittime + `</div></div>`;
 		} else {
-			let imghash = cyrb_hash(data);
+			let imghash = cyrb_hash(data).trim();
 			if (completed_imgs_meta[imghash] != null) {
-				alttxt = completed_imgs_meta[imghash].alt?escapeHtml(completed_imgs_meta[imghash].alt):"";
+				alttxt = completed_imgs_meta[imghash].prompt?escapeHtml(completed_imgs_meta[imghash].prompt):"";
 			}
-			return `<div class="`+siclass+reinvertcolor+`"><img src="` + data + `" width=` + dim + ` height=` + dim + ` title="`+alttxt+`" style="border-radius: 6%; cursor: pointer;" onclick="return click_image(this);"></div>`;
+			return `<div class="`+siclass+reinvertcolor+`"><img src="` + data + `" width=` + dim + ` height=` + dim + ` title="`+alttxt+`" style="border-radius: 6%; cursor: pointer;" onclick="return click_image(this,\'`+imghash+`\');"></div>`;
 		}
 	}
 
@@ -10146,7 +10484,59 @@ Current version: 110
 		document.getElementById("lastreq2").innerHTML = lastreq;
 	}
 
+	function poll_interrogation_db()
+	{
+		let imagecount = Object.keys(interrogation_db).length;
+		if (!imagecount) return;
+
+		console.log("polling for pending interrogations " + imagecount);
+		for (let key in interrogation_db) {
+			let img = interrogation_db[key];
+			if (img.done == false && !img.local) {
+				//call check
+				fetch(stablehorde_output_interrogate_endpoint + "/" + key)
+					.then(x => x.json())
+					.then((data) => {
+						console.log('pollimg result:', data);
+						if (!data.state || (data.state!="processing" && data.state!="done")) {
+							msgbox("Pending image interrogation could not complete.");
+							console.log("removing from interrogation: " + key);
+							delete interrogation_db[key];
+						}
+						else if (data.state == "done") {
+							//fetch final image
+							img.done = true;
+							//save results
+							if(data.forms && data.forms.length>0 && data.forms[0].result && data.forms[0].result.caption)
+							{
+								let caption = data.forms[0].result.caption;
+								let savedmeta = completed_imgs_meta[img.imghash];
+								if(caption && savedmeta)
+								{
+									savedmeta.desc = caption;
+									update_clicked_image(img.imghash);
+								}
+							}
+
+							delete interrogation_db[key];
+						}
+						else {
+							//do nothing
+						}
+					})
+					.catch((error) => {
+						console.error('Error:', error);
+						msgbox("Interrogate poll error: " + error);
+						delete interrogation_db[key];
+					});
+			}
+		}
+	}
+
 	function poll_image_db() {
+
+		poll_interrogation_db();
+
 		//every time this runs, we loop through our image cache for unfinished images and poll for a response
 		//console.log("polling for pending images: " + JSON.stringify(image_db));
 		let imagecount = Object.keys(image_db).length;
@@ -10182,7 +10572,7 @@ Current version: 110
 										img.queue = 0;
 										let origImg = "data:image/jpeg;base64," + finalimg.generations[0].img;
 										//console.log("Original image: " + origImg);
-										let imgres = localsettings.img_allowhd?380:256;
+										let imgres = localsettings.img_allowhd?HD_RES_PX:NO_HD_RES_PX;
 										compressImage(origImg, (newDataUri) => { img.result = newDataUri; }, true, true, imgres);
 									}
 								})
@@ -10221,7 +10611,7 @@ Current version: 110
 							let newstr = "[<|d|" + img.result + "|d|>]";
 							console.log("Replacing with Image: " + matchstr);
 							gametext_arr[i] = gametext_arr[i].replace(matchstr, newstr);
-							completed_imgs_meta[cyrb_hash(img.result)] = {alt:image_db[key].alt};
+							completed_imgs_meta[cyrb_hash(img.result)] = {prompt:image_db[key].prompt, desc:"", enabled:false};
 							delete image_db[key];
 						}
 					}
@@ -10234,7 +10624,7 @@ Current version: 110
 		}
 	}
 
-	function compressImage(inputDataUri, onDone, isJpeg=true, fixedSize=true, maxSize=256, quality = 0.33) {
+	function compressImage(inputDataUri, onDone, isJpeg=true, fixedSize=true, maxSize=NO_HD_RES_PX, quality = 0.35, forceCrop=false) {
 		let img = document.createElement('img');
 		let wantedWidth = maxSize;
 		let wantedHeight = maxSize;
@@ -10276,7 +10666,15 @@ Current version: 110
 			canvas.height = wantedHeight;
 
 			// We resize the image with the canvas method
-			ctx.drawImage(this, 0, 0, wantedWidth, wantedHeight);
+			if(forceCrop)
+			{
+				let minsize = Math.min(origW, origH);
+				let mx = (origW - minsize) / 2;
+				let my = (origH - minsize) / 2;
+				ctx.drawImage(this, mx, my, minsize, minsize, 0, 0, wantedWidth, wantedHeight);
+			}else{
+				ctx.drawImage(this, 0, 0, wantedWidth, wantedHeight);
+			}
 
 			var dataURI = "";
 			if(isJpeg)
@@ -10290,6 +10688,7 @@ Current version: 110
 			}
 			onDone(dataURI,aspectratio);
 		};
+		img.setAttribute('crossorigin', 'anonymous');
 
 		// We put the Data URI in the image's src attribute
 		if (typeof inputDataUri === 'string' || inputDataUri instanceof String)
@@ -10306,9 +10705,20 @@ Current version: 110
 	//runs every second
 	var idle_timer = 0; //used in chat mode to send multi replies
 	var idle_triggered_counter = 0;
+	var idle_backoff_array = [15000,60000,300000,1200000];
 	function poll_background_tasks()
 	{
-		let idle_timer_max = localsettings.idle_duration*1000;
+		let idle_timer_max = 0;
+		if(localsettings.idle_duration>0)
+		{
+			idle_timer_max = localsettings.idle_duration*1000;
+		}
+		else
+		{
+			//smart idle timer
+			idle_timer_max = idle_backoff_array[idle_triggered_counter>=idle_backoff_array.length?idle_backoff_array.length-1:idle_triggered_counter];
+		}
+
 		let newgenempty = (document.getElementById("input_text").value == "");
 		let	chatinputempty = (document.getElementById("cht_inp").value == "");
 		if ((localsettings.opmode == 1 || localsettings.opmode == 2 || localsettings.opmode == 3 || localsettings.opmode == 4)
@@ -10318,6 +10728,18 @@ Current version: 110
 			if (idle_timer > idle_timer_max) {
 				idle_timer = 0;
 				let nextcounter = ++idle_triggered_counter;
+				if(localsettings.opmode == 4)
+				{
+					if (!localsettings.placeholder_tags) {
+						pending_context_preinjection =  get_instruct_endtag(false);
+					} else {
+						pending_context_preinjection =  instructendplaceholder;
+					}
+					if(localsettings.inject_timestamps_instruct)
+					{
+						pending_context_preinjection += "["+(new Date().toLocaleTimeString([], {year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'}))+"]";
+					}
+				}
 				submit_generation();
 				idle_triggered_counter = nextcounter;
 			}
@@ -10565,7 +10987,10 @@ Current version: 110
 				gametext_elem.querySelectorAll('div.storyimg,div.storyimgfloat').forEach(
 					(el) => {
 						let chimg = el.getElementsByTagName("img")[0];
-						el.replaceWith((chimg.alt == null || chimg.alt == "") ? ("[<|d|" + chimg.src + "|d|>]") : ("[<|p|" + chimg.alt + "|p|>]"))
+						if(el && chimg)
+						{
+							el.replaceWith((chimg.alt == null || chimg.alt == "") ? ("[<|d|" + chimg.src + "|d|>]") : ("[<|p|" + chimg.alt + "|p|>]"))
+						}
 					}
 				);
 
@@ -10643,7 +11068,7 @@ Current version: 110
 		}
 	}
 
-	function concat_gametext(stripimg = false, stripimg_replace_str = "", append_before_segment="",append_after_segment="",escapeTxt=false) {
+	function concat_gametext(stripimg = false, stripimg_replace_str = "", append_before_segment="",append_after_segment="",escapeTxt=false,insertAIVision=false) {
 		let fulltxt = "";
 		for (let i = 0; i < gametext_arr.length; ++i) {
 			let extracted = (gametext_arr[i]);
@@ -10694,7 +11119,21 @@ Current version: 110
 				fulltxt = replaceAll(fulltxt,b,get_instruct_endtag(false));
 			}
 		}
-		if (stripimg) {
+		if (stripimg)
+		{
+			if(insertAIVision)
+			{
+				fulltxt = fulltxt.replace(/\[<\|d\|.+?\|d\|>\]/g, function (m) {
+					// m here means the whole matched string
+					let inner = m.substring(5, m.length - 5);
+					let imghash = cyrb_hash(inner);
+					let foundmeta = completed_imgs_meta[imghash];
+					if (foundmeta != null && foundmeta.enabled && foundmeta.desc) {
+						return "\n(Attached Image: " + foundmeta.desc + ")\n";
+					}
+					return "";
+				});
+			}
 			fulltxt = fulltxt.replace(/\[<\|p\|.+?\|p\|>\]/g, stripimg_replace_str);
 			fulltxt = fulltxt.replace(/\[<\|d\|.+?\|d\|>\]/g, stripimg_replace_str);
 
@@ -11135,7 +11574,7 @@ Current version: 110
 			// Show the 'AI is typing' message if an answer is pending, and prevent the 'send button' from being clicked again.
 			if (pending_response_id=="") { document.getElementById("chatistyping").classList.add("hidden"); }
 			else {
-				let aiName = ((pending_context_preinjection && pending_context_preinjection.includes(":")) ? pending_context_preinjection.split(":")[0] : "The AI");
+				let aiName = ((localsettings.opmode==3 && pending_context_preinjection && pending_context_preinjection.includes(":")) ? pending_context_preinjection.split(":")[0] : "The AI");
 				document.getElementById("chataityping").innerText = aiName + " is typing...";
 				document.getElementById("chatistyping").classList.remove("hidden");
 			}
@@ -12182,7 +12621,12 @@ Current version: 110
 			newbodystr += getStreamingText();
 		} 		 // Add the pending stream if it's needed. This will add any streamed text to a new bubble for the AI.
 		newbodystr += contextDict.closeTag + '</p></div></div>';						 // Lastly, append the closing div so our body's raw form is completed.
-		if (aestheticInstructUISettings.use_markdown) {																// If markdown is enabled, style the content of each bubble as well.
+		if (aestheticInstructUISettings.use_markdown) {
+
+			let md = applyStylizedCodeBlocks(); 	// apply the code-block styling, if markdown is used.
+			newbodystr = md[0];
+			let codestashes = md[1];
+			// If markdown is enabled, style the content of each bubble as well.
 			let internalHTMLparts = []; // We'll cache the embedded HTML parts here to keep them intact.
 			for (let role of aestheticTextStyleRoles) {																// ..starting by the "speech" and *actions* for each role.
 				let styleRole = aestheticInstructUISettings.use_uniform_colors ? 'uniform' : role;					// Uniform role is preferred if it's active on the settings.
@@ -12195,7 +12639,10 @@ Current version: 110
 				});
 			}
 			internalHTMLparts.forEach((part, index) => { newbodystr = newbodystr.replace(`<internal_html_${index}>`, part); }); // Bring back the embedded HTML parts.
-			newbodystr = applyStylizedCodeBlocks(); 																// Then, apply the code-block styling, if markdown is used.
+			for(let i=0;i<codestashes.length;++i)
+			{
+				newbodystr = newbodystr.replace(`%CodeStash${i}%`,codestashes[i]);
+			}
 		}
 		newbodystr = newbodystr.replace(/\[<\|p\|.+?\|p\|>\]/g, function (m) {
 			// m here means the whole matched string
@@ -12236,16 +12683,21 @@ Current version: 110
 		}
 		function applyStylizedCodeBlocks() {
 			let blocks = newbodystr.split(/(```[\s\S]*?\n[\s\S]*?```)/g);
+			let codestashes = [];
 			for (var i = 0; i < blocks.length; i++) {
 				if (blocks[i].startsWith('```')) {
 					blocks[i] = blocks[i].replace(/```[\s\S]*?\n([\s\S]*?)```/g,
-					function (m,m2) {return `</p><pre style='min-width:80%;margin:0px 40px 0px 20px;background-color:${as.code_block_background};color:${as.code_block_foreground}'>${m2.replace(/[“”]/g, "\"")}</pre><p>`});
+					function (m,m2) {
+						let idx = codestashes.length;
+						codestashes.push(`<pre style='min-width:80%;white-space:pre-wrap;margin:0px 30px 0px 20px;background-color:${as.code_block_background};color:${as.code_block_foreground}'>${m2.replace(/[“”]/g, "\"")}</pre>`);
+						return `</p>%CodeStash${idx}%<p>`
+					});
 				}
 				else {
 					blocks[i] = blocks[i].replaceAll('```', '`').replaceAll('``', '`').replace(/`(.*?)`/g, function (m,m2) {return `<code style='background-color:black'>${m2.replace(/[“”]/g, "\"")}</code>`;}); //remove fancy quotes too
 				}
 			}
-			return blocks.join('');
+			return [blocks.join(''),codestashes];
 		}
 		function transformInputToAestheticStyle(bodyStr, isPreview) { // Trim unnecessary empty space and new lines, and append * or " to each bubble if start/end sequence ends with * or ", to preserve styling.
 			bodyStr = bodyStr.replaceAll(you + '\n', you).replaceAll(you + ' ', you).replaceAll(you, style('you') + `${you.endsWith('*') ? '*' : ''}` + `${you.endsWith('"') ? '"' : ''}`);
@@ -12387,7 +12839,7 @@ Current version: 110
 				<button type="button" class="btn btn-primary" id="btn_actundo" onpointerdown="btn_back_longpress_start()" onpointerleave="btn_back_longpress_end()" onpointerup="btn_back_longpress_end()" onclick="btn_back()">Back</button>
 				<button type="button" class="btn btn-primary" id="btn_actredo" onpointerdown="btn_redo_longpress_start()" onpointerleave="btn_redo_longpress_end()" onpointerup="btn_redo_longpress_end()" onclick="btn_redo()">Redo</button>
 				<button type="button" class="btn btn-primary" id="btn_actretry" onclick="btn_retry()">Retry</button>
-				<button type="button" class="btn btn-primary bg_green" id="btn_genimg" onpointerdown="btn_addimg_longpress_start()" onpointerleave="btn_addimg_longpress_end()" onpointerup="btn_addimg_longpress_end()" onclick="manual_gen_image()">Add Img</button>
+				<button type="button" class="btn btn-primary bg_green" id="btn_genimg" onclick="add_img_btn_menu()">Add Img</button>
 			</div>
 			<div class="box flex flex-push-right">
 				<input type="checkbox" id="entersubmit" onclick="toggle_entersends()" checked>
@@ -12434,7 +12886,7 @@ Current version: 110
 					<button type="button" class="btn btn-primary" id="btn_actundo2" onpointerdown="btn_back_longpress_start()" onpointerleave="btn_back_longpress_end()" onpointerup="btn_back_longpress_end()" onclick="btn_back()">Back</button>
 					<button type="button" class="btn btn-primary" id="btn_actredo2" onpointerdown="btn_redo_longpress_start()" onpointerleave="btn_redo_longpress_end()" onpointerup="btn_redo_longpress_end()" onclick="btn_redo()">Redo</button>
 					<button type="button" class="btn btn-primary" id="btn_actretry2" onclick="btn_retry()">Retry</button>
-					<button type="button" class="btn btn-primary bg_green" id="btn_genimg2" onpointerdown="btn_addimg_longpress_start()" onpointerleave="btn_addimg_longpress_end()" onpointerup="btn_addimg_longpress_end()" onclick="manual_gen_image()">Add Img</button>
+					<button type="button" class="btn btn-primary bg_green" id="btn_genimg2" onclick="add_img_btn_menu()">Add Img</button>
 					<button type="button" class="btn btn-primary" id="btn_editmode" onclick="btn_editmode()">Edit</button>
 
 				</div>
@@ -12629,10 +13081,7 @@ Current version: 110
 				Model Choice:<br>
 				<select style="padding:4px;display:inline;width:calc(100% - 220px)" class="form-control" id="custom_oai_model" onchange="oai_model_change()">
 					<option value="gpt-3.5-turbo-instruct" selected="selected">gpt-3.5-turbo-instruct</option>
-					<option value="text-davinci-003">text-davinci-003</option>
-					<option value="text-davinci-002">text-davinci-002</option>
-					<option value="text-davinci-001">text-davinci-001</option>
-					<option value="davinci">davinci</option>
+					<option value="davinci-002">davinci-002</option>
 					<option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
 					<option value="gpt-3.5-turbo-16k">gpt-3.5-turbo-16k</option>
 					<option value="gpt-4">gpt-4</option>
@@ -13262,6 +13711,7 @@ Current version: 110
 								<option value="120">2m</option>
 								<option value="300">5m</option>
 								<option value="600">10m</option>
+								<option value="-1">Auto</option>
 							</select>
 						</div>
 
@@ -13295,6 +13745,11 @@ Current version: 110
 								class="helptext">If enabled, uses universal {{user}} and {{[INPUT]}} placeholders that get swapped on submit. If disabled, uses plaintext chat or instruct tags verbatim.</span></span></div>
 						   <input type="checkbox" id="placeholder_tags" style="margin:0px 0px 0px auto;">
 						</div>
+						<div class="settinglabel">
+							<div class="justifyleft settingsmall">Run In Background <span class="helpicon">?<span
+								class="helptext">Prevents the browser from suspending Kobold Lite by playing a silent audio track. This setting cannot be saved.</span></span></div>
+						   <input type="checkbox" id="run_in_background" style="margin:0px 0px 0px auto;">
+						</div>
 					</div>
 
 
@@ -13326,7 +13781,7 @@ Current version: 110
 						</div>
 						<div class="settinglabel">
 							<div class="justifyleft settingsmall">Unlock Scroll Height <span class="helpicon">?<span
-								class="helptext">Unlocks the text viewport, allowing for infinite height without scrolling (Printable View)</span></span></div>
+								class="helptext">Unlocks the text viewport, allowing for infinite height without scrolling</span></span></div>
 						   <input type="checkbox" id="printer_view" style="margin:0px 0px 0px auto;">
 						</div>
 						<div class="settinglabel">
@@ -13539,6 +13994,7 @@ Current version: 110
 			<div class="aidgpopuplistheader anotelabel zoomedimgdesc" id="zoomedimgdesc" style="word-wrap: break-word;">
 				Loading...
 			</div>
+			<br>
 			<div class="popupfooter">
 				<button type="button" class="bg_red btn btn-primary" style="width: 124px;" onclick="delete_curr_image();hide_popups();">Delete Image</button>
 				<button type="button" class="btn btn-primary" onclick="hide_popups()">Close</button>
@@ -13619,6 +14075,29 @@ Current version: 110
 
 			<div class="popupfooter">
 				<button type="button" class="btn btn-primary" onclick="confirmImgStyle()">Ok</button>
+			</div>
+		</div>
+	</div>
+
+	<div class="popupcontainer flex hidden" id="addimgcontainer">
+		<div class="popupbg flex"></div>
+		<div class="nspopup fixsize">
+			<div class="popuptitlebar">
+				<div class="popuptitletext">Add New Image</div>
+			</div>
+			<div class="aidgpopuplistheader anotelabel">
+				<button type="button" class="btn btn-primary bg_green" onclick="add_img_btn_auto()">Generate Image (Automatic)</button>
+			</div>
+			<div class="aidgpopuplistheader anotelabel">
+				<button type="button" class="btn btn-primary bg_green" onclick="add_img_btn_custom()">Generate Image (Custom Prompt)</button>
+			</div>
+			<div class="aidgpopuplistheader anotelabel">
+				<button type="button" class="btn btn-primary bg_green" onclick="add_img_btn_upload()">Upload Image File</button>
+			</div>
+			<br>
+			<input type="file" id="addimgfileinput" style="display:none" accept="image/*">
+			<div class="popupfooter">
+				<button type="button" class="btn btn-primary" onclick="hide_popups()">Cancel</button>
 			</div>
 		</div>
 	</div>

@@ -56,3 +56,5 @@ std::vector<gpt_vocab::id> gpt_tokenize(const gpt_vocab & vocab, const std::stri
 
 bool should_transpose_layer(std::string name);
 void kcpp_graph_compute_helper(ggml_v3_cgraph * graph, int n_threads);
+
+std::vector<uint8_t> kcpp_base64_decode(const std::string & encoded_string);

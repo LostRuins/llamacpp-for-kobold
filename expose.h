@@ -34,6 +34,7 @@ struct load_model_inputs
     const int max_context_length;
     const bool low_vram;
     const bool use_mmq;
+    const bool use_rowsplit;
     const char * executable_path;
     const char * model_filename;
     const char * lora_filename;

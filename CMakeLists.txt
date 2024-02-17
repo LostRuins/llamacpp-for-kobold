@@ -27,8 +27,6 @@ set(LLAMA_SANITIZE_THREAD OFF)
 set(LLAMA_SANITIZE_ADDRESS OFF)
 set(LLAMA_SANITIZE_UNDEFINED OFF)
 
-option(MAKE_MISC_FILES              "MAKE_MISC_FILES"                                       OFF)
-
 # instruction set specific
 option(LLAMA_AVX                    "llama: enable AVX"                                     ON)
 option(LLAMA_AVX2                   "llama: enable AVX2"                                    ON)
@@ -463,18 +461,3 @@ if (LLAMA_HIPBLAS)
     target_compile_features(${TARGET} PRIVATE cxx_std_11)
 endif()
 
-
-if (MAKE_MISC_FILES)
-add_subdirectory(common)
-add_library(llama
-        llama.cpp
-        llama.h
-        )
-target_include_directories(llama PUBLIC .)
-target_compile_features(llama PUBLIC cxx_std_11) # don't bump
-target_link_libraries(llama PRIVATE
-    ggml
-    ${LLAMA_EXTRA_LIBS}
-    )
-add_subdirectory(examples)
-endif()

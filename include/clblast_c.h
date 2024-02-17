@@ -34,10 +34,10 @@
   #define PUBLIC_API
 #endif
 
-// Version numbering (v1.6.0)
+// Version numbering (v1.6.2)
 #define CLBLAST_VERSION_MAJOR 1
 #define CLBLAST_VERSION_MINOR 6
-#define CLBLAST_VERSION_PATCH 0
+#define CLBLAST_VERSION_PATCH 2
 
 // The C interface
 #ifdef __cplusplus
