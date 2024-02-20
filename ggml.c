@@ -2020,7 +2020,8 @@ void ggml_numa_init(enum ggml_numa_strategy numa_flag) {
         return;
     }
 
-#ifdef __linux__
+// Android's libc implementation "bionic" does not support setting affinity
+#if defined(__linux__) && !defined(__BIONIC__)
     struct stat st;
     char path[256];
     int rv;
