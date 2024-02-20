@@ -1998,7 +1998,7 @@ inline static void ggml_critical_section_end(void) {
 }
 
 // Android's libc implementation "bionic" does not support setting affinity
-#ifdef __linux__ && !defined(__BIONIC__)
+#if defined(__linux__) && !defined(__BIONIC__)
 static cpu_set_t ggml_get_numa_affinity(void) {
     cpu_set_t cpuset;
     pthread_t thread;
