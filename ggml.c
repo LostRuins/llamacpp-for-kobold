@@ -1997,7 +1997,8 @@ inline static void ggml_critical_section_end(void) {
     atomic_fetch_sub(&g_state_barrier, 1);
 }
 
-#ifdef __linux__
+// Android's libc implementation "bionic" does not support setting affinity
+#ifdef __linux__ && !defined(__BIONIC__)
 static cpu_set_t ggml_get_numa_affinity(void) {
     cpu_set_t cpuset;
     pthread_t thread;
