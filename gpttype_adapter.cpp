@@ -1470,7 +1470,7 @@ const std::string & gpttype_get_pending_output()
     return concat_output_reader_copy;
 }
 
-bool GetThreadsToUse(bool blasmode)
+int GetThreadsToUse(bool blasmode)
 {
     if (blasmode)
     {

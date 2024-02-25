@@ -1705,6 +1705,7 @@ void dump_non_result_info_yaml(FILE * stream, const gpt_params & params, const l
     }
     fprintf(stream, "lora_base: %s\n", params.lora_base.c_str());
     fprintf(stream, "main_gpu: %d # default: 0\n", params.main_gpu);
+    fprintf(stream, "min_keep: %d # default: 0 (disabled)\n", sparams.min_keep);
     fprintf(stream, "mirostat: %d # default: 0 (disabled)\n", sparams.mirostat);
     fprintf(stream, "mirostat_ent: %f # default: 5.0\n", sparams.mirostat_tau);
     fprintf(stream, "mirostat_lr: %f # default: 0.1\n", sparams.mirostat_eta);
@@ -1742,7 +1743,7 @@ void dump_non_result_info_yaml(FILE * stream, const gpt_params & params, const l
 
     fprintf(stream, "rope_freq_base: %f # default: 10000.0\n", params.rope_freq_base);
     fprintf(stream, "rope_freq_scale: %f # default: 1.0\n", params.rope_freq_scale);
-    fprintf(stream, "seed: %d # default: -1 (random seed)\n", params.seed);
+    fprintf(stream, "seed: %u # default: -1 (random seed)\n", params.seed);
     fprintf(stream, "simple_io: %s # default: false\n", params.simple_io ? "true" : "false");
     fprintf(stream, "cont_batching: %s # default: false\n", params.cont_batching ? "true" : "false");
     fprintf(stream, "temp: %f # default: 0.8\n", sparams.temp);
@@ -1751,7 +1752,7 @@ void dump_non_result_info_yaml(FILE * stream, const gpt_params & params, const l
     dump_vector_float_yaml(stream, "tensor_split", tensor_split_vector);
 
     fprintf(stream, "tfs: %f # default: 1.0\n", sparams.tfs_z);
-    fprintf(stream, "threads: %d # default: %d\n", params.n_threads, std::thread::hardware_concurrency());
+    fprintf(stream, "threads: %d # default: %u\n", params.n_threads, std::thread::hardware_concurrency());
     fprintf(stream, "top_k: %d # default: 40\n", sparams.top_k);
     fprintf(stream, "top_p: %f # default: 0.95\n", sparams.top_p);
     fprintf(stream, "min_p: %f # default: 0.0\n", sparams.min_p);
@@ -1802,7 +1803,8 @@ void dump_kv_cache_view_seqs(const llama_kv_cache_view & view, int row_size) {
             if (cs_curr[j] < 0) { continue; }
             if (seqs.find(cs_curr[j]) == seqs.end()) {
                 if (seqs.size() + 1 >= sizeof(slot_chars)) { break; }
-                seqs[cs_curr[j]] = seqs.size();
+                const size_t sz = seqs.size();
+                seqs[cs_curr[j]] = sz;
             }
         }
         if (seqs.size() + 1 >= sizeof(slot_chars)) { break; }

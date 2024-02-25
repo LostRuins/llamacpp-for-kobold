@@ -322,13 +322,7 @@
 extern "C" {
 #endif
 
-#if defined(__ARM_NEON) && defined(__CUDACC__)
-    typedef half ggml_fp16_t;
-#elif defined(__ARM_NEON) && !defined(_MSC_VER)
-    typedef __fp16 ggml_fp16_t;
-#else
     typedef uint16_t ggml_fp16_t;
-#endif
 
     // convert FP16 <-> FP32
     GGML_API float       ggml_fp16_to_fp32(ggml_fp16_t x);
@@ -361,6 +355,8 @@ extern "C" {
         GGML_TYPE_IQ2_XXS = 16,
         GGML_TYPE_IQ2_XS  = 17,
         GGML_TYPE_IQ3_XXS = 18,
+        GGML_TYPE_IQ1_S   = 19,
+        GGML_TYPE_IQ4_NL  = 20,
         GGML_TYPE_I8,
         GGML_TYPE_I16,
         GGML_TYPE_I32,
@@ -398,6 +394,8 @@ extern "C" {
         GGML_FTYPE_MOSTLY_IQ2_XXS = 15, // except 1d tensors
         GGML_FTYPE_MOSTLY_IQ2_XS  = 16, // except 1d tensors
         GGML_FTYPE_MOSTLY_IQ3_XXS = 17, // except 1d tensors
+        GGML_FTYPE_MOSTLY_IQ1_S   = 18, // except 1d tensors
+        GGML_FTYPE_MOSTLY_IQ4_NL  = 19, // except 1d tensors
     };
 
     // available tensor operations:
@@ -1390,13 +1388,17 @@ extern "C" {
             struct ggml_context * ctx,
             struct ggml_tensor  * a);
 
-    // fused soft_max(a*scale + mask)
+    // fused soft_max(a*scale + mask + pos[i]*(ALiBi slope))
     // mask is optional
+    // pos is required when max_bias > 0.0f
+    // max_bias = 0.0f for no ALiBi
     GGML_API struct ggml_tensor * ggml_soft_max_ext(
             struct ggml_context * ctx,
             struct ggml_tensor  * a,
             struct ggml_tensor  * mask,
-            float                 scale);
+            struct ggml_tensor  * pos,
+            float                 scale,
+            float                 max_bias);
 
     GGML_API struct ggml_tensor * ggml_soft_max_back(
             struct ggml_context * ctx,
@@ -1498,12 +1500,13 @@ extern "C" {
 
     // alibi position embedding
     // in-place, returns view(a)
-    GGML_API struct ggml_tensor * ggml_alibi(
+    GGML_DEPRECATED(GGML_API struct ggml_tensor * ggml_alibi(
             struct ggml_context * ctx,
             struct ggml_tensor  * a,
             int                   n_past,
             int                   n_head,
-            float                 bias_max);
+            float                 bias_max),
+        "use ggml_soft_max_ext instead (will be removed in Mar 2024)");
 
     // clamp
     // in-place, returns view(a)

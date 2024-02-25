@@ -100,6 +100,8 @@ extern "C" {
         LLAMA_FTYPE_MOSTLY_Q2_K_S        = 21, // except 1d tensors
         LLAMA_FTYPE_MOSTLY_Q3_K_XS       = 22, // except 1d tensors
         LLAMA_FTYPE_MOSTLY_IQ3_XXS       = 23, // except 1d tensors
+        LLAMA_FTYPE_MOSTLY_IQ1_S         = 24, // except 1d tensors
+        LLAMA_FTYPE_MOSTLY_IQ4_NL        = 25, // except 1d tensors
 
         LLAMA_FTYPE_GUESSED = 1024, // not specified in the model file
     };
@@ -303,6 +305,12 @@ extern "C" {
         int32_t n_p_eval;
         int32_t n_eval;
     };
+
+    // used in chat template
+    typedef struct llama_chat_message {
+        const char * role;
+        const char * content;
+    } llama_chat_message;
 
     // Helpers for getting default parameters
     LLAMA_API struct llama_model_params llama_model_default_params(void);
@@ -697,6 +705,25 @@ extern "C" {
     LLAMA_API int32_t llama_token_to_piece(
               const struct llama_model * model,
                            llama_token   token,
+                                  char * buf,
+                               int32_t   length);
+
+    /// Apply chat template. Inspired by hf apply_chat_template() on python.
+    /// Both "model" and "custom_template" are optional, but at least one is required. "custom_template" has higher precedence than "model"
+    /// NOTE: This function does not use a jinja parser. It only support a pre-defined list of template. See more: https://github.com/ggerganov/llama.cpp/wiki/Templates-supported-by-llama_chat_apply_template
+    /// @param tmpl A Jinja template to use for this chat. If this is nullptr, the model’s default chat template will be used instead.
+    /// @param chat Pointer to a list of multiple llama_chat_message
+    /// @param n_msg Number of llama_chat_message in this chat
+    /// @param add_ass Whether to end the prompt with the token(s) that indicate the start of an assistant message.
+    /// @param buf A buffer to hold the output formatted prompt. The recommended alloc size is 2 * (total number of characters of all messages)
+    /// @param length The size of the allocated buffer
+    /// @return The total number of bytes of the formatted prompt. If is it larger than the size of buffer, you may need to re-alloc it and then re-apply the template.
+    LLAMA_API int32_t llama_chat_apply_template(
+              const struct llama_model * model,
+                            const char * tmpl,
+       const struct llama_chat_message * chat,
+                                size_t   n_msg,
+                                  bool   add_ass,
                                   char * buf,
                                int32_t   length);
 
