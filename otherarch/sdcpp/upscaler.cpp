@@ -21,7 +21,7 @@ struct UpscalerGGML {
 #endif
 #ifdef SD_USE_METAL
         LOG_DEBUG("Using Metal backend");
-        ggml_metal_log_set_callback(ggml_log_callback_default, nullptr);
+        ggml_backend_metal_log_set_callback(ggml_log_callback_default, nullptr);
         backend = ggml_backend_metal_init();
 #endif
 
