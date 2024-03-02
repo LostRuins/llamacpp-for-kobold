@@ -8959,15 +8959,15 @@ Current version: 114
 				formData.append("output_file_timestamp", true);
 				formData.append("autoplay", false); // the audio will be played by the XTTS endpoint, rather than being sent back to the browser (useful for quickly testing the endpoints)
 				formData.append("autoplay_volume", 1.0); // (0.1..2.0)
-				formData.append("streaming", localsettings.saved_xtts_streaming); // NOT SURE ABOUT THIS, see below
-
+                formData.append("streaming", true); // OK, SO, FOR THIS NON-STREAMING TTS REQUEST, WE NEEN TO SET "STREAMING" = TRUE (why @daswer123 ???)
+                formData.append("streaming", localsettings.saved_xtts_streaming); // REVERT TO THIS ONCE THE BEHAVIOR IS CLEAR
+                
                 // According to the AllTalk documentation this EP supports both normal and streaming mode, 
                 // but then how is this EP different from the other one specific for streaming ("/api/tts-generate-streaming") ?
                 // After a quick test it seems that even when setting `streaming=true` the audio will only get played
                 // after all the text has been generated... 
-                // In any case: Anyway, when setting `streaming=true`, make sure to also set `narrator_enabled=false` and `autoplay=false` 
-                // or the server will respond with a generic error                
-
+                // In any case: when setting `streaming=true`, make sure to also set `narrator_enabled=false` and `autoplay=false` (and viceversa)
+                // otherwise the request will fail...
 
 				/* Payload for older XTTS implementation (https://github.com/daswer123/xtts-api-server)
 				let xtts_payload = {
