@@ -8941,24 +8941,33 @@ Current version: 114
 			{
 				const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 				
-				// TODO: implement payload switching logic (AllTalk / xtts-api-server). Currently: AllTalk by default
+				// TODO: implement AllTalk vs xtts-api-server payload switching logic (currently: AllTalk by default)
 				
-				// Payload for newer XTTS API implementation (AllTalk) -> "/api/tts-generate": responds to POST requests, supports normal or streaming mode, supports narration mode (only available in normal mode). Other endpoints with different features are also available (e.g. for GET requests, etc), please refer to https://github.com/erew123/alltalk_tts#-api-suite-and-json-curl
-				
-				// For the AllTalk "/api/tts-generation" endpoint variant we need to send the payload as FormData:
+                // TTS request code for AllTalk XTTS API endpoint (currently not 100% compatible with old XTTS...)
+                // httsp://github.com/erew123/alltalk_tts
+                // Endpoint -> "/api/tts-generate" (POST) (payload must be sent as FormData)
+                
 				const formData = new FormData();
 				formData.append("text_input", text); // max 2000 chars
-				formData.append("text_filtering", 'none');
+				formData.append("text_filtering", 'none'); // (none|standard|html)
 				formData.append("character_voice_gen", document.getElementById("xtts_voices").value);
-				formData.append("narrator_enabled", true);
-				formData.append("narrator_voice_gen", "male_01.wav");
-				formData.append("text_not_inside", "character");  // character or narrator, ddetermines whether the text *NOT* inside quotes or asterisks should be interpreted as from the character or the narrator
+				formData.append("narrator_enabled", false); // NOTE: TODO: get this setting form the UI
+				formData.append("narrator_voice_gen", "male_01.wav"); 
+				formData.append("text_not_inside", "character"); // character or narrator, ddetermines whether the text *NOT* inside quotes or asterisks should be interpreted as from the character or the narrator
 				formData.append("language", localsettings.saved_xtts_lang);
-				formData.append("output_file_name", "spoken_text"); // NOTE: only the name, no .ext!
+				formData.append("output_file_name", "speech-audio-file"); // NOTE: name only, no .ext
 				formData.append("output_file_timestamp", true);
-				formData.append("autoplay", true);
-				formData.append("autoplay_volume", 1.0);
-				formData.append("streaming", localsettings.saved_xtts_streaming);
+				formData.append("autoplay", false); // the audio will be played by the XTTS endpoint, rather than being sent back to the browser (useful for quickly testing the endpoints)
+				formData.append("autoplay_volume", 1.0); // (0.1..2.0)
+				formData.append("streaming", localsettings.saved_xtts_streaming); // NOT SURE ABOUT THIS, see below
+
+                // According to the AllTalk documentation this EP supports both normal and streaming mode, 
+                // but then how is this EP different from the other one specific for streaming ("/api/tts-generate-streaming") ?
+                // After a quick test it seems that even when setting `streaming=true` the audio will only get played
+                // after all the text has been generated... 
+                // In any case: Anyway, when setting `streaming=true`, make sure to also set `narrator_enabled=false` and `autoplay=false` 
+                // or the server will respond with a generic error                
+
 
 				/* Payload for older XTTS implementation (https://github.com/daswer123/xtts-api-server)
 				let xtts_payload = {
