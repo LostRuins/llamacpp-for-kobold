@@ -26,7 +26,7 @@ jobs:
         export PATH=/usr/local/cuda-12/bin${PATH:+:${PATH}}
         export LD_LIBRARY_PATH=/usr/local/cuda-12/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
         sudo ldconfig
-        make -j$((`nproc`+1)) LLAMA_OPENBLAS=1 LLAMA_CLBLAST=1 LLAMA_CUBLAS=1 LLAMA_PORTABLE=1
+        make -j$((`nproc`+1)) LLAMA_OPENBLAS=1 LLAMA_CLBLAST=1 LLAMA_CUBLAS=1 LLAMA_PORTABLE=1 LLAMA_COLAB=1
     - name: Packaging Libraries 
       run: |
         tar -czvf KoboldCPP_libraries.tar.gz *.so *.o
