@@ -52,16 +52,16 @@ enum FileFormat
 
 enum GGUFArch
 {
-    DEFAULT = 0, //used for llama and other generic gguf
-    FALCON = 1,
-    PHI = 2,
+    ARCH_DEFAULT = 0, //used for llama and other generic gguf
+    ARCH_FALCON = 1,
+    ARCH_PHI = 2,
 };
 
 struct FileFormatExtraMeta
 {
     int n_ctx_train = 2048;
     int fileversion = 0;
-    GGUFArch model_architecture = GGUFArch::DEFAULT;
+    GGUFArch model_architecture = GGUFArch::ARCH_DEFAULT;
     int n_expert_count = 0;
 };
 
@@ -73,10 +73,13 @@ enum ModelLoadResult
 };
 
 ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in_file_format, FileFormatExtraMeta file_format_meta);
-generation_outputs gpttype_generate(const generation_inputs inputs, generation_outputs &output);
+generation_outputs gpttype_generate(const generation_inputs inputs);
 bool gpttype_generate_abort();
 const std::string & gpttype_get_pending_output();
 std::vector<int> gpttype_get_token_arr(const std::string & input);
+
+bool sdtype_load_model(const sd_load_model_inputs inputs);
+sd_generation_outputs sdtype_generate(const sd_generation_inputs inputs);
 
 void timer_start();
 double timer_check();

@@ -22,6 +22,14 @@ logit_bias_max = 16
 bias_min_value = -100.0
 bias_max_value = 100.0
 
+class logit_bias(ctypes.Structure):
+    _fields_ = [("token_id", ctypes.c_int32),
+                ("bias", ctypes.c_float)]
+
+class token_count_outputs(ctypes.Structure):
+    _fields_ = [("count", ctypes.c_int),
+                ("ids", ctypes.POINTER(ctypes.c_int))]
+
 class load_model_inputs(ctypes.Structure):
     _fields_ = [("threads", ctypes.c_int),
                 ("blasthreads", ctypes.c_int),
@@ -48,10 +56,6 @@ class load_model_inputs(ctypes.Structure):
                 ("rope_freq_base", ctypes.c_float),
                 ("banned_tokens", ctypes.c_char_p * ban_token_max),
                 ("tensor_split", ctypes.c_float * tensor_split_max)]
-
-class logit_bias(ctypes.Structure):
-    _fields_ = [("token_id", ctypes.c_int32),
-                ("bias", ctypes.c_float)]
 
 class generation_inputs(ctypes.Structure):
     _fields_ = [("seed", ctypes.c_int),
@@ -87,11 +91,30 @@ class generation_inputs(ctypes.Structure):
 
 class generation_outputs(ctypes.Structure):
     _fields_ = [("status", ctypes.c_int),
-                ("text", ctypes.c_char * 32768)]
+                ("text", ctypes.c_char_p)]
 
-class token_count_outputs(ctypes.Structure):
-    _fields_ = [("count", ctypes.c_int),
-                ("ids", ctypes.POINTER(ctypes.c_int))]
+class sd_load_model_inputs(ctypes.Structure):
+    _fields_ = [("model_filename", ctypes.c_char_p),
+                ("clblast_info", ctypes.c_int),
+                ("cublas_info", ctypes.c_int),
+                ("vulkan_info", ctypes.c_char_p),
+                ("threads", ctypes.c_int),
+                ("quant", ctypes.c_int),
+                ("debugmode", ctypes.c_int)]
+
+class sd_generation_inputs(ctypes.Structure):
+    _fields_ = [("prompt", ctypes.c_char_p),
+                ("negative_prompt", ctypes.c_char_p),
+                ("cfg_scale", ctypes.c_float),
+                ("sample_steps", ctypes.c_int),
+                ("width", ctypes.c_int),
+                ("height", ctypes.c_int),
+                ("seed", ctypes.c_int),
+                ("sample_method", ctypes.c_char_p)]
+
+class sd_generation_outputs(ctypes.Structure):
+    _fields_ = [("status", ctypes.c_int),
+                ("data", ctypes.c_char_p)]
 
 handle = None
 
@@ -242,7 +265,7 @@ def init_library():
 
     handle.load_model.argtypes = [load_model_inputs]
     handle.load_model.restype = ctypes.c_bool
-    handle.generate.argtypes = [generation_inputs, ctypes.c_wchar_p] #apparently needed for osx to work. i duno why they need to interpret it that way but whatever
+    handle.generate.argtypes = [generation_inputs]
     handle.generate.restype = generation_outputs
     handle.new_token.restype = ctypes.c_char_p
     handle.new_token.argtypes = [ctypes.c_int]
@@ -257,47 +280,16 @@ def init_library():
     handle.abort_generate.restype = ctypes.c_bool
     handle.token_count.restype = token_count_outputs
     handle.get_pending_output.restype = ctypes.c_char_p
+    handle.sd_load_model.argtypes = [sd_load_model_inputs]
+    handle.sd_load_model.restype = ctypes.c_bool
+    handle.sd_generate.argtypes = [sd_generation_inputs]
+    handle.sd_generate.restype = sd_generation_outputs
 
-def load_model(model_filename):
-    global args
-    inputs = load_model_inputs()
-    inputs.model_filename = model_filename.encode("UTF-8")
-    inputs.max_context_length = maxctx #initial value to use for ctx, can be overwritten
-    inputs.threads = args.threads
-    inputs.low_vram = (True if (args.usecublas and "lowvram" in args.usecublas) else False)
-    inputs.use_mmq = (True if (args.usecublas and "mmq" in args.usecublas) else False)
-    inputs.use_rowsplit = (True if (args.usecublas and "rowsplit" in args.usecublas) else False)
-    inputs.vulkan_info = "0".encode("UTF-8")
-    inputs.blasthreads = args.blasthreads
-    inputs.use_mmap = (not args.nommap)
-    inputs.use_mlock = args.usemlock
-    inputs.lora_filename = "".encode("UTF-8")
-    inputs.lora_base = "".encode("UTF-8")
-    if args.lora:
-        inputs.lora_filename = args.lora[0].encode("UTF-8")
-        inputs.use_mmap = False
-        if len(args.lora) > 1:
-            inputs.lora_base = args.lora[1].encode("UTF-8")
-    inputs.use_smartcontext = args.smartcontext
-    inputs.use_contextshift = (0 if args.noshift else 1)
-    inputs.blasbatchsize = args.blasbatchsize
-    inputs.forceversion = args.forceversion
-    inputs.gpulayers = args.gpulayers
-    inputs.rope_freq_scale = args.ropeconfig[0]
-    if len(args.ropeconfig)>1:
-        inputs.rope_freq_base = args.ropeconfig[1]
-    else:
-        inputs.rope_freq_base = 10000
+def set_backend_props(inputs):
     clblastids = 0
     if args.useclblast:
         clblastids = 100 + int(args.useclblast[0])*10 + int(args.useclblast[1])
     inputs.clblast_info = clblastids
-
-    for n in range(tensor_split_max):
-        if args.tensor_split and n < len(args.tensor_split):
-            inputs.tensor_split[n] = float(args.tensor_split[n])
-        else:
-            inputs.tensor_split[n] = 0
 
     # we must force an explicit tensor split
     # otherwise the default will divide equally and multigpu crap will slow it down badly
@@ -335,6 +327,46 @@ def load_model(model_filename):
         inputs.vulkan_info = s.encode("UTF-8")
     else:
         inputs.vulkan_info = "0".encode("UTF-8")
+    return inputs
+
+def load_model(model_filename):
+    global args
+    inputs = load_model_inputs()
+    inputs.model_filename = model_filename.encode("UTF-8")
+    inputs.max_context_length = maxctx #initial value to use for ctx, can be overwritten
+    inputs.threads = args.threads
+    inputs.low_vram = (True if (args.usecublas and "lowvram" in args.usecublas) else False)
+    inputs.use_mmq = (True if (args.usecublas and "mmq" in args.usecublas) else False)
+    inputs.use_rowsplit = (True if (args.usecublas and "rowsplit" in args.usecublas) else False)
+    inputs.vulkan_info = "0".encode("UTF-8")
+    inputs.blasthreads = args.blasthreads
+    inputs.use_mmap = (not args.nommap)
+    inputs.use_mlock = args.usemlock
+    inputs.lora_filename = "".encode("UTF-8")
+    inputs.lora_base = "".encode("UTF-8")
+    if args.lora:
+        inputs.lora_filename = args.lora[0].encode("UTF-8")
+        inputs.use_mmap = False
+        if len(args.lora) > 1:
+            inputs.lora_base = args.lora[1].encode("UTF-8")
+    inputs.use_smartcontext = args.smartcontext
+    inputs.use_contextshift = (0 if args.noshift else 1)
+    inputs.blasbatchsize = args.blasbatchsize
+    inputs.forceversion = args.forceversion
+    inputs.gpulayers = args.gpulayers
+    inputs.rope_freq_scale = args.ropeconfig[0]
+    if len(args.ropeconfig)>1:
+        inputs.rope_freq_base = args.ropeconfig[1]
+    else:
+        inputs.rope_freq_base = 10000
+
+    for n in range(tensor_split_max):
+        if args.tensor_split and n < len(args.tensor_split):
+            inputs.tensor_split[n] = float(args.tensor_split[n])
+        else:
+            inputs.tensor_split[n] = 0
+
+    inputs = set_backend_props(inputs)
 
     inputs.executable_path = (getdirpath()+"/").encode("UTF-8")
     inputs.debugmode = args.debugmode
@@ -350,7 +382,6 @@ def load_model(model_filename):
 def generate(prompt, memory="", max_length=32, max_context_length=512, temperature=0.7, top_k=100, top_a=0.0, top_p=0.92, min_p=0.0, typical_p=1.0, tfs=1.0, rep_pen=1.0, rep_pen_range=128, presence_penalty=0.0, mirostat=0, mirostat_tau=5.0, mirostat_eta=0.1, sampler_order=[6,0,1,3,4,2,5], seed=-1, stop_sequence=[], use_default_badwordsids=False, stream_sse=False, grammar='', grammar_retain_state=False, genkey='', trimstop=False, quiet=False, dynatemp_range=0.0, dynatemp_exponent=1.0, smoothing_factor=0.0, logit_biases={}):
     global maxctx, args, currentusergenkey, totalgens, pendingabortkey
     inputs = generation_inputs()
-    outputs = ctypes.create_unicode_buffer(ctypes.sizeof(generation_outputs))
     inputs.prompt = prompt.encode("UTF-8")
     inputs.memory = memory.encode("UTF-8")
     if max_length >= (max_context_length-1):
@@ -438,7 +469,7 @@ def generate(prompt, memory="", max_length=32, max_context_length=512, temperatu
         pendingabortkey = ""
         return ""
     else:
-        ret = handle.generate(inputs,outputs)
+        ret = handle.generate(inputs)
         outstr = ""
         if ret.status==1:
             outstr = ret.text.decode("UTF-8","ignore")
@@ -448,6 +479,68 @@ def generate(prompt, memory="", max_length=32, max_context_length=512, temperatu
                 if sindex != -1 and trim_str!="":
                     outstr = outstr[:sindex]
         return outstr
+
+
+def sd_load_model(model_filename):
+    global args
+    inputs = sd_load_model_inputs()
+    inputs.debugmode = args.debugmode
+    inputs.model_filename = model_filename.encode("UTF-8")
+    thds = args.threads
+    quant = 0
+    if len(args.sdconfig) > 2:
+        sdt = int(args.sdconfig[2])
+        if sdt > 0:
+            thds = sdt
+    if len(args.sdconfig) > 3:
+        quant = (1 if args.sdconfig[3]=="quant" else 0)
+
+    inputs.threads = thds
+    inputs.quant = quant
+    inputs = set_backend_props(inputs)
+    ret = handle.sd_load_model(inputs)
+    return ret
+
+def sd_generate(genparams):
+    global maxctx, args, currentusergenkey, totalgens, pendingabortkey
+    prompt = genparams.get("prompt", "high quality")
+    negative_prompt = genparams.get("negative_prompt", "")
+    cfg_scale = genparams.get("cfg_scale", 5)
+    sample_steps = genparams.get("steps", 20)
+    width = genparams.get("width", 512)
+    height = genparams.get("height", 512)
+    seed = genparams.get("seed", -1)
+    sample_method = genparams.get("sampler_name", "euler a")
+
+    #clean vars
+    width = width - (width%64)
+    height = height - (height%64)
+    cfg_scale = (1 if cfg_scale < 1 else (25 if cfg_scale > 25 else cfg_scale))
+    sample_steps = (1 if sample_steps < 1 else (80 if sample_steps > 80 else sample_steps))
+    width = (128 if width < 128 else (1024 if width > 1024 else width))
+    height = (128 if height < 128 else (1024 if height > 1024 else height))
+
+    #quick mode
+    if args.sdconfig and len(args.sdconfig)>1 and args.sdconfig[1]=="quick":
+        cfg_scale = 1
+        sample_steps = 7
+        sample_method = "dpm++ 2m karras"
+        print("Image generation set to Quick Mode (Low Quality). Step counts, sampler, and cfg scale are fixed.")
+
+    inputs = sd_generation_inputs()
+    inputs.prompt = prompt.encode("UTF-8")
+    inputs.negative_prompt = negative_prompt.encode("UTF-8")
+    inputs.cfg_scale = cfg_scale
+    inputs.sample_steps = sample_steps
+    inputs.width = width
+    inputs.height = height
+    inputs.seed = seed
+    inputs.sample_method = sample_method.lower().encode("UTF-8")
+    ret = handle.sd_generate(inputs)
+    outstr = ""
+    if ret.status==1:
+        outstr = ret.data.decode("UTF-8","ignore")
+    return outstr
 
 def utfprint(str):
     try:
@@ -468,14 +561,16 @@ def bring_terminal_to_foreground():
 ### A hacky simple HTTP server simulating a kobold api by Concedo
 ### we are intentionally NOT using flask, because we want MINIMAL dependencies
 #################################################################
-friendlymodelname = "concedo/koboldcpp"  # local kobold api apparently needs a hardcoded known HF model name
+friendlymodelname = "inactive"
+friendlysdmodelname = "inactive"
+fullsdmodelpath = ""  #if empty, it's not initialized
 maxctx = 2048
 maxhordectx = 2048
 maxhordelen = 256
 modelbusy = threading.Lock()
 requestsinqueue = 0
 defaultport = 5001
-KcppVersion = "1.59.1"
+KcppVersion = "1.60"
 showdebug = True
 showsamplerwarning = True
 showmaxctxwarning = True
@@ -816,7 +911,7 @@ Enter Prompt:<br>
         self.wfile.write(finalhtml)
 
     def do_GET(self):
-        global maxctx, maxhordelen, friendlymodelname, KcppVersion, totalgens, preloaded_story, exitcounter, currentusergenkey
+        global maxctx, maxhordelen, friendlymodelname, KcppVersion, totalgens, preloaded_story, exitcounter, currentusergenkey, friendlysdmodelname, fullsdmodelpath
         self.path = self.path.rstrip('/')
         response_body = None
         content_type = 'application/json'
@@ -875,6 +970,24 @@ Enter Prompt:<br>
 
         elif self.path.endswith('/v1/models'):
             response_body = (json.dumps({"object":"list","data":[{"id":friendlymodelname,"object":"model","created":1,"owned_by":"koboldcpp","permission":[],"root":"koboldcpp"}]}).encode())
+
+        elif self.path.endswith('/sdapi/v1/sd-models'):
+            if friendlysdmodelname=="inactive" or fullsdmodelpath=="":
+                response_body = (json.dumps([]).encode())
+            else:
+                response_body = (json.dumps([{"title":friendlysdmodelname,"model_name":friendlysdmodelname,"hash":"8888888888","sha256":"8888888888888888888888888888888888888888888888888888888888888888","filename":fullsdmodelpath,"config": None}]).encode())
+        elif self.path.endswith('/sdapi/v1/options'):
+           response_body = (json.dumps({"samples_format":"png","sd_model_checkpoint":friendlysdmodelname}).encode())
+        elif self.path.endswith('/sdapi/v1/samplers'):
+            if friendlysdmodelname=="inactive" or fullsdmodelpath=="":
+                response_body = (json.dumps([]).encode())
+            else:
+                response_body = (json.dumps([{"name":"Euler a","aliases":["k_euler_a","k_euler_ancestral"],"options":{}},{"name":"Euler","aliases":["k_euler"],"options":{}},{"name":"Heun","aliases":["k_heun"],"options":{}},{"name":"DPM2","aliases":["k_dpm_2"],"options":{}},{"name":"DPM++ 2M","aliases":["k_dpmpp_2m"],"options":{}}]).encode())
+        elif self.path.endswith('/sdapi/v1/latent-upscale-modes'):
+           response_body = (json.dumps([]).encode())
+        elif self.path.endswith('/sdapi/v1/upscalers'):
+           response_body = (json.dumps([]).encode())
+
 
         elif self.path=="/api":
             content_type = 'text/html'
@@ -1000,6 +1113,7 @@ Enter Prompt:<br>
             sse_stream_flag = False
 
             api_format = 0 #1=basic,2=kai,3=oai,4=oai-chat
+            is_txt2img = False
 
             if self.path.endswith('/request'):
                 api_format = 1
@@ -1017,7 +1131,10 @@ Enter Prompt:<br>
             if self.path.endswith('/v1/chat/completions'):
                 api_format = 4
 
-            if api_format > 0:
+            if self.path.endswith('/sdapi/v1/txt2img'):
+                is_txt2img = True
+
+            if is_txt2img or api_format > 0:
                 genparams = None
                 try:
                     genparams = json.loads(body)
@@ -1032,25 +1149,44 @@ Enter Prompt:<br>
                 if args.foreground:
                     bring_terminal_to_foreground()
 
-                # Check if streaming chat completions, if so, set stream mode to true
-                if (api_format == 4 or api_format == 3) and "stream" in genparams and genparams["stream"]:
-                    sse_stream_flag = True
+                if api_format > 0:#text gen
+                    # Check if streaming chat completions, if so, set stream mode to true
+                    if (api_format == 4 or api_format == 3) and "stream" in genparams and genparams["stream"]:
+                        sse_stream_flag = True
 
-                gen = asyncio.run(self.handle_request(genparams, api_format, sse_stream_flag))
+                    gen = asyncio.run(self.handle_request(genparams, api_format, sse_stream_flag))
 
-                try:
-                    # Headers are already sent when streaming
-                    if not sse_stream_flag:
+                    try:
+                        # Headers are already sent when streaming
+                        if not sse_stream_flag:
+                            self.send_response(200)
+                            genresp = (json.dumps(gen).encode())
+                            self.send_header('content-length', str(len(genresp)))
+                            self.end_headers(content_type='application/json')
+                            self.wfile.write(genresp)
+                    except Exception as ex:
+                        if args.debugmode:
+                            print(ex)
+                        print("Generate: The response could not be sent, maybe connection was terminated?")
+                        handle.abort_generate()
+                        time.sleep(0.2) #short delay
+                    return
+
+                elif is_txt2img: #image gen
+                    try:
+                        gen = sd_generate(genparams)
+                        genresp = (json.dumps({"images":[gen],"parameters":{},"info":""}).encode())
                         self.send_response(200)
-                        genresp = (json.dumps(gen).encode())
                         self.send_header('content-length', str(len(genresp)))
                         self.end_headers(content_type='application/json')
                         self.wfile.write(genresp)
-                except Exception as ex:
-                    print("Generate: The response could not be sent, maybe connection was terminated?")
-                    handle.abort_generate()
-                    time.sleep(0.2) #short delay
-                return
+                    except Exception as ex:
+                        if args.debugmode:
+                            print(ex)
+                        print("Generate Image: The response could not be sent, maybe connection was terminated?")
+                        time.sleep(0.2) #short delay
+                    return
+
         finally:
             modelbusy.release()
 
@@ -1089,7 +1225,7 @@ def RunServerMultiThreaded(addr, port, embedded_kailite = None, embedded_kcpp_do
         sock = context.wrap_socket(sock, server_side=True)
 
     sock.bind((addr, port))
-    numThreads = 12
+    numThreads = 20
     sock.listen(numThreads)
 
     class Thread(threading.Thread):
@@ -1147,7 +1283,7 @@ def show_new_gui():
         root.destroy()
         if args.model_param and args.model_param!="" and args.model_param.lower().endswith('.kcpps'):
             loadconfigfile(args.model_param)
-        if not args.model_param:
+        if not args.model_param and not args.sdconfig:
             global exitcounter
             exitcounter = 999
             print("\nNo ggml model or kcpps file was selected. Exiting.")
@@ -1193,7 +1329,7 @@ def show_new_gui():
 
     tabs = ctk.CTkFrame(root, corner_radius = 0, width=windowwidth, height=windowheight-50)
     tabs.grid(row=0, stick="nsew")
-    tabnames= ["Quick Launch", "Hardware", "Tokens", "Model", "Network"]
+    tabnames= ["Quick Launch", "Hardware", "Tokens", "Model", "Network","Image Gen"]
     navbuttons = {}
     navbuttonframe = ctk.CTkFrame(tabs, width=100, height=int(tabs.cget("height")))
     navbuttonframe.grid(row=0, column=0, padx=2,pady=2)
@@ -1283,6 +1419,11 @@ def show_new_gui():
     usehorde_var = ctk.IntVar()
     ssl_cert_var = ctk.StringVar()
     ssl_key_var = ctk.StringVar()
+
+    sd_model_var = ctk.StringVar()
+    sd_quick_var = ctk.IntVar(value=0)
+    sd_threads_var = ctk.StringVar(value=str(default_threads))
+    sd_quant_var = ctk.IntVar(value=0)
 
     def tabbuttonaction(name):
         for t in tabcontent:
@@ -1756,9 +1897,17 @@ def show_new_gui():
     makecheckbox(network_tab, "Configure for Horde", usehorde_var, 19, command=togglehorde,tooltiptxt="Enable the embedded AI Horde worker.")
     togglehorde(1,1,1)
 
+    # Image Gen Tab
+    images_tab = tabcontent["Image Gen"]
+    makefileentry(images_tab, "Stable Diffusion Model (f16 safetensors):", "Select Stable Diffusion Model File", sd_model_var, 1, filetypes=[("*.safetensors","*.safetensors")], tooltiptxt="Select a .safetensors Stable Diffusion model file on disk to be loaded.")
+    makecheckbox(images_tab, "Quick Mode (Low Quality)", sd_quick_var, 4,tooltiptxt="Force optimal generation settings for speed.")
+    makelabelentry(images_tab, "Image threads:" , sd_threads_var, 6, 50,"How many threads to use during image generation.\nIf left blank, uses same value as threads.")
+    makecheckbox(images_tab, "Compress Weights (Saves Memory)", sd_quant_var, 8,tooltiptxt="Quantizes the SD model weights to save memory. May degrade quality.")
+
+
     # launch
     def guilaunch():
-        if model_var.get() == "":
+        if model_var.get() == "" and sd_model_var.get() == "":
             tmp = askopenfilename(title="Select ggml model .bin or .gguf file")
             model_var.set(tmp)
         nonlocal nextstate
@@ -1841,6 +1990,8 @@ def show_new_gui():
             args.hordeconfig = None if usehorde_var.get() == 0 else [horde_name_var.get(), horde_gen_var.get(), horde_context_var.get()]
         else:
             args.hordeconfig = None if usehorde_var.get() == 0 else [horde_name_var.get(), horde_gen_var.get(), horde_context_var.get(), horde_apikey_var.get(), horde_workername_var.get()]
+
+        args.sdconfig = None if sd_model_var.get() == "" else [sd_model_var.get(), ("quick" if sd_quick_var.get()==1 else "normal"),(int(threads_var.get()) if sd_threads_var.get()=="" else int(sd_threads_var.get())),("quant" if sd_quant_var.get()==1 else "noquant")]
 
     def import_vars(dict):
         if "threads" in dict:
@@ -1969,6 +2120,15 @@ def show_new_gui():
                 horde_workername_var.set(dict["hordeconfig"][4])
                 usehorde_var.set("1")
 
+        if "sdconfig" in dict and dict["sdconfig"] and len(dict["sdconfig"]) > 0:
+            sd_model_var.set(dict["sdconfig"][0])
+            if len(dict["sdconfig"]) > 1:
+                sd_quick_var.set(1 if dict["sdconfig"][1]=="quick" else 0)
+            if len(dict["sdconfig"]) > 2:
+                sd_threads_var.set(str(dict["sdconfig"][2]))
+            if len(dict["sdconfig"]) > 3:
+                sd_quant_var.set(str(dict["sdconfig"][3])=="quant")
+
     def save_config():
         file_type = [("KoboldCpp Settings", "*.kcpps")]
         filename = asksaveasfile(filetypes=file_type, defaultextension=file_type)
@@ -2027,9 +2187,9 @@ def show_new_gui():
         # processing vars
         export_vars()
 
-        if not args.model_param:
+        if not args.model_param and not args.sdconfig:
             exitcounter = 999
-            print("\nNo ggml model file was selected. Exiting.")
+            print("\nNo text or image model file was selected. Exiting.")
             time.sleep(3)
             sys.exit(2)
 
@@ -2240,6 +2400,9 @@ def setuptunnel():
             if os.name == 'nt':
                 print("Starting Cloudflare Tunnel for Windows, please wait...", flush=True)
                 tunnelproc = subprocess.Popen(f"cloudflared.exe tunnel --url localhost:{args.port}", text=True, encoding='utf-8', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+            elif sys.platform=="darwin":
+                print("Starting Cloudflare Tunnel for MacOS, please wait...", flush=True)
+                tunnelproc = subprocess.Popen(f"./cloudflared tunnel --url http://localhost:{args.port}", text=True, encoding='utf-8', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
             else:
                 print("Starting Cloudflare Tunnel for Linux, please wait...", flush=True)
                 tunnelproc = subprocess.Popen(f"./cloudflared-linux-amd64 tunnel --url http://localhost:{args.port}", text=True, encoding='utf-8', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
@@ -2276,6 +2439,14 @@ def setuptunnel():
             else:
                 print("Downloading Cloudflare Tunnel for Windows...")
                 subprocess.run("curl -fL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe -o cloudflared.exe", shell=True, capture_output=True, text=True, check=True, encoding='utf-8')
+        elif sys.platform=="darwin":
+            if os.path.exists("cloudflared") and os.path.getsize("cloudflared") > 1000000:
+                print("Cloudflared file exists, reusing it...")
+            else:
+                print("Downloading Cloudflare Tunnel for MacOS...")
+                subprocess.run("curl -fL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-amd64.tgz -o cloudflared-darwin-amd64.tgz", shell=True, capture_output=True, text=True, check=True, encoding='utf-8')
+                subprocess.run("tar -xzf cloudflared-darwin-amd64.tgz", shell=True)
+                subprocess.run("chmod +x 'cloudflared'", shell=True)
         else:
             if os.path.exists("cloudflared-linux-amd64") and os.path.getsize("cloudflared-linux-amd64") > 1000000:
                 print("Cloudflared file exists, reusing it...")
@@ -2374,7 +2545,7 @@ def sanitize_string(input_string):
     return sanitized_string
 
 def main(launch_args,start_server=True):
-    global args, friendlymodelname
+    global args, friendlymodelname, friendlysdmodelname, fullsdmodelpath
     args = launch_args
     embedded_kailite = None
     embedded_kcpp_docs = None
@@ -2395,7 +2566,7 @@ def main(launch_args,start_server=True):
     if not args.model_param:
         args.model_param = args.model
 
-    if not args.model_param:
+    if not args.model_param and not args.sdconfig:
         #give them a chance to pick a file
         print("For command line arguments, please refer to --help")
         print("***")
@@ -2420,7 +2591,7 @@ def main(launch_args,start_server=True):
             print(f"Warning: Saved story file {args.preloadstory} invalid or not found. No story will be preloaded into server.")
 
     # sanitize and replace the default vanity name. remember me....
-    if args.model_param!="":
+    if args.model_param and args.model_param!="":
         newmdldisplayname = os.path.basename(args.model_param)
         newmdldisplayname = os.path.splitext(newmdldisplayname)[0]
         friendlymodelname = "koboldcpp/" + sanitize_string(newmdldisplayname)
@@ -2472,45 +2643,71 @@ def main(launch_args,start_server=True):
     init_library() # Note: if blas does not exist and is enabled, program will crash.
     print("==========")
     time.sleep(1)
-    if not os.path.exists(args.model_param):
-        exitcounter = 999
-        print(f"Cannot find model file: {args.model_param}")
-        time.sleep(3)
-        sys.exit(2)
 
-    if args.lora and args.lora[0]!="":
-        if not os.path.exists(args.lora[0]):
+    #handle loading text model
+    if args.model_param:
+        if not os.path.exists(args.model_param):
             exitcounter = 999
-            print(f"Cannot find lora file: {args.lora[0]}")
+            print(f"Cannot find text model file: {args.model_param}")
             time.sleep(3)
             sys.exit(2)
-        else:
-            args.lora[0] = os.path.abspath(args.lora[0])
-            if len(args.lora) > 1:
-                if not os.path.exists(args.lora[1]):
-                    exitcounter = 999
-                    print(f"Cannot find lora base: {args.lora[1]}")
-                    time.sleep(3)
-                    sys.exit(2)
-                else:
-                    args.lora[1] = os.path.abspath(args.lora[1])
 
-    if not args.blasthreads or args.blasthreads <= 0:
-        args.blasthreads = args.threads
+        if args.lora and args.lora[0]!="":
+            if not os.path.exists(args.lora[0]):
+                exitcounter = 999
+                print(f"Cannot find lora file: {args.lora[0]}")
+                time.sleep(3)
+                sys.exit(2)
+            else:
+                args.lora[0] = os.path.abspath(args.lora[0])
+                if len(args.lora) > 1:
+                    if not os.path.exists(args.lora[1]):
+                        exitcounter = 999
+                        print(f"Cannot find lora base: {args.lora[1]}")
+                        time.sleep(3)
+                        sys.exit(2)
+                    else:
+                        args.lora[1] = os.path.abspath(args.lora[1])
 
-    modelname = os.path.abspath(args.model_param)
-    print(args)
-    # Flush stdout for win32 issue with regards to piping in terminals,
-    # especially before handing over to C++ context.
-    print(f"==========\nLoading model: {modelname} \n[Threads: {args.threads}, BlasThreads: {args.blasthreads}, SmartContext: {args.smartcontext}, ContextShift: {not (args.noshift)}]", flush=True)
-    loadok = load_model(modelname)
-    print("Load Model OK: " + str(loadok))
+        if not args.blasthreads or args.blasthreads <= 0:
+            args.blasthreads = args.threads
 
-    if not loadok:
-        exitcounter = 999
-        print("Could not load model: " + modelname)
-        time.sleep(3)
-        sys.exit(3)
+        modelname = os.path.abspath(args.model_param)
+        print(args)
+        # Flush stdout for win32 issue with regards to piping in terminals,
+        # especially before handing over to C++ context.
+        print(f"==========\nLoading model: {modelname} \n[Threads: {args.threads}, BlasThreads: {args.blasthreads}, SmartContext: {args.smartcontext}, ContextShift: {not (args.noshift)}]", flush=True)
+        loadok = load_model(modelname)
+        print("Load Text Model OK: " + str(loadok))
+
+        if not loadok:
+            exitcounter = 999
+            print("Could not load text model: " + modelname)
+            time.sleep(3)
+            sys.exit(3)
+
+    #handle loading image model
+    if args.sdconfig:
+        imgmodel = args.sdconfig[0]
+        if not imgmodel or not os.path.exists(imgmodel):
+            exitcounter = 999
+            print(f"Cannot find image model file: {imgmodel}")
+            time.sleep(3)
+            sys.exit(2)
+        imgmodel = os.path.abspath(imgmodel)
+        fullsdmodelpath = imgmodel
+        friendlysdmodelname = os.path.basename(imgmodel)
+        friendlysdmodelname = os.path.splitext(friendlysdmodelname)[0]
+        friendlysdmodelname = sanitize_string(friendlysdmodelname)
+        loadok = sd_load_model(imgmodel)
+        print("Load Image Model OK: " + str(loadok))
+        if not loadok:
+            exitcounter = 999
+            print("Could not load image model: " + imgmodel)
+            time.sleep(3)
+            sys.exit(3)
+
+    #load embedded lite
     try:
         basepath = os.path.abspath(os.path.dirname(__file__))
         with open(os.path.join(basepath, "klite.embd"), mode='rb') as f:
@@ -2573,7 +2770,7 @@ def main(launch_args,start_server=True):
         timer_thread = threading.Timer(1, onready_subprocess) #1 second delay
         timer_thread.start()
 
-    if args.benchmark is not None:
+    if args.model_param and args.benchmark is not None:
         from datetime import datetime, timezone
         global libname
         start_server = False
@@ -2592,7 +2789,7 @@ def main(launch_args,start_server=True):
         benchprompt = "11111111"
         for i in range(0,10): #generate massive prompt
             benchprompt += benchprompt
-        result = generate(benchprompt,memory="",max_length=benchlen,max_context_length=benchmaxctx,use_default_badwordsids=True)
+        result = generate(benchprompt,memory="",max_length=benchlen,max_context_length=benchmaxctx,temperature=0.1,top_k=1,rep_pen=1,use_default_badwordsids=True)
         result = (result[:5] if len(result)>5 else "")
         resultok = (result=="11111")
         t_pp = float(handle.get_last_process_time())*float(benchmaxctx-benchlen)*0.001
@@ -2656,6 +2853,18 @@ def start_in_seperate_process(launch_args):
     return (output_queue, input_queue, p)
 
 if __name__ == '__main__':
+
+    def check_range(value_type, min_value, max_value):
+        def range_checker(arg: str):
+            try:
+                f = value_type(arg)
+            except ValueError:
+                raise argparse.ArgumentTypeError(f'must be a valid {value_type}')
+            if f < min_value or f > max_value:
+                raise argparse.ArgumentTypeError(f'must be within [{min_value}, {max_value}]')
+            return f
+        return range_checker
+
     print("***\nWelcome to KoboldCpp - Version " + KcppVersion) # just update version manually
     # print("Python version: " + sys.version)
     parser = argparse.ArgumentParser(description='KoboldCpp Server')
@@ -2667,18 +2876,25 @@ if __name__ == '__main__':
     portgroup.add_argument("port_param", help="Port to listen on (positional)", default=defaultport, nargs="?", type=int, action='store')
     parser.add_argument("--host", help="Host IP to listen on. If empty, all routable interfaces are accepted.", default="")
     parser.add_argument("--launch", help="Launches a web browser when load is completed.", action='store_true')
-    parser.add_argument("--lora", help="LLAMA models only, applies a lora file on top of model. Experimental.", metavar=('[lora_filename]', '[lora_base]'), nargs='+')
     parser.add_argument("--config", help="Load settings from a .kcpps file. Other arguments will be ignored", type=str, nargs=1)
     physical_core_limit = 1
     if os.cpu_count()!=None and os.cpu_count()>1:
         physical_core_limit = int(os.cpu_count()/2)
     default_threads = (physical_core_limit if physical_core_limit<=3 else max(3,physical_core_limit-1))
     parser.add_argument("--threads", help="Use a custom number of threads if specified. Otherwise, uses an amount based on CPU cores", type=int, default=default_threads)
-    parser.add_argument("--blasthreads", help="Use a different number of threads during BLAS if specified. Otherwise, has the same value as --threads",metavar=('[threads]'), type=int, default=0)
-    parser.add_argument("--highpriority", help="Experimental flag. If set, increases the process CPU priority, potentially speeding up generation. Use caution.", action='store_true')
-    parser.add_argument("--contextsize", help="Controls the memory allocated for maximum context size, only change if you need more RAM for big contexts. (default 2048)", type=int,choices=[256, 512,1024,2048,3072,4096,6144,8192,12288,16384,24576,32768,49152,65536], default=2048)
-    parser.add_argument("--blasbatchsize", help="Sets the batch size used in BLAS processing (default 512). Setting it to -1 disables BLAS mode, but keeps other benefits like GPU offload.", type=int,choices=[-1,32,64,128,256,512,1024,2048], default=512)
+    compatgroup = parser.add_mutually_exclusive_group()
+    compatgroup.add_argument("--usecublas", help="Use CuBLAS for GPU Acceleration. Requires CUDA. Select lowvram to not allocate VRAM scratch buffer. Enter a number afterwards to select and use 1 GPU. Leaving no number will use all GPUs. For hipBLAS binaries, please check YellowRoseCx rocm fork.", nargs='*',metavar=('[lowvram|normal] [main GPU ID] [mmq] [rowsplit]'), choices=['normal', 'lowvram', '0', '1', '2', '3', 'mmq', 'rowsplit'])
+    compatgroup.add_argument("--usevulkan", help="Use Vulkan for GPU Acceleration. Can optionally specify GPU Device ID (e.g. --usevulkan 0).", metavar=('[Device ID]'), nargs='*', type=int, default=None)
+    compatgroup.add_argument("--useclblast", help="Use CLBlast for GPU Acceleration. Must specify exactly 2 arguments, platform ID and device ID (e.g. --useclblast 1 0).", type=int, choices=range(0,9), nargs=2)
+    compatgroup.add_argument("--noblas", help="Do not use OpenBLAS for accelerated prompt ingestion", action='store_true')
+    parser.add_argument("--gpulayers", help="Set number of layers to offload to GPU when using GPU. Requires GPU.",metavar=('[GPU layers]'), nargs='?', const=1, type=int, default=0)
+    parser.add_argument("--tensor_split", help="For CUDA and Vulkan only, ratio to split tensors across multiple GPUs, space-separated list of proportions, e.g. 7 3", metavar=('[Ratios]'), type=float, nargs='+')
+    parser.add_argument("--contextsize", help="Controls the memory allocated for maximum context size, only change if you need more RAM for big contexts. (default 2048). Supported values are [256,512,1024,2048,3072,4096,6144,8192,12288,16384,24576,32768,49152,65536]. IF YOU USE ANYTHING ELSE YOU ARE ON YOUR OWN.",metavar=('[256,512,1024,2048,3072,4096,6144,8192,12288,16384,24576,32768,49152,65536]'), type=check_range(int,256,262144), default=2048)
     parser.add_argument("--ropeconfig", help="If set, uses customized RoPE scaling from configured frequency scale and frequency base (e.g. --ropeconfig 0.25 10000). Otherwise, uses NTK-Aware scaling set automatically based on context size. For linear rope, simply set the freq-scale and ignore the freq-base",metavar=('[rope-freq-scale]', '[rope-freq-base]'), default=[0.0, 10000.0], type=float, nargs='+')
+    #more advanced params
+    parser.add_argument("--blasbatchsize", help="Sets the batch size used in BLAS processing (default 512). Setting it to -1 disables BLAS mode, but keeps other benefits like GPU offload.", type=int,choices=[-1,32,64,128,256,512,1024,2048], default=512)
+    parser.add_argument("--blasthreads", help="Use a different number of threads during BLAS if specified. Otherwise, has the same value as --threads",metavar=('[threads]'), type=int, default=0)
+    parser.add_argument("--lora", help="LLAMA models only, applies a lora file on top of model. Experimental.", metavar=('[lora_filename]', '[lora_base]'), nargs='+')
     parser.add_argument("--smartcontext", help="Reserving a portion of context to try processing less frequently.", action='store_true')
     parser.add_argument("--noshift", help="If set, do not attempt to Trim and Shift the GGUF context.", action='store_true')
     parser.add_argument("--bantokens", help="You can manually specify a list of token SUBSTRINGS that the AI cannot use. This bans ALL instances of that substring.", metavar=('[token_substrings]'), nargs='+')
@@ -2689,27 +2905,16 @@ if __name__ == '__main__':
     parser.add_argument("--debugmode", help="Shows additional debug info in the terminal.", nargs='?', const=1, type=int, default=0)
     parser.add_argument("--skiplauncher", help="Doesn't display or use the GUI launcher.", action='store_true')
     parser.add_argument("--hordeconfig", help="Sets the display model name to something else, for easy use on AI Horde. Optional additional parameters set the horde max genlength, max ctxlen, API key and worker name.",metavar=('[hordemodelname]', '[hordegenlength] [hordemaxctx] [hordeapikey] [hordeworkername]'), nargs='+')
-    compatgroup = parser.add_mutually_exclusive_group()
-    compatgroup.add_argument("--noblas", help="Do not use OpenBLAS for accelerated prompt ingestion", action='store_true')
-    compatgroup.add_argument("--useclblast", help="Use CLBlast for GPU Acceleration. Must specify exactly 2 arguments, platform ID and device ID (e.g. --useclblast 1 0).", type=int, choices=range(0,9), nargs=2)
-    compatgroup.add_argument("--usecublas", help="Use CuBLAS for GPU Acceleration. Requires CUDA. Select lowvram to not allocate VRAM scratch buffer. Enter a number afterwards to select and use 1 GPU. Leaving no number will use all GPUs. For hipBLAS binaries, please check YellowRoseCx rocm fork.", nargs='*',metavar=('[lowvram|normal] [main GPU ID] [mmq] [rowsplit]'), choices=['normal', 'lowvram', '0', '1', '2', '3', 'mmq', 'rowsplit'])
-    compatgroup.add_argument("--usevulkan", help="Use Vulkan for GPU Acceleration. Can optionally specify GPU Device ID (e.g. --usevulkan 0).", metavar=('[Device ID]'), nargs='*', type=int, default=None)
-    parser.add_argument("--gpulayers", help="Set number of layers to offload to GPU when using GPU. Requires GPU.",metavar=('[GPU layers]'), nargs='?', const=1, type=int, default=0)
-    parser.add_argument("--tensor_split", help="For CUDA and Vulkan only, ratio to split tensors across multiple GPUs, space-separated list of proportions, e.g. 7 3", metavar=('[Ratios]'), type=float, nargs='+')
     parser.add_argument("--onready", help="An optional shell command to execute after the model has been loaded.", metavar=('[shell command]'), type=str, default="",nargs=1)
     parser.add_argument("--benchmark", help="Do not start server, instead run benchmarks. If filename is provided, appends results to provided file.", metavar=('[filename]'), nargs='?', const="stdout", type=str, default=None)
     parser.add_argument("--multiuser", help="Runs in multiuser mode, which queues incoming requests instead of blocking them.", metavar=('limit'), nargs='?', const=1, type=int, default=0)
     parser.add_argument("--remotetunnel", help="Uses Cloudflare to create a remote tunnel, allowing you to access koboldcpp remotely over the internet even behind a firewall.", action='store_true')
+    parser.add_argument("--highpriority", help="Experimental flag. If set, increases the process CPU priority, potentially speeding up generation. Use caution.", action='store_true')
     parser.add_argument("--foreground", help="Windows only. Sends the terminal to the foreground every time a new prompt is generated. This helps avoid some idle slowdown issues.", action='store_true')
     parser.add_argument("--preloadstory", help="Configures a prepared story json save file to be hosted on the server, which frontends (such as Kobold Lite) can access over the API.", default="")
     parser.add_argument("--quiet", help="Enable quiet mode, which hides generation inputs and outputs in the terminal. Quiet mode is automatically enabled when running --hordeconfig.", action='store_true')
     parser.add_argument("--ssl", help="Allows all content to be served over SSL instead. A valid UNENCRYPTED SSL cert and key .pem files must be provided", metavar=('[cert_pem]', '[key_pem]'), nargs='+')
     parser.add_argument("--nocertify", help="Allows insecure SSL connections. Use this if you have cert errors and need to bypass certificate restrictions.", action='store_true')
-
-    # #deprecated hidden args. they do nothing. do not use
-    # parser.add_argument("--psutil_set_threads", action='store_true', help=argparse.SUPPRESS)
-    # parser.add_argument("--stream", action='store_true', help=argparse.SUPPRESS)
-    # parser.add_argument("--unbantokens", action='store_true', help=argparse.SUPPRESS)
-    # parser.add_argument("--usemirostat", action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument("--sdconfig", help="Specify a stable diffusion safetensors model to enable image generation. If quick is specified, force optimal generation settings for speed.",metavar=('[sd_filename]', '[normal|quick] [sd_threads] [quant|noquant]'), nargs='+')
 
     main(parser.parse_args(),start_server=True)

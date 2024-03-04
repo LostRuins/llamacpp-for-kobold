@@ -284,14 +284,14 @@ void print_tok_vec(std::vector<float> &embd)
 
             int filever = gguf_get_version(ctx);
             fileformatmeta->fileversion = filever;
-            fileformatmeta->model_architecture = GGUFArch::DEFAULT;
+            fileformatmeta->model_architecture = GGUFArch::ARCH_DEFAULT;
             if(modelarch=="phi2")
             {
-                fileformatmeta->model_architecture = GGUFArch::PHI;
+                fileformatmeta->model_architecture = GGUFArch::ARCH_PHI;
             }
             else if(modelarch=="falcon")
             {
-                fileformatmeta->model_architecture = GGUFArch::FALCON;
+                fileformatmeta->model_architecture = GGUFArch::ARCH_FALCON;
             }
         }
         gguf_free(ctx);

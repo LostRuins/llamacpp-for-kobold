@@ -316,7 +316,7 @@
                          },
                          "stop_reason": {
                             "type": "integer",
-                            "description": "Reason the generation stopped. INVALID=-1, OUT_OF_TOKENS=0, EOS_TOKEN=1, CUSTOM_STOPPER=2"
+                            "description": "Reason the generation stopped. INVALID=-1, OUT_OF_TOKENS=0, EOS_TOKEN_HIT=1, CUSTOM_STOPPER=2"
                          },
                          "queue": {
                             "type": "integer",
@@ -345,11 +345,11 @@
              "info": {
                 "title": "KoboldCpp API",
                 "description": "For swagger.json, <a href=\"?json=1\">click here</a>.",
-                "version": "1.58"
+                "version": "1.60"
              },
              "openapi": "3.0.3",
              "paths": {
-                "/v1/config/max_context_length": {
+                "/api/v1/config/max_context_length": {
                    "get": {
                       "responses": {
                          "200": {
@@ -368,11 +368,11 @@
                       },
                       "summary": "Retrieve the current max context length setting value that horde sees",
                       "tags": [
-                         "v1"
+                         "api/v1"
                       ]
                    }
                 },
-                "/v1/config/max_length": {
+                "/api/v1/config/max_length": {
                    "get": {
                       "responses": {
                          "200": {
@@ -391,11 +391,11 @@
                       },
                       "summary": "Retrieve the current max length (amount to generate) setting value",
                       "tags": [
-                         "v1"
+                         "api/v1"
                       ]
                    }
                 },
-                "/v1/generate": {
+                "/api/v1/generate": {
                    "post": {
                       "description": "Generates text given a prompt and generation settings.\n\nUnspecified values are set to defaults.",
                       "requestBody": {
@@ -460,11 +460,11 @@
                       },
                       "summary": "Generate text with a specified prompt",
                       "tags": [
-                         "v1"
+                         "api/v1"
                       ]
                    }
                 },
-                "/v1/info/version": {
+                "/api/v1/info/version": {
                    "get": {
                       "description": "Returns the matching *KoboldAI* (United) version of the API that you are currently using. This is not the same as the KoboldCpp API version - this is used to feature match against KoboldAI United.",
                       "responses": {
@@ -484,11 +484,11 @@
                       },
                       "summary": "Current KoboldAI United API version",
                       "tags": [
-                         "v1"
+                         "api/v1"
                       ]
                    }
                 },
-                "/v1/model": {
+                "/api/v1/model": {
                    "get": {
                       "description": "Gets the current model display name, set with hordeconfig.",
                       "responses": {
@@ -508,11 +508,11 @@
                       },
                       "summary": "Retrieve the current model string from hordeconfig",
                       "tags": [
-                         "v1"
+                         "api/v1"
                       ]
                    }
                 },
-                "/extra/true_max_context_length": {
+                "/api/extra/true_max_context_length": {
                    "get": {
                       "responses": {
                          "200": {
@@ -532,11 +532,11 @@
                       "summary": "Retrieve the actual max context length setting value set from the launcher",
                       "description": "Retrieve the actual max context length setting value set from the launcher",
                       "tags": [
-                         "extra"
+                         "api/extra"
                       ]
                    }
                 },
-                "/extra/version": {
+                "/api/extra/version": {
                    "get": {
                       "responses": {
                          "200": {
@@ -557,11 +557,11 @@
                       "description": "Retrieve the KoboldCpp backend version",
                       "summary": "Retrieve the KoboldCpp backend version",
                       "tags": [
-                         "extra"
+                         "api/extra"
                       ]
                    }
                 },
-                "/extra/preloadstory": {
+                "/api/extra/preloadstory": {
                    "get": {
                       "responses": {
                          "200": {
@@ -581,11 +581,11 @@
                       "description": "Retrieves the KoboldCpp preloaded story, --preloadstory configures a prepared story json save file to be hosted on the server, which frontends (such as Kobold Lite) can access over the API.",
                       "summary": "Retrieves the KoboldCpp preloaded story",
                       "tags": [
-                         "extra"
+                         "api/extra"
                       ]
                    }
                 },
-                "/extra/perf": {
+                "/api/extra/perf": {
                    "get": {
                       "responses": {
                          "200": {
@@ -611,11 +611,11 @@
                       "description": "Retrieve the KoboldCpp recent performance information",
                       "summary": "Retrieve the KoboldCpp recent performance information",
                       "tags": [
-                         "extra"
+                         "api/extra"
                       ]
                    }
                 },
-                "/extra/generate/stream": {
+                "/api/extra/generate/stream": {
                    "post": {
                       "description": "Generates text given a prompt and generation settings, with SSE streaming.\n\nUnspecified values are set to defaults.\n\nSSE streaming establishes a persistent connection, returning ongoing process in the form of message events.\n\n``` \nevent: message\ndata: {data}\n\n```",
                       "requestBody": {
@@ -670,11 +670,11 @@
                       },
                       "summary": "Generate text with a specified prompt. SSE streamed results.",
                       "tags": [
-                         "extra"
+                         "api/extra"
                       ]
                    }
                 },
-                "/extra/generate/check": {
+                "/api/extra/generate/check": {
                    "get": {
                       "responses": {
                          "200": {
@@ -698,7 +698,7 @@
                       "summary": "Poll the incomplete results of the currently ongoing text generation.",
                       "description": "Poll the incomplete results of the currently ongoing text generation. Will not work when multiple requests are in queue.",
                       "tags": [
-                         "extra"
+                         "api/extra"
                       ]
                    },
                    "post": {
@@ -743,11 +743,11 @@
                       },
                       "summary": "Poll the incomplete results of the currently ongoing text generation. Supports multiuser mode.",
                       "tags": [
-                         "extra"
+                         "api/extra"
                       ]
                    }
                 },
-                "/extra/tokencount": {
+                "/api/extra/tokencount": {
                    "post": {
                       "description": "Counts the number of tokens in a string.",
                       "requestBody": {
@@ -797,11 +797,11 @@
                       },
                       "summary": "Counts the number of tokens in a string.",
                       "tags": [
-                         "extra"
+                         "api/extra"
                       ]
                    }
                 },
-                "/extra/abort": {
+                "/api/extra/abort": {
                    "post": {
                       "description": "Aborts the currently ongoing text generation. Does not work when multiple requests are in queue.",
                       "requestBody": {
@@ -845,24 +845,207 @@
                       },
                       "summary": "Aborts the currently ongoing text generation.",
                       "tags": [
-                         "extra"
+                         "api/extra"
                       ]
                    }
-                }
+                },
+                "/sdapi/v1/sd-models": {
+                   "get": {
+                      "description": "Gets a list of image generation models. For koboldcpp, only one model will be returned. If no model is loaded, the list is empty.",
+                      "responses": {
+                         "200": {
+                            "content": {
+                               "application/json": {
+                                  "example": [{
+                                     "title":"stable_diffusion",
+                                     "model_name":"stable_diffusion",
+                                     "hash":"8888888888",
+                                     "sha256":"8888888888888888888888888888888888888888888888888888888888888888",
+                                     "filename":"path_to_safetensors_model_file",
+                                     "config": null
+                                    }]
+                               }
+                            },
+                            "description": "Successful request"
+                         }
+                      },
+                      "summary": "Gets a list of image generation models",
+                      "tags": [
+                         "sdapi/v1"
+                      ]
+                   }
+                },
+                "/sdapi/v1/options": {
+                   "get": {
+                      "description": "Gets configuration info for image generation, used to get loaded model name in A1111.",
+                      "responses": {
+                         "200": {
+                            "content": {
+                               "application/json": {
+                                  "example": {"samples_format":"png","sd_model_checkpoint":"stable_diffusion"}
+                               }
+                            },
+                            "description": "Successful request"
+                         }
+                      },
+                      "summary": "Gets configuration info for image generation",
+                      "tags": [
+                         "sdapi/v1"
+                      ]
+                   }
+                },
+                "/sdapi/v1/samplers": {
+                   "get": {
+                      "description": "Gets a list of supported samplers.",
+                      "responses": {
+                         "200": {
+                            "content": {
+                               "application/json": {
+                                  "example": [{"name":"Euler a","aliases":["k_euler_a","k_euler_ancestral"],"options":{}},{"name":"Euler","aliases":["k_euler"],"options":{}},{"name":"Heun","aliases":["k_heun"],"options":{}},{"name":"DPM2","aliases":["k_dpm_2"],"options":{}},{"name":"DPM++ 2M","aliases":["k_dpmpp_2m"],"options":{}}]
+                               }
+                            },
+                            "description": "Successful request"
+                         }
+                      },
+                      "summary": "Gets a list of supported samplers",
+                      "tags": [
+                         "sdapi/v1"
+                      ]
+                   }
+                },
+                "/sdapi/v1/txt2img": {
+                   "post": {
+                      "description": "Generates an image from a text prompt, and returns a base64 encoded png.",
+                      "requestBody": {
+                         "content": {
+                            "application/json": {
+                               "example": {
+                                  "prompt": "picture of a kobold, high quality HD render",
+                                  "negative_prompt": "ugly, deformed, censored",
+                                  "cfg_scale": 5,
+                                  "steps": 20,
+                                  "width": 512,
+                                  "height": 512,
+                                  "seed": -1,
+                                  "sampler_name": "Euler a"
+                               },
+                               "schema": {
+                                  "properties": {
+                                     "prompt": {
+                                        "type": "string"
+                                     },
+                                     "negative_prompt": {
+                                        "type": "string"
+                                     },
+                                     "cfg_scale": {
+                                        "type": "number"
+                                     },
+                                     "steps": {
+                                        "type": "number"
+                                     },
+                                     "width": {
+                                        "type": "number"
+                                     },
+                                     "height": {
+                                        "type": "number"
+                                     },
+                                     "seed": {
+                                        "type": "number"
+                                     },
+                                     "sampler_name": {
+                                        "type": "string"
+                                     },
+                                  },
+                                  "type": "object"
+                               }
+                            }
+                         },
+                         "required": false
+                      },
+                      "responses": {
+                         "200": {
+                            "content": {
+                               "application/json": {
+                                  "example":
+                                  {
+                                     "images":["base64_image_data"],"parameters":{},"info":""
+                                  },
+                                  "schema": {
+                                     "properties": {
+                                        "images": {
+                                           "type": "string",
+                                           "description": "A base64 string containing the encoded PNG of the generated image."
+                                        },
+                                        "parameters": {
+                                           "type": "object",
+                                           "description": "Not used. Will be empty."
+                                        },
+                                           "info": {
+                                           "type": "string",
+                                           "description": "Not used. Will be empty."
+                                        }
+                                     }
+                                  }
+                               }
+                            },
+                            "description": "Successful request"
+                         }
+                      },
+                      "summary": "Generates an image from a text prompt",
+                      "tags": [
+                         "sdapi/v1"
+                      ]
+                   }
+                },
+                "/v1/completions": {
+                   "post": {
+                      "summary": "Generates text continuations given a prompt. Please refer to OpenAI documentation",
+                      "description": "Generates text continuations given a prompt.\n\nThis is an OpenAI compatibility endpoint.\n\n Please refer to OpenAI documentation at [https://platform.openai.com/docs/api-reference/completions](https://platform.openai.com/docs/api-reference/completions)",
+                      "tags": [
+                         "v1"
+                      ]
+                   }
+                },
+                "/v1/chat/completions": {
+                   "post": {
+                      "summary": "Generates a response from a list of messages. Please refer to OpenAI documentation",
+                      "description": "Given a list of messages comprising a conversation, the model will return a response.\n\n This is an OpenAI compatibility endpoint.\n\n Please refer to OpenAI documentation at [https://platform.openai.com/docs/api-reference/chat](https://platform.openai.com/docs/api-reference/chat)",
+                      "tags": [
+                         "v1"
+                      ]
+                   }
+                },
+                "/v1/models": {
+                   "get": {
+                      "summary": "List and describe the various models available in the API. Please refer to OpenAI documentation",
+                      "description": "List and describe the various models available in the API.\n\n This is an OpenAI compatibility endpoint.\n\n Please refer to OpenAI documentation at [https://platform.openai.com/docs/api-reference/models](https://platform.openai.com/docs/api-reference/models)",
+                      "tags": [
+                         "v1"
+                      ]
+                   }
+                },
              },
              "servers": [
                 {
-                   "url": "/api"
+                   "url": "/"
                 }
              ],
              "tags": [
                 {
                    "description": "KoboldAI United compatible API core endpoints",
-                   "name": "v1"
+                   "name": "api/v1"
                 },
                 {
                    "description": "Extended API unique to KoboldCpp",
-                   "name": "extra"
+                   "name": "api/extra"
+                },
+                {
+                   "description": "Image Generation API (A1111 compatible)",
+                   "name": "sdapi/v1"
+                },
+                {
+                   "description": "OpenAI compatible textgen API (not recommended)",
+                   "name": "v1"
                 }
              ]
           };

@@ -206,9 +206,18 @@ extern "C"
         }
     }
 
-    generation_outputs generate(const generation_inputs inputs, generation_outputs &output)
+    generation_outputs generate(const generation_inputs inputs)
     {
-        return gpttype_generate(inputs, output);
+        return gpttype_generate(inputs);
+    }
+
+    bool sd_load_model(const sd_load_model_inputs inputs)
+    {
+        return sdtype_load_model(inputs);
+    }
+    sd_generation_outputs sd_generate(const sd_generation_inputs inputs)
+    {
+        return sdtype_generate(inputs);
     }
 
     const char * new_token(int idx) {
@@ -263,4 +272,6 @@ extern "C"
         output.ids = toks.data(); //this may be slightly unsafe
         return output;
     }
+
+
 }

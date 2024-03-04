@@ -1,6 +1,6 @@
 # koboldcpp
 
-KoboldCpp is an easy-to-use AI text-generation software for GGML and GGUF models. It's a single self contained distributable from Concedo, that builds off llama.cpp, and adds a versatile Kobold API endpoint, additional format support, backward compatibility, as well as a fancy UI with persistent stories, editing tools, save formats, memory, world info, author's note, characters, scenarios and everything Kobold and Kobold Lite have to offer.
+KoboldCpp is an easy-to-use AI text-generation software for GGML and GGUF models. It's a single self contained distributable from Concedo, that builds off llama.cpp, and adds a versatile Kobold API endpoint, additional format support, Stable Diffusion image generation, backward compatibility, as well as a fancy UI with persistent stories, editing tools, save formats, memory, world info, author's note, characters, scenarios and everything Kobold and Kobold Lite have to offer.
 
 ![Preview](media/preview.png)
 ![Preview](media/preview2.png)
@@ -132,6 +132,7 @@ You can then run koboldcpp anywhere from the terminal by running `koboldcpp` to 
 - Since v1.33, you can set the context size to be above what the model supports officially. It does increases perplexity but should still work well below 4096 even on untuned models. (For GPT-NeoX, GPT-J, and LLAMA models) Customize this with `--ropeconfig`.
 - Since v1.42, supports GGUF models for LLAMA and Falcon
 - Since v1.55, lcuda paths on Linux are hardcoded and may require manual changes to the makefile if you do not use koboldcpp.sh for the compilation.
+- Since v1.60, provides native image generation with StableDiffusion.cpp, you can load any SD1.5 or SDXL .safetensors model and it will provide an A1111 compatible API to use.
 - **I plan to keep backwards compatibility with ALL past llama.cpp AND alpaca.cpp models**. But you are also encouraged to reconvert/update your models if possible for best results.
 
 ## License
@@ -144,6 +145,7 @@ You can then run koboldcpp anywhere from the terminal by running `koboldcpp` to 
 - I have heard of someone claiming a false AV positive report. The exe is a simple pyinstaller bundle that includes the necessary python scripts and dlls to run. If this still concerns you, you might wish to rebuild everything from source code using the makefile, and you can rebuild the exe yourself with pyinstaller by using `make_pyinstaller.bat`
 - API documentation available at `/api` and https://lite.koboldai.net/koboldcpp_api
 - Supported GGML models (Includes backward compatibility for older versions/legacy GGML models, though some newer features might be unavailable):
+  - All up-to-date GGUF models are supported (Mistral/Mixtral/QWEN/Gemma and more)
   - LLAMA and LLAMA2 (LLaMA / Alpaca / GPT4All / Vicuna / Koala / Pygmalion 7B / Metharme 7B / WizardLM and many more)
   - GPT-2 / Cerebras
   - GPT-J

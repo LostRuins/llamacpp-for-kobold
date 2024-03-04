@@ -1,0 +1,2 @@
+- json.hpp library from: https://github.com/nlohmann/json
+- ZIP Library from: https://github.com/kuba--/zip

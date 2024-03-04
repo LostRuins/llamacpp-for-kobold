@@ -1,11 +1,12 @@
 @llama.cpp
+@parallel
 Feature: Parallel
 
   Background: Server startup
     Given a server listening on localhost:8080
-    And   a model file stories260K.gguf
-    And   a model alias tinyllama-2
+    And   a model file tinyllamas/stories260K.gguf from HF repo ggml-org/models
     And   42 as server seed
+    And   512 as batch size
     And   64 KV cache size
     And   2 slots
     And   embeddings extraction
@@ -46,6 +47,28 @@ Feature: Parallel
     And <n_predict> max tokens to predict
     And streaming is <streaming>
     Given concurrent OAI completions requests
+    Then the server is busy
+    Then the server is idle
+    Then all prompts are predicted with <n_predict> tokens
+    Examples:
+      | streaming | n_predict |
+      | disabled  | 128       |
+      | enabled   | 64        |
+
+  Scenario Outline: Multi users OAI completions compatibility no v1
+    Given a system prompt You are a writer.
+    And   a model tinyllama-2
+    Given a prompt:
+      """
+      Write a very long book.
+      """
+    And a prompt:
+      """
+      Write another a poem.
+      """
+    And <n_predict> max tokens to predict
+    And streaming is <streaming>
+    Given concurrent OAI completions requests no v1
     Then the server is busy
     Then the server is idle
     Then all prompts are predicted with <n_predict> tokens

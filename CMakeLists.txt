@@ -80,9 +80,8 @@ if (LLAMA_CUBLAS)
         enable_language(CUDA)
 
         add_compile_definitions(GGML_USE_CUBLAS)
-        #add_compile_definitions(GGML_CUDA_CUBLAS) #remove to not use cublas
+        add_compile_definitions(SD_USE_CUBLAS)
         add_compile_definitions(GGML_CUDA_MMQ_Y=${LLAMA_CUDA_MMQ_Y})
-        #add_compile_definitions(GGML_CUDA_FORCE_DMMV) #non dmmv broken for me
 
         add_compile_definitions(GGML_CUDA_DMMV_X=${LLAMA_CUDA_DMMV_X})
         add_compile_definitions(GGML_CUDA_DMMV_Y=${LLAMA_CUDA_DMMV_Y})
@@ -150,7 +149,7 @@ if (LLAMA_HIPBLAS)
 
     if (${hipblas_FOUND} AND ${hip_FOUND})
         message(STATUS "HIP and hipBLAS found")
-        add_compile_definitions(GGML_USE_HIPBLAS GGML_USE_CUBLAS)
+        add_compile_definitions(GGML_USE_HIPBLAS GGML_USE_CUBLAS SD_USE_CUBLAS)
         add_library(ggml-rocm OBJECT ${GGML_SOURCES_CUDA})
         if (LLAMA_CUDA_FORCE_DMMV)
             target_compile_definitions(ggml-rocm PUBLIC GGML_CUDA_FORCE_DMMV)
@@ -425,14 +424,21 @@ add_library(common2
             common/common.h
             common/grammar-parser.h
             common/grammar-parser.cpp)
-target_include_directories(common2 PUBLIC . ./otherarch ./otherarch/tools ./examples ./common)
+target_include_directories(common2 PUBLIC . ./otherarch ./otherarch/tools ./otherarch/sdcpp ./otherarch/sdcpp/thirdparty ./examples ./common)
 target_compile_features(common2 PUBLIC cxx_std_11) # don't bump
 target_link_libraries(common2 PRIVATE ggml ${LLAMA_EXTRA_LIBS})
 set_target_properties(common2 PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
+add_library(sdtype_adapter
+            otherarch/sdcpp/sdtype_adapter.cpp)
+target_include_directories(sdtype_adapter PUBLIC . ./otherarch ./otherarch/tools ./otherarch/sdcpp ./otherarch/sdcpp/thirdparty ./examples ./common)
+target_compile_features(sdtype_adapter PUBLIC cxx_std_11) # don't bump
+target_link_libraries(sdtype_adapter PRIVATE common2 ggml ${LLAMA_EXTRA_LIBS})
+set_target_properties(sdtype_adapter PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 add_library(gpttype_adapter
             gpttype_adapter.cpp)
-target_include_directories(gpttype_adapter PUBLIC . ./otherarch ./otherarch/tools ./examples ./common)
+target_include_directories(gpttype_adapter PUBLIC . ./otherarch ./otherarch/tools ./otherarch/sdcpp ./otherarch/sdcpp/thirdparty ./examples ./common)
 target_compile_features(gpttype_adapter PUBLIC cxx_std_11) # don't bump
 target_link_libraries(gpttype_adapter PRIVATE common2 ggml ${LLAMA_EXTRA_LIBS})
 set_target_properties(gpttype_adapter PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -440,24 +446,24 @@ set_target_properties(gpttype_adapter PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if (LLAMA_CUBLAS)
     set(TARGET koboldcpp_cublas)
     add_library(${TARGET} SHARED expose.cpp expose.h)
-    target_include_directories(${TARGET} PUBLIC . ./otherarch ./otherarch/tools ./examples ./common)
+    target_include_directories(${TARGET} PUBLIC . ./otherarch ./otherarch/tools ./otherarch/sdcpp ./otherarch/sdcpp/thirdparty ./examples ./common)
     target_compile_features(${TARGET} PUBLIC cxx_std_11) # don't bump
     set_target_properties(${TARGET} PROPERTIES PREFIX "")
     set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME "koboldcpp_cublas")
     set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    target_link_libraries(${TARGET} PUBLIC Threads::Threads ggml ggml_v1 ggml_v2 ggml_v3 common2 gpttype_adapter ${LLAMA_EXTRA_LIBS})
+    target_link_libraries(${TARGET} PUBLIC Threads::Threads ggml ggml_v1 ggml_v2 ggml_v3 common2 gpttype_adapter sdtype_adapter ${LLAMA_EXTRA_LIBS})
     target_compile_features(${TARGET} PRIVATE cxx_std_11)
 endif()
 
 if (LLAMA_HIPBLAS)
     set(TARGET koboldcpp_hipblas)
     add_library(${TARGET} SHARED expose.cpp expose.h)
-    target_include_directories(${TARGET} PUBLIC . ./otherarch ./otherarch/tools ./examples ./common)
+    target_include_directories(${TARGET} PUBLIC . ./otherarch ./otherarch/tools ./otherarch/sdcpp ./otherarch/sdcpp/thirdparty ./examples ./common)
     target_compile_features(${TARGET} PUBLIC cxx_std_11) # don't bump
     set_target_properties(${TARGET} PROPERTIES PREFIX "")
     set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME "koboldcpp_hipblas")
     set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-    target_link_libraries(${TARGET} PUBLIC Threads::Threads ggml ggml_v1 ggml_v2 ggml_v3 common2 gpttype_adapter ${LLAMA_EXTRA_LIBS})
+    target_link_libraries(${TARGET} PUBLIC Threads::Threads ggml ggml_v1 ggml_v2 ggml_v3 common2 gpttype_adapter sdtype_adapter ${LLAMA_EXTRA_LIBS})
     target_compile_features(${TARGET} PRIVATE cxx_std_11)
 endif()
 

@@ -64,6 +64,15 @@ extern "C" {
         LLAMA_VOCAB_TYPE_WPM = 2, // WordPiece
     };
 
+    // note: these values should be synchronized with ggml_rope
+    // TODO: maybe move this enum to ggml.h (ggml_rope_type)
+    enum llama_rope_type {
+        LLAMA_ROPE_TYPE_NONE = -1,
+        LLAMA_ROPE_TYPE_NORM =  0,
+        LLAMA_ROPE_TYPE_NEOX =  2,
+        LLAMA_ROPE_TYPE_GLM  =  4,
+    };
+
     enum llama_token_type {
         LLAMA_TOKEN_TYPE_UNDEFINED    = 0,
         LLAMA_TOKEN_TYPE_NORMAL       = 1,
@@ -98,12 +107,15 @@ extern "C" {
         LLAMA_FTYPE_MOSTLY_IQ2_XXS       = 19, // except 1d tensors
         LLAMA_FTYPE_MOSTLY_IQ2_XS        = 20, // except 1d tensors
         LLAMA_FTYPE_MOSTLY_Q2_K_S        = 21, // except 1d tensors
-        LLAMA_FTYPE_MOSTLY_Q3_K_XS       = 22, // except 1d tensors
+        LLAMA_FTYPE_MOSTLY_IQ3_XS        = 22, // except 1d tensors
         LLAMA_FTYPE_MOSTLY_IQ3_XXS       = 23, // except 1d tensors
         LLAMA_FTYPE_MOSTLY_IQ1_S         = 24, // except 1d tensors
         LLAMA_FTYPE_MOSTLY_IQ4_NL        = 25, // except 1d tensors
         LLAMA_FTYPE_MOSTLY_IQ3_S         = 26, // except 1d tensors
         LLAMA_FTYPE_MOSTLY_IQ3_M         = 27, // except 1d tensors
+        LLAMA_FTYPE_MOSTLY_IQ2_S         = 28, // except 1d tensors
+        LLAMA_FTYPE_MOSTLY_IQ2_M         = 29, // except 1d tensors
+        LLAMA_FTYPE_MOSTLY_IQ4_XS        = 30, // except 1d tensors
 
         LLAMA_FTYPE_GUESSED = 1024, // not specified in the model file
     };
@@ -117,6 +129,7 @@ extern "C" {
     };
 
     enum llama_pooling_type {
+        LLAMA_POOLING_TYPE_UNSPECIFIED = -1,
         LLAMA_POOLING_TYPE_NONE = 0,
         LLAMA_POOLING_TYPE_MEAN = 1,
         LLAMA_POOLING_TYPE_CLS  = 2,
@@ -224,7 +237,10 @@ extern "C" {
         uint32_t n_batch;           // prompt processing maximum batch size
         uint32_t n_threads;         // number of threads to use for generation
         uint32_t n_threads_batch;   // number of threads to use for batch processing
-        int32_t  rope_scaling_type; // RoPE scaling type, from `enum llama_rope_scaling_type`
+
+        enum llama_rope_scaling_type rope_scaling_type; // RoPE scaling type, from `enum llama_rope_scaling_type`
+        enum llama_pooling_type      pooling_type;      // whether to pool (sum) embedding results by sequence id
+                                                        // (ignored if no pooling layer)
 
         // ref: https://github.com/ggerganov/llama.cpp/pull/2054
         float    rope_freq_base;   // RoPE base frequency, 0 = from model
@@ -234,6 +250,7 @@ extern "C" {
         float    yarn_beta_fast;   // YaRN low correction dim
         float    yarn_beta_slow;   // YaRN high correction dim
         uint32_t yarn_orig_ctx;    // YaRN original context size
+        float    defrag_thold;     // defragment the KV cache if holes/size > thold, < 0 disabled (default)
 
         ggml_backend_sched_eval_callback cb_eval;
         void * cb_eval_user_data;
@@ -242,11 +259,15 @@ extern "C" {
         enum ggml_type type_v; // data type for V cache
 
         // Keep the booleans together to avoid misalignment during copy-by-value.
-        bool mul_mat_q;   // if true, use experimental mul_mat_q kernels (DEPRECATED - always true)
-        bool logits_all;  // the llama_eval() call computes all logits, not just the last one (DEPRECATED - set llama_batch.logits instead)
+        bool logits_all;  // the llama_decode() call computes all logits, not just the last one (DEPRECATED - set llama_batch.logits instead)
         bool embedding;   // embedding mode only
         bool offload_kqv; // whether to offload the KQV ops (including the KV cache) to GPU
-        bool do_pooling;  // whether to pool (sum) embedding results by sequence id (ignored if no pooling layer)
+
+        // Abort callback
+        // if it returns true, execution of llama_decode() will be aborted
+        // currently works only with CPU execution
+        ggml_abort_callback abort_callback;
+        void *              abort_callback_data;
     };
 
     // model quantization parameters
@@ -351,15 +372,13 @@ extern "C" {
     LLAMA_API bool llama_supports_mlock      (void);
     LLAMA_API bool llama_supports_gpu_offload(void);
 
-    LLAMA_API DEPRECATED(bool llama_mmap_supported (void), "use llama_supports_mmap() instead");
-    LLAMA_API DEPRECATED(bool llama_mlock_supported(void), "use llama_supports_mlock() instead");
-
     LLAMA_API const struct llama_model * llama_get_model(const struct llama_context * ctx);
 
     LLAMA_API uint32_t llama_n_ctx      (const struct llama_context * ctx);
     LLAMA_API uint32_t llama_n_batch    (const struct llama_context * ctx);
 
     LLAMA_API enum llama_vocab_type llama_vocab_type(const struct llama_model * model);
+    LLAMA_API enum llama_rope_type  llama_rope_type (const struct llama_model * model);
 
     LLAMA_API int32_t llama_n_vocab    (const struct llama_model * model);
     LLAMA_API int32_t llama_n_ctx_train(const struct llama_model * model);
@@ -409,14 +428,6 @@ extern "C" {
     // The model needs to be reloaded before applying a new adapter, otherwise the adapter
     // will be applied on top of the previous one
     // Returns 0 on success
-    LLAMA_API DEPRECATED(int32_t llama_apply_lora_from_file(
-            struct llama_context * ctx,
-                      const char * path_lora,
-                           float   scale,
-                      const char * path_base_model,
-                         int32_t   n_threads),
-            "use llama_model_apply_lora_from_file instead");
-
     LLAMA_API int32_t llama_model_apply_lora_from_file(
             const struct llama_model * model,
                       const char * path_lora,
@@ -516,10 +527,12 @@ extern "C" {
                     llama_seq_id   seq_id);
 
     // Adds relative position "delta" to all tokens that belong to the specified sequence and have positions in [p0, p1)
-    // If the KV cache is RoPEd, the KV data is updated accordingly
+    // If the KV cache is RoPEd, the KV data is updated accordingly:
+    //   - lazily on next llama_decode()
+    //   - explicitly with llama_kv_cache_update()
     // p0 < 0 : [0,  p1]
     // p1 < 0 : [p0, inf)
-    LLAMA_API void llama_kv_cache_seq_shift(
+    LLAMA_API void llama_kv_cache_seq_add(
             struct llama_context * ctx,
                     llama_seq_id   seq_id,
                        llama_pos   p0,
@@ -527,7 +540,9 @@ extern "C" {
                        llama_pos   delta);
 
     // Integer division of the positions by factor of `d > 1`
-    // If the KV cache is RoPEd, the KV data is updated accordingly
+    // If the KV cache is RoPEd, the KV data is updated accordingly:
+    //   - lazily on next llama_decode()
+    //   - explicitly with llama_kv_cache_update()
     // p0 < 0 : [0,  p1]
     // p1 < 0 : [p0, inf)
     LLAMA_API void llama_kv_cache_seq_div(
@@ -536,6 +551,20 @@ extern "C" {
                        llama_pos   p0,
                        llama_pos   p1,
                              int   d);
+
+    // Returns the largest position present in the KV cache for the specified sequence
+    LLAMA_API llama_pos llama_kv_cache_seq_pos_max(
+            struct llama_context * ctx,
+                    llama_seq_id   seq_id);
+
+    // Defragment the KV cache
+    // This will be applied:
+    //   - lazily on next llama_decode()
+    //   - explicitly with llama_kv_cache_update()
+    LLAMA_API void llama_kv_cache_defrag(struct llama_context * ctx);
+
+    // Apply the KV cache updates (such as K-shifts, defragmentation, etc.)
+    LLAMA_API void llama_kv_cache_update(struct llama_context * ctx);
 
     //
     // State / sessions
@@ -556,7 +585,7 @@ extern "C" {
     // Returns the number of bytes read
     LLAMA_API size_t llama_set_state_data(
             struct llama_context * ctx,
-                         uint8_t * src);
+                   const uint8_t * src);
 
     // Save/load session file
     LLAMA_API bool llama_load_session_file(
@@ -575,27 +604,6 @@ extern "C" {
     //
     // Decoding
     //
-
-    // Run the llama inference to obtain the logits and probabilities for the next token(s).
-    // tokens + n_tokens is the provided batch of new tokens to process
-    // n_past is the number of tokens to use from previous eval calls
-    // Returns 0 on success
-    // DEPRECATED: use llama_decode() instead
-    LLAMA_API DEPRECATED(int llama_eval(
-            struct llama_context * ctx,
-                     llama_token * tokens,
-                         int32_t   n_tokens,
-                         int32_t   n_past),
-            "use llama_decode() instead");
-
-    // Same as llama_eval, but use float matrix input directly.
-    // DEPRECATED: use llama_decode() instead
-    LLAMA_API DEPRECATED(int llama_eval_embd(
-            struct llama_context * ctx,
-                           float * embd,
-                         int32_t   n_tokens,
-                         int32_t   n_past),
-            "use llama_decode() instead");
 
     // Return batch for single sequence of tokens starting at pos_0
     //
@@ -635,7 +643,10 @@ extern "C" {
     // n_threads_batch is the number of threads used for prompt and batch processing (multiple tokens)
     LLAMA_API void llama_set_n_threads(struct llama_context * ctx, uint32_t n_threads, uint32_t n_threads_batch);
 
-    // Token logits obtained from the last call to llama_eval()
+    // Set abort callback
+    LLAMA_API void llama_set_abort_callback(struct llama_context * ctx, ggml_abort_callback abort_callback, void * abort_callback_data);
+
+    // Token logits obtained from the last call to llama_decode()
     // The logits for the last token are stored in the last row
     // Logits for which llama_batch.logits[i] == 0 are undefined
     // Rows: n_tokens provided with llama_batch
@@ -770,13 +781,6 @@ extern "C" {
                              float * logits_guidance,
                              float   scale);
 
-    LLAMA_API DEPRECATED(void llama_sample_classifier_free_guidance(
-              struct llama_context * ctx,
-            llama_token_data_array * candidates,
-              struct llama_context * guidance_ctx,
-                             float   scale),
-              "use llama_sample_apply_guidance() instead");
-
     /// @details Sorts candidate tokens by their logits in descending order and calculate probabilities based on logits.
     LLAMA_API void llama_sample_softmax(
             struct llama_context * ctx,
@@ -831,12 +835,6 @@ extern "C" {
           llama_token_data_array * candidates,
                            float   temp,
                            float   smoothing_factor);
-
-    LLAMA_API DEPRECATED(void llama_sample_temperature(
-                struct llama_context * ctx,
-              llama_token_data_array * candidates,
-                               float   temp),
-            "use llama_sample_temp instead");
 
     /// @details Apply constraints from grammar
     LLAMA_API void llama_sample_grammar(
