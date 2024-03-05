@@ -20058,6 +20058,12 @@ struct gguf_v3_context * gguf_v3_init_from_file(const char * fname, struct gguf_
             fprintf(stderr, "%s: GGUFv1 is deprecated. please update if possible.\n", __func__);
         }
 
+        // sanity-checks to prevent from integer/buffer overflows
+
+        ok = ok && (ctx->header.n_tensors < (SIZE_MAX/2)/sizeof(struct gguf_v3_tensor_info));
+        ok = ok && (ctx->header.n_tensors < (SIZE_MAX/2)/ggml_v3_tensor_overhead());
+        ok = ok && (ctx->header.n_kv      < (SIZE_MAX/2)/sizeof(struct gguf_v3_kv));
+
         if (!ok) {
             fprintf(stderr, "%s: failed to read header\n", __func__);
             fclose(file);

@@ -675,10 +675,13 @@ bool ModelLoader::init_from_file(const std::string& file_path, const std::string
     } else if (is_safetensors_file(file_path)) {
         LOG_INFO("load %s using safetensors format", file_path.c_str());
         return init_from_safetensors_file(file_path, prefix);
-    } else if (is_zip_file(file_path)) {
-        LOG_INFO("load %s using checkpoint format", file_path.c_str());
-        return init_from_ckpt_file(file_path, prefix);
-    } else {
+    }
+    //disable ckpt loading
+    // else if (is_zip_file(file_path)) {
+    //     LOG_INFO("load %s using checkpoint format", file_path.c_str());
+    //     return init_from_ckpt_file(file_path, prefix);
+    // } else
+    {
         LOG_WARN("unknown format %s", file_path.c_str());
         return false;
     }

@@ -1489,6 +1489,7 @@ Current version: 120
 			float: right;
 			position: relative;
 			padding: 4px;
+			clear: both;
 		}
 		.storyimgside
 		{
@@ -3365,6 +3366,7 @@ Current version: 120
 	const scale_submit_endpoint = "https://dashboard.scale.com/spellbook/api/v2/deploy/"
 
 	const claude_submit_endpoint = "/complete";
+	const claude_submit_endpoint_v3 = "/messages";
 
 	const default_openrouter_base = "https://openrouter.ai/api/v1";
 	const default_oai_base = "https://api.openai.com";
@@ -3431,7 +3433,7 @@ Current version: 120
 	var current_wi = []; //each item stores a wi object.
 	var wi_insertlocation = 0; //after memory
 	var wi_searchdepth = 0; //search everything
-	var generateimagesinterval = 650; //if generated images is enabled, it will trigger after every 600 new characters in context.
+	var generateimagesinterval = 700; //if generated images is enabled, it will trigger after every 700 new characters in context.
 	var nextgeneratedimagemilestone = generateimagesinterval; //used to keep track of when to generate the next image
 	var image_db = {}; //stores a dictionary of pending images
 	var interrogation_db = {};
@@ -6736,6 +6738,22 @@ Current version: 120
 		});
 	}
 
+	function toggleclaudemodel()
+	{
+		if (document.getElementById("custom_claude_model").value.toLowerCase().includes("claude-3"))
+		{
+			document.getElementById("claudesystemprompt").classList.remove("hidden");
+			document.getElementById("claudejailbreakprompt").classList.remove("hidden");
+			document.getElementById("clauderenamecompatdiv").classList.add("hidden");
+		}
+		else
+		{
+			document.getElementById("claudesystemprompt").classList.add("hidden");
+			document.getElementById("claudejailbreakprompt").classList.add("hidden");
+			document.getElementById("clauderenamecompatdiv").classList.remove("hidden");
+		}
+	}
+
 	function customapi_dropdown()
 	{
 		let epchoice = document.getElementById("customapidropdown").value;
@@ -8891,7 +8909,7 @@ Current version: 120
 	function do_auto_gen_image(truncated_context)
 	{
 		var tclen = truncated_context.length;
-		var sentence = truncated_context.substring(tclen - 350, tclen);
+		var sentence = truncated_context.substring(tclen - 380, tclen);
 		sentence = start_trim_to_sentence(sentence);
 		sentence = end_trim_to_sentence(sentence,true);
 		if (sentence.length > 0) {
@@ -8920,7 +8938,7 @@ Current version: 120
 			let userinput = getInputBoxValue();
 			if(userinput.trim()!="")
 			{
-				var sentence = userinput.trim().substring(0, 350);
+				var sentence = userinput.trim().substring(0, 380);
 				do_manual_gen_image(sentence);
 			}
 		},false);
@@ -9967,57 +9985,96 @@ Current version: 120
 			}
 			else if (custom_claude_key != "")//handle for Claude
 			{
-				let targetep = cors_proxy + "?" + (custom_claude_endpoint + claude_submit_endpoint);
+				let claudev3mode = custom_claude_model.toLowerCase().includes("claude-3");
+				let targetep = cors_proxy + "?" + (custom_claude_endpoint + (claudev3mode?claude_submit_endpoint_v3:claude_submit_endpoint));
+				let claude_payload = null;
+				if(claudev3mode)
+				{
+					let sysprompt = document.getElementById("claudesystemprompt").value;
+					let assistantprompt = document.getElementById("claudejailbreakprompt").value;
+					claude_payload =
+					{
+						"model": custom_claude_model,
+						"messages": [{"role": "user", "content": submit_payload.prompt}],
+						"max_tokens": submit_payload.params.max_length,
+						"top_k": (submit_payload.params.top_k<1?300:submit_payload.params.top_k),
+						"temperature": submit_payload.params.temperature,
+						"top_p": submit_payload.params.top_p,
+					};
+					if(sysprompt)
+					{
+						claude_payload.system = sysprompt;
+					}
+					if(assistantprompt)
+					{
+						claude_payload.messages.push({"role": "assistant", "content": assistantprompt});
+					}
+				}
+				else
+				{
+					claude_payload =
+					{
+						"prompt": submit_payload.prompt,
+						"max_tokens_to_sample": submit_payload.params.max_length,
+						"model": custom_claude_model,
+						"top_k": (submit_payload.params.top_k<1?300:submit_payload.params.top_k),
+						"temperature": submit_payload.params.temperature,
+						"top_p": submit_payload.params.top_p,
+					};
 
-				let claude_payload =
-				{
-					"prompt": submit_payload.prompt,
-					"max_tokens_to_sample": submit_payload.params.max_length,
-					"model": custom_claude_model,
-					"top_k": (submit_payload.params.top_k<1?300:submit_payload.params.top_k),
-					"temperature": submit_payload.params.temperature,
-					"top_p": submit_payload.params.top_p,
-				}
-				if(document.getElementById("clauderenamecompat").checked)
-				{
-					let assistant_correct_case = "Assistant:";
-					if(!claude_payload.prompt.toLowerCase().trim().startsWith('human:'))
+					if(document.getElementById("clauderenamecompat").checked)
 					{
-						claude_payload.prompt = "Human: "+claude_payload.prompt;
-					}
-					if(!claude_payload.prompt.toLowerCase().trim().endsWith(assistant_correct_case.toLowerCase()))
-					{
-						if(localsettings.opmode==1)
+						let assistant_correct_case = "Assistant:";
+						if(!claude_payload.prompt.toLowerCase().trim().startsWith('human:'))
 						{
-							claude_payload.prompt = claude_payload.prompt + " \n"+assistant_correct_case+" Here is a continuation of the story: \n"+assistant_correct_case;
+							claude_payload.prompt = "Human: "+claude_payload.prompt;
 						}
-						else
+						if(!claude_payload.prompt.toLowerCase().trim().endsWith(assistant_correct_case.toLowerCase()))
 						{
-							claude_payload.prompt = claude_payload.prompt + " "+assistant_correct_case;
+							if(localsettings.opmode==1)
+							{
+								claude_payload.prompt = claude_payload.prompt + " \n"+assistant_correct_case+" Here is a continuation of the story: \n"+assistant_correct_case;
+							}
+							else
+							{
+								claude_payload.prompt = claude_payload.prompt + " "+assistant_correct_case;
+							}
 						}
+						//trim end
+						claude_payload.prompt = claude_payload.prompt.replace(/[\t\r\n ]+$/, '');
+						//replace final assistant with fixed case
+						claude_payload.prompt = claude_payload.prompt.slice(0, -(assistant_correct_case.length))+assistant_correct_case;
 					}
-					//trim end
-					claude_payload.prompt = claude_payload.prompt.replace(/[\t\r\n ]+$/, '');
-					//replace final assistant with fixed case
-					claude_payload.prompt = claude_payload.prompt.slice(0, -(assistant_correct_case.length))+assistant_correct_case;
 				}
+
 
 				last_request_str = JSON.stringify(claude_payload);
 
+				let claudeheaders = {
+					'Content-Type': 'application/json',
+					'x-api-key': custom_claude_key,
+					'Authorization': 'Bearer '+custom_claude_key,
+				};
+				if(claudev3mode)
+				{
+					claudeheaders["anthropic-version"] = '2023-06-01';
+				}else{
+					claudeheaders["anthropic-version"] = '2023-01-01';
+				}
+
 				fetch(targetep, {
 					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						'x-api-key': custom_claude_key,
-						'anthropic-version': '2023-01-01',
-						'Authorization': 'Bearer '+custom_claude_key,
-					},
+					headers: claudeheaders,
 					body: JSON.stringify(claude_payload),
 					referrerPolicy: 'no-referrer',
 				})
 					.then((response) => response.json())
 					.then((data) => {
 						console.log("sync finished response: " + JSON.stringify(data));
+						if(custom_claude_key != "" && data.content && data.content.length > 0 && data.content[0].text)
+						{
+							data.completion = data.content[0].text; //for claudev3
+						}
 						if (custom_claude_key != "" && data.completion != null && data.completion != "")
 						{
 							synchro_polled_response = data.completion;
@@ -10584,11 +10641,12 @@ Current version: 120
 	}
 
 	function render_image_html(data, pend_txt = "", float=true, center=false) {
-		var dim = (localsettings.opmode == 2 ? 160 : 200); //adventure mode has smaller pictures
+		var dim = (localsettings.opmode == 2 ? 160 : 180); //adventure mode has smaller pictures
 		let siclass = (float?"storyimgfloat":(center?"storyimgcenter":"storyimgside"));
 		let reinvertcolor = localsettings.invert_colors?" invert_colors":"";
 		let alttxt = "";
-		let suffix = ((float==false&&center==false)?"<br>":"");
+		let suffix = "";
+		let prefix = ((float==false&&center==false)?"<br>":"");
 		if (!data || data == "") {
 			let waittime = "Unavailable";
 			if (image_db[pend_txt] != null) {
@@ -10599,13 +10657,13 @@ Current version: 120
 				console.log("Cannot render " + pend_txt);
 			}
 
-			return `<div class="`+siclass+reinvertcolor+`" contenteditable="false"><img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDABsSFBcUERsXFhceHBsgKEIrKCUlKFE6PTBCYFVlZF9VXVtqeJmBanGQc1tdhbWGkJ6jq62rZ4C8ybqmx5moq6T/2wBDARweHigjKE4rK06kbl1upKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKT/wAARCAEAAQADASIAAhEBAxEB/8QAGQABAQEBAQEAAAAAAAAAAAAAAAEDAgQF/8QAIBABAAIBBQEBAQEAAAAAAAAAAAECEgMRMVKRIWFBof/EABQBAQAAAAAAAAAAAAAAAAAAAAD/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwD7AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABETPENNPT3je3jUHm22HpmInljqUx+xwDgAAAAAAAAAAAAAAAAAAAAAAAAABaxvaIRaztaJB6AAEmN4mFSZ2iZB5wAAAAAAAAAAAAAAAAAAAAAAAAAAAaaeptG1vWrzETMcSD0zMRyx1L5fI4cb7gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA7rpzNd/HAAAAAAAAAAAAAAAAAAAAAAAAAAAAADTT09/s8Gnp7/Z4agONSmX2OXYDzDbUpl9jliAAAAAAAAAAAAAAAAAAAsVmd9o4KVm0/jeIiI2gHnGupp/2vjIAABpp6e/2TT09/s8NQAAAAHGpTL7HLsB5htqUy+xyxAAAAAAAAAAAAAAAWlZtP4UrNp/G8RFY2gCIiI2hQAZ6mn/a+NAHmaaenv8AZ4dzp1m2/wDjoAAAAAAAABxqUy+xy7AeYbalMvscsQAAAAAAAAAAFpWbT+FKzafxvEREbQBEREbQoAAAAAAAAAAAAAAAAAONSmX2OXYDzDbUpl9jliAAAAAAAtKzafxaVm0/jaIiI2gCIiI2hQAAAAAAAAAAAAAAAAAAAAAcalMvscuwHmG2pTL7HLEAAAAFi0xxMwZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6kzvyAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/Z" width=` + dim + ` height=` + dim + ` style="border-radius: 6%;" title="`+alttxt+`" alt="` + pend_txt + `"><div class=\"loader2\"></div><div class=\"imagelabel\">` + waittime + `</div></div>` + suffix;
+			return prefix + `<div class="`+siclass+reinvertcolor+`" contenteditable="false"><img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDABsSFBcUERsXFhceHBsgKEIrKCUlKFE6PTBCYFVlZF9VXVtqeJmBanGQc1tdhbWGkJ6jq62rZ4C8ybqmx5moq6T/2wBDARweHigjKE4rK06kbl1upKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKT/wAARCAEAAQADASIAAhEBAxEB/8QAGQABAQEBAQEAAAAAAAAAAAAAAAEDAgQF/8QAIBABAAIBBQEBAQEAAAAAAAAAAAECEgMRMVKRIWFBof/EABQBAQAAAAAAAAAAAAAAAAAAAAD/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwD7AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABETPENNPT3je3jUHm22HpmInljqUx+xwDgAAAAAAAAAAAAAAAAAAAAAAAAABaxvaIRaztaJB6AAEmN4mFSZ2iZB5wAAAAAAAAAAAAAAAAAAAAAAAAAAAaaeptG1vWrzETMcSD0zMRyx1L5fI4cb7gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA7rpzNd/HAAAAAAAAAAAAAAAAAAAAAAAAAAAAADTT09/s8Gnp7/Z4agONSmX2OXYDzDbUpl9jliAAAAAAAAAAAAAAAAAAAsVmd9o4KVm0/jeIiI2gHnGupp/2vjIAABpp6e/2TT09/s8NQAAAAHGpTL7HLsB5htqUy+xyxAAAAAAAAAAAAAAAWlZtP4UrNp/G8RFY2gCIiI2hQAZ6mn/a+NAHmaaenv8AZ4dzp1m2/wDjoAAAAAAAABxqUy+xy7AeYbalMvscsQAAAAAAAAAAFpWbT+FKzafxvEREbQBEREbQoAAAAAAAAAAAAAAAAAONSmX2OXYDzDbUpl9jliAAAAAAAtKzafxaVm0/jaIiI2gCIiI2hQAAAAAAAAAAAAAAAAAAAAAcalMvscuwHmG2pTL7HLEAAAAFi0xxMwZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6ZW7T6gC5W7T6kzvyAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/Z" width=` + dim + ` height=` + dim + ` style="border-radius: 6%;" title="`+alttxt+`" alt="` + pend_txt + `"><div class=\"loader2\"></div><div class=\"imagelabel\">` + waittime + `</div></div>` + suffix;
 		} else {
 			let imghash = cyrb_hash(data).trim();
 			if (completed_imgs_meta[imghash] != null) {
 				alttxt = completed_imgs_meta[imghash].prompt?escapeHtml(completed_imgs_meta[imghash].prompt):"";
 			}
-			return `<div class="`+siclass+reinvertcolor+`"><img src="` + data + `" width=` + dim + ` height=` + dim + ` title="`+alttxt+`" style="border-radius: 6%; cursor: pointer;" onclick="return click_image(this,\'`+imghash+`\');"></div>` + suffix;
+			return prefix + `<div class="`+siclass+reinvertcolor+`"><img src="` + data + `" width=` + dim + ` height=` + dim + ` title="`+alttxt+`" style="border-radius: 6%; cursor: pointer;" onclick="return click_image(this,\'`+imghash+`\');"></div>` + suffix;
 		}
 	}
 
@@ -13542,7 +13600,7 @@ Current version: 120
 				<input class="form-control" type="text" id="custom_claude_endpoint" placeholder="Claude API URL" value="">
 				<input class="form-control" type="password" id="custom_claude_key" placeholder="Claude API Key" value="" onfocus="focus_api_keys()" onblur="blur_api_keys()"><br>
 				Model Choice:<br>
-				<select style="padding:4px;" class="form-control" id="custom_claude_model">
+				<select style="padding:4px;" class="form-control" id="custom_claude_model"  onload="toggleclaudemodel()"  onchange="toggleclaudemodel()">
 					<option value="claude-v1">claude-v1</option>
 					<option value="claude-v1-100k">claude-v1-100k</option>
 					<option value="claude-instant-v1">claude-instant-v1</option>
@@ -13550,11 +13608,21 @@ Current version: 120
 					<option value="claude-2" selected="selected">claude-2</option>
 					<option value="claude-2.1">claude-2.1</option>
 					<option value="claude-2.0">claude-2.0</option>
+					<option value="claude-3-opus-20240229">claude-3-opus</option>
+					<option value="claude-3-sonnet-20240229">claude-3-sonnet</option>
 				</select>
 				<input type="checkbox" id="claudeaddversion" onchange="" checked>
 				<div class="box-label" title="Add endpoint version">Add Endpoint Version</div>
+				<span id="clauderenamecompatdiv">
 				<input type="checkbox" id="clauderenamecompat" onchange="" checked>
 				<div class="box-label" title="Rename User and Bot tags to work with claude, force inject them otherwise">Claude Compatibility Rename Fix</div>
+				</span>
+
+				<input class="form-control hidden" type="text" id="claudesystemprompt" placeholder="(Enter System Prompt)"
+				value="" onload="">
+				<input class="form-control hidden" type="text" id="claudejailbreakprompt" placeholder="(Enter Assistant Postfix)"
+				value="" onload="">
+
 			</div>
 			<div id="palmcustom" class="aidgpopuplistheader anotelabel hidden">
 				Uses Gemini or PaLM Text Bison by Google.<br><br>
@@ -13989,7 +14057,7 @@ Current version: 120
 						<div class="settinglabel">
 							<div class="justifyleft settingsmall">Generate Images <span class="helpicon">?<span class="helptext">Use the AI Horde or a local A1111 instance to insert AI generated images into your story.</span></span></div>
 						</div>
-							<select class="form-control" id="generate_images_mode" style="height:20px;padding:0;margin:0px 0 0;" onchange="toggle_generate_images_mode()">
+							<select class="form-control" id="generate_images_mode" style="height:20px;padding:0;margin:0px 0 0;" onchange="toggle_generate_images_mode(true)">
 								<option value="0">[Disabled]</option>
 								<option value="1">AI Horde</option>
 								<option value="2">Local A1111</option>
