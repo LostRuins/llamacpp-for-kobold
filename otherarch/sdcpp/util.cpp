@@ -28,6 +28,37 @@
 #include "ggml.h"
 #include "stable-diffusion.h"
 
+static sd_log_cb_t sd_log_cb = NULL;
+void* sd_log_cb_data         = NULL;
+
+#define LOG_BUFFER_SIZE 1024
+
+static bool do_log = true;
+
+void log_message(const char* format, ...) {
+    if (do_log) {
+        printf("\n");
+        va_list args;
+        va_start(args, format);
+        vprintf(format, args);
+        va_end(args);
+        fflush(stdout);
+    }
+}
+
+void set_log_message(bool log) {
+    do_log = log;
+}
+
+bool get_log_message() {
+    return do_log;
+}
+
+void sd_set_log_callback(sd_log_cb_t cb, void* data) {
+    sd_log_cb      = cb;
+    sd_log_cb_data = data;
+}
+
 bool ends_with(const std::string& str, const std::string& ending) {
     if (str.length() >= ending.length()) {
         return (str.compare(str.length() - ending.length(), ending.length(), ending) == 0);
@@ -207,6 +238,35 @@ std::string path_join(const std::string& p1, const std::string& p2) {
     return p1 + "/" + p2;
 }
 
+void log_printf(sd_log_level_t level, const char* file, int line, const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+
+    const char* level_str = "DEBUG";
+    if (level == SD_LOG_INFO) {
+        level_str = "INFO ";
+    } else if (level == SD_LOG_WARN) {
+        level_str = "WARN ";
+    } else if (level == SD_LOG_ERROR) {
+        level_str = "ERROR";
+    }
+
+    static char log_buffer[LOG_BUFFER_SIZE];
+
+    int written = snprintf(log_buffer, LOG_BUFFER_SIZE, "[%s] %s:%-4d - ", level_str, sd_basename(file).c_str(), line);
+
+    if (written >= 0 && written < LOG_BUFFER_SIZE) {
+        vsnprintf(log_buffer + written, LOG_BUFFER_SIZE - written, format, args);
+        strncat(log_buffer, "\n", LOG_BUFFER_SIZE - strlen(log_buffer) - 1);
+    }
+
+    if (sd_log_cb) {
+        sd_log_cb(level, log_buffer, sd_log_cb_data);
+    }
+
+    va_end(args);
+}
+
 void pretty_progress(int step, int steps, float time) {
     if (step == 0) {
         return;
@@ -253,65 +313,6 @@ std::string rtrim(const std::string& s) {
 
 std::string trim(const std::string& s) {
     return rtrim(ltrim(s));
-}
-
-static sd_log_cb_t sd_log_cb = NULL;
-void* sd_log_cb_data         = NULL;
-
-#define LOG_BUFFER_SIZE 1024
-
-static bool do_log = true;
-void log_message(const char* format, ...) {
-    if (do_log) {
-        printf("\n");
-        va_list args;
-        va_start(args, format);
-        vprintf(format, args);
-        va_end(args);
-        fflush(stdout);
-    }
-}
-void set_log_message(bool log)
-{
-    do_log = log;
-}
-bool get_log_message()
-{
-    return do_log;
-}
-
-void log_printf(sd_log_level_t level, const char* file, int line, const char* format, ...) {
-    va_list args;
-    va_start(args, format);
-
-    const char* level_str = "DEBUG";
-    if (level == SD_LOG_INFO) {
-        level_str = "INFO ";
-    } else if (level == SD_LOG_WARN) {
-        level_str = "WARN ";
-    } else if (level == SD_LOG_ERROR) {
-        level_str = "ERROR";
-    }
-
-    static char log_buffer[LOG_BUFFER_SIZE];
-
-    int written = snprintf(log_buffer, LOG_BUFFER_SIZE, "[%s] %s:%-4d - ", level_str, sd_basename(file).c_str(), line);
-
-    if (written >= 0 && written < LOG_BUFFER_SIZE) {
-        vsnprintf(log_buffer + written, LOG_BUFFER_SIZE - written, format, args);
-        strncat(log_buffer, "\n", LOG_BUFFER_SIZE - strlen(log_buffer) - 1);
-    }
-
-    if (sd_log_cb) {
-        sd_log_cb(level, log_buffer, sd_log_cb_data);
-    }
-
-    va_end(args);
-}
-
-void sd_set_log_callback(sd_log_cb_t cb, void* data) {
-    sd_log_cb      = cb;
-    sd_log_cb_data = data;
 }
 
 const char* sd_get_system_info() {
