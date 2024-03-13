@@ -427,7 +427,9 @@ add_library(common2
             examples/llava/llava.cpp
             examples/llava/llava.h
             examples/llava/clip.cpp
-            examples/llava/clip.h)
+            examples/llava/clip.h
+            unicode.h
+            unicode.cpp)
 target_include_directories(common2 PUBLIC . ./otherarch ./otherarch/tools ./otherarch/sdcpp ./otherarch/sdcpp/thirdparty ./examples ./common)
 target_compile_features(common2 PUBLIC cxx_std_11) # don't bump
 target_link_libraries(common2 PRIVATE ggml ${LLAMA_EXTRA_LIBS})

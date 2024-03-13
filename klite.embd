@@ -6449,6 +6449,7 @@ Current version: 124
 			document.getElementById("groupselectcontainer").classList.contains("hidden") &&
 			document.getElementById("imagestylecontainer").classList.contains("hidden") &&
 			document.getElementById("addimgcontainer").classList.contains("hidden") &&
+			document.getElementById("pasteimgcontainer").classList.contains("hidden") &&
 			document.getElementById("choosesharecontainer").classList.contains("hidden") &&
 			document.getElementById("advancedloadfile").classList.contains("hidden")
 		);
@@ -6471,6 +6472,7 @@ Current version: 124
 		document.getElementById("groupselectcontainer").classList.add("hidden");
 		document.getElementById("imagestylecontainer").classList.add("hidden");
 		document.getElementById("addimgcontainer").classList.add("hidden");
+		document.getElementById("pasteimgcontainer").classList.add("hidden");
 		document.getElementById("choosesharecontainer").classList.add("hidden");
 		document.getElementById("advancedloadfile").classList.add("hidden");
 	}
@@ -9106,6 +9108,57 @@ Current version: 124
 		document.getElementById("addimgcontainer").classList.add("hidden");
 	}
 
+	function self_upload_img(origImg)
+	{
+		let imgid = "selfuploadimg"+(Math.floor(10000 + Math.random() * 90000)).toString();
+		let nimgtag = "[<|p|" + imgid + "|p|>]";
+		gametext_arr.push(nimgtag);
+		image_db[imgid] = { done: false, queue: "Generating", result: "", prompt:"", local:true };
+		image_db[imgid].aspect = 0;
+		image_db[imgid].imsource = 1; //0=generated,1=uploaded
+		let imgres = localsettings.img_allowhd?HD_RES_PX:NO_HD_RES_PX;
+		compressImage(origImg, (newDataUri, outAspect) => {
+			image_db[imgid].done = true;
+			image_db[imgid].result = newDataUri;
+			if(outAspect<0.7)
+			{
+				image_db[imgid].aspect = 1; //portrait
+			}
+			else if(outAspect>1.4)
+			{
+				image_db[imgid].aspect = 2; //landscape
+			}
+		}, true, false, imgres,0.35,true);
+	}
+
+	function img_paste_event(event)
+	{
+		var items = (event.clipboardData || event.originalEvent.clipboardData).items;
+		let founditem = false;
+		for (index in items) {
+			var item = items[index];
+			if (!founditem && item.kind === 'file' && item.type.includes("image"))
+			{
+				var blob = item.getAsFile();
+				var reader = new FileReader();
+				reader.onload = function(event){
+					let origImg = event.target.result;
+					self_upload_img(origImg);
+				};
+				reader.readAsDataURL(blob);
+				founditem = true;
+				document.getElementById("pasteimgcontainer").classList.add("hidden");
+			}
+		}
+	}
+
+
+	function add_img_btn_paste()
+	{
+		document.getElementById("addimgcontainer").classList.add("hidden");
+		document.getElementById("pasteimgcontainer").classList.remove("hidden");
+	}
+
 	function add_img_btn_upload()
 	{
 		let finput = document.getElementById('addimgfileinput');
@@ -9115,20 +9168,8 @@ Current version: 124
 				const file = event.target.files[0];
 				const reader = new FileReader();
 				reader.onload = function(img) {
-
-					let imgid = "selfuploadimg"+(Math.floor(10000 + Math.random() * 90000)).toString();
-					let nimgtag = "[<|p|" + imgid + "|p|>]";
-					gametext_arr.push(nimgtag);
-					image_db[imgid] = { done: false, queue: "Generating", result: "", prompt:"", local:true };
-					image_db[imgid].aspect = 0;
-					image_db[imgid].imsource = 1; //0=generated,1=uploaded
 					let origImg = img.target.result;
-					let imgres = localsettings.img_allowhd?HD_RES_PX:NO_HD_RES_PX;
-					compressImage(origImg, (newDataUri) => {
-						image_db[imgid].done = true;
-						image_db[imgid].result = newDataUri;
-					}, true, true, imgres,0.35,true);
-
+					self_upload_img(origImg);
 				}
 				reader.readAsDataURL(file);
 			}
@@ -11312,10 +11353,33 @@ Current version: 124
 			// We resize the image with the canvas method
 			if(forceCrop)
 			{
-				let minsize = Math.min(origW, origH);
-				let mx = (origW - minsize) / 2;
-				let my = (origH - minsize) / 2;
-				ctx.drawImage(this, mx, my, minsize, minsize, 0, 0, wantedWidth, wantedHeight);
+				let minsizeW = Math.min(origW, origH);
+				let minsizeH = Math.min(origW, origH);
+
+				if(aspectratio<0.7)
+				{
+					//portrait
+					minsizeH *= 1.5;
+					canvas.width = wantedWidth = maxSize/1.5;
+					canvas.height = wantedHeight = maxSize;
+				}
+				else if(aspectratio>1.4)
+				{
+					//landscape
+					minsizeW *= 1.5;
+					canvas.width = wantedWidth = maxSize;
+					canvas.height = wantedHeight = maxSize/1.5;
+				}
+				else
+				{
+					//square
+					canvas.width = wantedWidth = maxSize;
+					canvas.height = wantedHeight = maxSize;
+				}
+
+				let mx = (origW - minsizeW) / 2;
+				let my = (origH - minsizeH) / 2;
+				ctx.drawImage(this, mx, my, minsizeW, minsizeH, 0, 0, wantedWidth, wantedHeight);
 			}else{
 				ctx.drawImage(this, 0, 0, wantedWidth, wantedHeight);
 			}
@@ -14838,12 +14902,27 @@ Current version: 124
 				<button type="button" class="btn btn-primary bg_green" onclick="add_img_btn_upload()">Upload Image File</button>
 			</div>
 			<div class="aidgpopuplistheader anotelabel">
+				<button type="button" class="btn btn-primary bg_green" onclick="add_img_btn_paste()">Paste from Clipboard</button>
+			</div>
+			<div class="aidgpopuplistheader anotelabel">
 				<button type="button" class="btn btn-primary" onclick="hide_popups();display_settings();selectImgStyle();">Customize Settings</button>
 			</div>
-
-
 			<br>
 			<input type="file" id="addimgfileinput" style="display:none" accept="image/*">
+			<div class="popupfooter">
+				<button type="button" class="btn btn-primary" onclick="hide_popups()">Cancel</button>
+			</div>
+		</div>
+	</div>
+
+	<div class="popupcontainer flex hidden" id="pasteimgcontainer">
+		<div class="popupbg flex"></div>
+		<div class="nspopup fixsize">
+			<div class="popuptitlebar">
+				<div class="popuptitletext">Paste Image From Clipboard</div>
+			</div>
+			<input type="text" style="width:100%; height:100px; text-align: center;" readonly="true" onpaste="return img_paste_event(event)" value="" placeholder="[Paste Image Here]">
+			<br>
 			<div class="popupfooter">
 				<button type="button" class="btn btn-primary" onclick="hide_popups()">Cancel</button>
 			</div>

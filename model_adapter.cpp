@@ -293,6 +293,10 @@ void print_tok_vec(std::vector<float> &embd)
             {
                 fileformatmeta->model_architecture = GGUFArch::ARCH_FALCON;
             }
+            else if(modelarch=="mamba")
+            {
+                fileformatmeta->model_architecture = GGUFArch::ARCH_MAMBA;
+            }
         }
         gguf_free(ctx);
     }

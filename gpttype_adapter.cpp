@@ -58,6 +58,7 @@ static std::string current_grammar = "";
 
 //return val: 0=fail, 1=(original ggml, alpaca), 2=(ggmf), 3=(ggjt)
 static FileFormat file_format = FileFormat::BADFORMAT;
+static FileFormatExtraMeta file_format_meta;
 
 static gpt_vocab vocab;
 static int32_t n_vocab = 0;
@@ -736,12 +737,13 @@ static int GetBatchSize(int desiredBlasBatchSize,FileFormat in_file_format)
     return desiredBlasBatchSize;
 }
 
-ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in_file_format, FileFormatExtraMeta file_format_meta)
+ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in_file_format, FileFormatExtraMeta in_file_format_meta)
 {
     ggml_time_init();
     kcpp_params = new gpt_params(); //allocate on heap to avoid linux segfault. yes this leaks memory.
 
     file_format = in_file_format;
+    file_format_meta = in_file_format_meta;
     kcpp_params->n_threads = inputs.threads;
     kcpp_params->n_threads_batch = inputs.blasthreads;
     bool isGguf = (file_format == FileFormat::GGUF_GENERIC);
@@ -1828,9 +1830,23 @@ generation_outputs gpttype_generate(const generation_inputs inputs)
     std::fill(last_n_tokens.begin(), last_n_tokens.end(), 0);
     n_past = 0;
 
-    if (file_format == FileFormat::RWKV_1 || file_format==FileFormat::RWKV_2)
+    bool is_mamba = (file_format == FileFormat::GGUF_GENERIC && file_format_meta.model_architecture==GGUFArch::ARCH_MAMBA);
+
+    if (file_format == FileFormat::RWKV_1 || file_format==FileFormat::RWKV_2 || is_mamba)
     {
         ContextFastForward(current_context_tokens, embd_inp, n_past, last_n_tokens, nctx, smartcontext, false, true);
+        if(is_mamba)
+        {
+            if(n_past==0)
+            {
+                llama_kv_cache_clear(llama_ctx_v4);
+            }
+            else if(embd_inp.size()==0)
+            {
+                embd_inp.push_back(current_context_tokens[current_context_tokens.size()-1]);
+                n_past -= 1;
+            }
+        }
     }
     else
     {
