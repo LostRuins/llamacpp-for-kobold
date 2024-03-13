@@ -207,8 +207,14 @@ std::string path_join(const std::string& p1, const std::string& p2) {
     return p1 + "/" + p2;
 }
 
+static int sdloglevel = 0; //-1 = hide all, 0 = normal, 1 = showall
+static bool sdquiet = false;
 void pretty_progress(int step, int steps, float time) {
     if (step == 0) {
+        return;
+    }
+    if(sdloglevel<0 || sdquiet)
+    {
         return;
     }
     std::string progress = "  |";
@@ -256,9 +262,8 @@ void* sd_log_cb_data         = NULL;
 
 #define LOG_BUFFER_SIZE 1024
 
-static bool do_log = true;
 void log_message(const char* format, ...) {
-    if (do_log) {
+    if (sdloglevel>0) {
         printf("\n");
         va_list args;
         va_start(args, format);
@@ -267,9 +272,17 @@ void log_message(const char* format, ...) {
         fflush(stdout);
     }
 }
-void set_log_message(bool log)
+void set_sd_log_level(int log)
 {
-    do_log = log;
+    sdloglevel = log;
+}
+bool get_sd_log_level()
+{
+    return sdloglevel;
+}
+void set_sd_quiet(bool quiet)
+{
+    sdquiet = quiet;
 }
 
 void log_printf(sd_log_level_t level, const char* file, int line, const char* format, ...) {

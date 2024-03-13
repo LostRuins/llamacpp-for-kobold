@@ -21,7 +21,7 @@
 // #include "preprocessing.hpp"
 #include "stable-diffusion.h"
 
-#define STB_IMAGE_IMPLEMENTATION
+//#define STB_IMAGE_IMPLEMENTATION //already defined in llava
 #include "stb_image.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -142,7 +142,7 @@ std::string base64_encode(const unsigned char* data, unsigned int data_length) {
 static std::string sdplatformenv, sddeviceenv, sdvulkandeviceenv;
 bool sdtype_load_model(const sd_load_model_inputs inputs) {
 
-    printf("\nImage Generation Init - Load Safetensors Model: %s\n",inputs.model_filename);
+    printf("\nImageGen Init - Load Model: %s\n",inputs.model_filename);
 
     //duplicated from expose.cpp
     int cl_parseinfo = inputs.clblast_info; //first digit is whether configured, second is platform, third is devices
@@ -179,7 +179,7 @@ bool sdtype_load_model(const sd_load_model_inputs inputs) {
 
     sddebugmode = inputs.debugmode;
 
-    set_log_message(sddebugmode==1);
+    set_sd_log_level(sddebugmode);
 
     bool vae_decode_only = false;
     bool free_param = false;
@@ -255,6 +255,9 @@ sd_generation_outputs sdtype_generate(const sd_generation_inputs inputs)
     sd_image_t * results;
     sd_image_t* control_image = NULL;
 
+    bool is_quiet = inputs.quiet;
+    set_sd_quiet(is_quiet);
+
     //sanitize prompts, remove quotes and limit lengths
     std::string cleanprompt = clean_input_prompt(inputs.prompt);
     std::string cleannegprompt = clean_input_prompt(inputs.negative_prompt);
@@ -267,31 +270,37 @@ sd_generation_outputs sdtype_generate(const sd_generation_inputs inputs)
     sd_params->width = inputs.width;
     sd_params->height = inputs.height;
 
-    printf("\nGenerating Image (%d steps)\n",inputs.sample_steps);
+    if(!is_quiet)
+    {
+        printf("\nGenerating Image (%d steps)\n",inputs.sample_steps);
+    }else{
+        printf("\nGenerating (%d st.)\n",inputs.sample_steps);
+    }
+
     fflush(stdout);
     std::string sampler = inputs.sample_method;
 
-    if(sampler=="euler a") //all lowercase
+    if(sampler=="euler a"||sampler=="k_euler_a"||sampler=="euler_a") //all lowercase
     {
         sd_params->sample_method = sample_method_t::EULER_A;
     }
-    else if(sampler=="euler")
+    else if(sampler=="euler"||sampler=="k_euler")
     {
         sd_params->sample_method = sample_method_t::EULER;
     }
-    else if(sampler=="heun")
+    else if(sampler=="heun"||sampler=="k_heun")
     {
         sd_params->sample_method = sample_method_t::HEUN;
     }
-    else if(sampler=="dpm2")
+    else if(sampler=="dpm2"||sampler=="k_dpm_2")
     {
         sd_params->sample_method = sample_method_t::DPM2;
     }
-    else if(sampler=="lcm")
+    else if(sampler=="lcm"||sampler=="k_lcm")
     {
         sd_params->sample_method = sample_method_t::LCM;
     }
-    else if(sampler=="dpm++ 2m karras" || sampler=="dpm++ 2m")
+    else if(sampler=="dpm++ 2m karras" || sampler=="dpm++ 2m" || sampler=="k_dpmpp_2m")
     {
         sd_params->sample_method = sample_method_t::DPMPP2M;
     }
@@ -302,7 +311,7 @@ sd_generation_outputs sdtype_generate(const sd_generation_inputs inputs)
 
     if (sd_params->mode == TXT2IMG) {
 
-         if(sddebugmode==1)
+         if(!is_quiet && sddebugmode==1)
         {
             printf("\nPROMPT:%s\nNPROMPT:%s\nCLPSKP:%d\nCFGSCLE:%f\nW:%d\nH:%d\nSM:%d\nSTEP:%d\nSEED:%d\nBATCH:%d\nCIMG:%d\nCSTR:%f\n\n",
             sd_params->prompt.c_str(),

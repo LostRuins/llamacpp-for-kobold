@@ -4,6 +4,8 @@ const int stop_token_max = 16;
 const int ban_token_max = 16;
 const int tensor_split_max = 16;
 const int logit_bias_max = 16;
+const int images_max = 4;
+
 // match kobold's sampler list and order
 enum samplers
 {
@@ -39,6 +41,7 @@ struct load_model_inputs
     const char * model_filename;
     const char * lora_filename;
     const char * lora_base;
+    const char * mmproj_filename;
     const bool use_mmap;
     const bool use_mlock;
     const bool use_smartcontext;
@@ -60,6 +63,7 @@ struct generation_inputs
     const int seed;
     const char * prompt;
     const char * memory;
+    const char * images[images_max];
     const int max_context_length;
     const int max_length;
     const float temperature;
@@ -119,6 +123,7 @@ struct sd_generation_inputs
     const int height;
     const int seed;
     const char * sample_method;
+    const bool quiet = false;
 };
 struct sd_generation_outputs
 {
@@ -129,6 +134,7 @@ struct sd_generation_outputs
 extern std::string executable_path;
 extern std::string lora_filename;
 extern std::string lora_base;
+extern std::string mmproj_filename;
 extern std::vector<std::string> generated_tokens;
 extern bool generation_finished;
 extern float last_eval_time;

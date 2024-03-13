@@ -458,4 +458,11 @@ struct mpt_model {
     std::map<std::string, struct ggml_v3_tensor *> tensors;
 };
 
+struct llava_image
+{
+    std::string b64data = "";
+    int32_t clp_image_tokens = 0; //holds number of tokens llava used
+    float * clp_img_embd = nullptr; //this holds dynamic memory and must be freed each use!
+};
+
 const float default_norm_eps = 1e-5f;

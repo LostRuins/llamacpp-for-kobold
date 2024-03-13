@@ -34,6 +34,7 @@ extern "C"
         std::string model = inputs.model_filename;
         lora_filename = inputs.lora_filename;
         lora_base = inputs.lora_base;
+        mmproj_filename = inputs.mmproj_filename;
 
         int forceversion = inputs.forceversion;
 

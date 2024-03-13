@@ -423,7 +423,11 @@ add_library(common2
             common/common.cpp
             common/common.h
             common/grammar-parser.h
-            common/grammar-parser.cpp)
+            common/grammar-parser.cpp
+            examples/llava/llava.cpp
+            examples/llava/llava.h
+            examples/llava/clip.cpp
+            examples/llava/clip.h)
 target_include_directories(common2 PUBLIC . ./otherarch ./otherarch/tools ./otherarch/sdcpp ./otherarch/sdcpp/thirdparty ./examples ./common)
 target_compile_features(common2 PUBLIC cxx_std_11) # don't bump
 target_link_libraries(common2 PRIVATE ggml ${LLAMA_EXTRA_LIBS})

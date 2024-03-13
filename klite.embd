@@ -7,7 +7,7 @@ Just copy this single static HTML file anywhere and open it in a browser, or fro
 Please go to https://github.com/LostRuins/lite.koboldai.net for updates on Kobold Lite.
 If you are submitting a pull request for Lite, PLEASE use the above repo, not the KoboldCpp one.
 Kobold Lite is under the AGPL v3.0 License unless otherwise exempted. Please do not remove this line.
-Current version: 120
+Current version: 124
 -Concedo
 -->
 
@@ -26,6 +26,7 @@ Current version: 120
 	<link rel="manifest" href="manifest.json" />
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="description" content="KoboldAI Lite">
 
 	<!-- Favicon -->
 	<link rel="icon" id="fvico" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAEtQTFRFAAAA+XJ0l09PsVdXcTw842hqw2hmTi4vMCQlb2eUgWtl+tGpBAMDEw4NPCkoFw8PJBgXt5WBVkxW4Nvf7Lia3Z+MpJnAZ05HnJOTYIS/NAAAABl0Uk5TAv////v//vT9//3/Nna08qf+///////a/hkcROQAAAGUSURBVHiclZLRcoQgDEULBAKoIKjI/39pL4i7nbUPbcYZwJyES5Kvr3/YvIx1nn9zL4G4EwuTXX7xs4QFGEklOT6SBENERguhsWHFD2AVRhL8IEgawY8b5L4fYtg+TSl8+NMEu4G2P34Q67r6I+37dLyBfU/4PY/sInG2MR8vIHG01h9mHfq1hUUQtwYcLEcp+ltmwqutdy5HMwAfc8ExKtVSLEZZW13Jxb4Azq7UHFnFrtGItLliS1UDYOfctm3JhEtlEH5zzpZNDsC63AB1VysY3gqC3C2ytsNW6Q3IjCt91Qr9QK8MiFL4nUEpEyNLYmodxYo3RquVHWUmbbRu0QCbKWwNfil5zYeENrRRqtZrGEQYqdtW8FWHLl4bgZDLFLZdbS/UzP2AEGTufkt3xWSvwzJeh4GxHWD5qlgXOZ/n2ULuC/od4Pk8x9xhCekD0Bqd/DmXgbpEumRgrMPn1K6ecs4pJc/V0nE+x35KtfTJTJufpvPTD2DyNZ3e4wP3zDCHevg+yYvf09PfkHuK7/Vv9g2CjBTdqv3bFgAAAABJRU5ErkJggg==" />
@@ -1522,6 +1523,39 @@ Current version: 120
 			overflow-x: hidden;
 			font-size: 12px;
 		}
+		.zoomedimg
+		{
+			border-radius: 6%;
+			width:462px;
+			height:462px;
+		}
+		.zoomedimg.portrait
+		{
+			width:308px;
+			height:462px;
+		}
+		.zoomedimg.landscape
+		{
+			width:462px;
+			height:308px;
+		}
+
+		@media (max-width: 620px) {
+			.zoomedimg {
+				width:min(96vw, 420px);
+				height:min(96vw, 420px);
+			}
+			.zoomedimg.portrait
+			{
+				width:min(64vw, 280px);
+				height:min(96vw, 420px);
+			}
+			.zoomedimg.landscape
+			{
+				width:min(96vw, 420px);
+				height:min(64vw, 280px);
+			}
+		}
 		.mdlpicker::-webkit-calendar-picker-indicator {
               opacity: 100;
            }
@@ -1976,15 +2010,15 @@ Current version: 120
 		const favivon_normal = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAEtQTFRFAAAA+XJ0l09PsVdXcTw842hqw2hmTi4vMCQlb2eUgWtl+tGpBAMDEw4NPCkoFw8PJBgXt5WBVkxW4Nvf7Lia3Z+MpJnAZ05HnJOTYIS/NAAAABl0Uk5TAv////v//vT9//3/Nna08qf+///////a/hkcROQAAAGUSURBVHiclZLRcoQgDEULBAKoIKjI/39pL4i7nbUPbcYZwJyES5Kvr3/YvIx1nn9zL4G4EwuTXX7xs4QFGEklOT6SBENERguhsWHFD2AVRhL8IEgawY8b5L4fYtg+TSl8+NMEu4G2P34Q67r6I+37dLyBfU/4PY/sInG2MR8vIHG01h9mHfq1hUUQtwYcLEcp+ltmwqutdy5HMwAfc8ExKtVSLEZZW13Jxb4Azq7UHFnFrtGItLliS1UDYOfctm3JhEtlEH5zzpZNDsC63AB1VysY3gqC3C2ytsNW6Q3IjCt91Qr9QK8MiFL4nUEpEyNLYmodxYo3RquVHWUmbbRu0QCbKWwNfil5zYeENrRRqtZrGEQYqdtW8FWHLl4bgZDLFLZdbS/UzP2AEGTufkt3xWSvwzJeh4GxHWD5qlgXOZ/n2ULuC/od4Pk8x9xhCekD0Bqd/DmXgbpEumRgrMPn1K6ecs4pJc/V0nE+x35KtfTJTJufpvPTD2DyNZ3e4wP3zDCHevg+yYvf09PfkHuK7/Vv9g2CjBTdqv3bFgAAAABJRU5ErkJggg==";
 		const compressed_scenario_db = ["XQAAAQCkKgAAAAAAAAA9iIqG1FTp3Td41VnWyuXTp3Lb95KmIEizGvJcmkqrV2FY5cKEeSxCwbqBRjHVjL7PUH9wCoW89dPxjDNZvgp6okMOelpy7_1P6GV-mfJV4jz42_DXqYfET4aYlAT13M95gkcA14f0NLvI_p6B9CyG8EbkhRxsk3uyf_KgTV5kwqzAcr5C4JQ_pJr77GnYCHQI8h6F765-lcqrvw1Xu1GHhcN3lj7s9PhMvLnmGPZbQMrTo5sqPJDzYO6lytxmNSHSXMICpN2kFJB6kqyL5lBxNAH3Au_F_JIC85GqwLXWEy8wZms5KmAdp1s3EA1yabPGqqF0G5RxBp3aXzm7h6QUJPy1qSr6JJAo4fi2gCPaLkdn2pKqNDR1Ww8FA6AVHOyMgCTmmrQxWVYgXY9TdhHKcRcrIsoHNXEeWSqMGJNQ8lzVfc26teZdBdPLhqcClG8wUThPtyobTMz8Fgom88nTv7VT-mZhwH9Nc4ghoCL8dMR0Skf-EYDZ0Uvz03_GTn5OB8yuX6FmsD1XQJv_CKBAUHeDKd7n_bC7WOnlAINHPX9Bh5TnwjeLYO-UAL2ClMJTFzR-k2cjVHGQnLB7hZ48L1nToRG1gSVN7dP3Zysw7riwIxnfG4MMNXtEbHyxrCvz2zRTUEqbHLrwIzdJRpJ5s5XfTlY1CPZkQCwxbA6rrUt27D6a-YDKavbg0hubpViPRYbnEDXr9gL-7in4f_K2cOZdQ26Q--hk0xzEtgBNFI6inHA2nA4LofUpWjl835qg6CUyz9EzQkw0cDgPVjYXehC9oC_3H0U2O9YC-Ah8VpdPdCHUFuaQr7oXgePUub_Be1XQyCA5TaqrJxVxUG2hZA4rOVJHZ_AahfiJN7z6QcVEp-8xf-wHcv1lpWjjNdXFWDqVQZkdOaKf63dtjP35SmC5eCw2_BNX_t-db_FCCAhm2Vn2WI3q4k00p4l_ocCrJIdRID6muBVZQXCzxcRf5m8kcGwrTB-XVS-XSSPZInaBxZjgimOl5bLwJvdMC-HNYtU-yUDjXvDjPraZ_7ZV_-knU1GbHf1BpI9-rNbl_3bbA7KbmL7Q_goV1Clvi6gLYgjbXGQMTFjQEoodZX3fK_bDhVsrA1fWMJMWwfY3ua-j8HNuyRDfhPBpbTK0Gvz5-GWbIRF3v4zwR9HzIjz2frY7luy3ApQ6QJw7K6ITvD80u5VLfpHYReVCLpgs-lvPStklgnGXj3j5vuaH9f-wFohB19vwzRnthvgdplXPQ9jMy3ieb80sELS0WiGD-E2L_HhNXUcpTdeBp3HQFK4QubJOiIeKuZDVR7PxvtwBj26m-pLXLzKc6WqQlt07TsRo_72SlAaZodyyFRXf8636HCAyEHcVEhR6uZ1lDu00BHvsyVe6BdG7zvjNdmLluA0qBJQ9FO3ipHezadlwCPnEBDQAAZRgHKUvRCJNOQH_jcqFLLtmDADXoLvcK8_lN0LEeisA4B1LH0X2x0Q6NqLgngh9M1y_cBEBaazMa_UIZwoL6eZGU0QhlpvysBi1wKDybNcF_uKrIxdQwn8L_QRFHtDn39-hw-GDs_6zbnRlwrBEwrMtAQfc62FLSzGUMAzww-aTGvUuQvP-D9m0r-eDbSATlSsrIYobVUDUdDWsMDUsjKfYOW_Rp0GMjk40BQxcdzjNjLCYaTEN5cMhsWyfTbhIHDP7-wfbvJG7Al7Z-nH2Pa-QXPte687xVanKT0d3Er07vOV9HoI09mtuhxE4g0VaLm4TMqxSMRBX3EB60W1U2sX9sHjAgmwfpUNXRNj03QeJe4cg0pndf-hhKkTsfNQMU_N6-Zt8IrM2xtzFfvKB4BpFyWmaYu_X7bGwgSZjzrBNE10fx001fMr2fmrVy_sj7mW7WhlWXa3N5eMe4pqkA4EawmGzhuIwAqZNmtvnL_N2nt4T4ZyqkAAyXMMKb60UJAXkqLjUisD1bnNt1qD9otg8mGNzQxlaY5Bfm7286vNmjyxGY4UVrn0RV0DSFFb5_NYEW5y5YYxiabWABr8k0ezTM8R_qQ7NxdUOj0qhBKOqGyzyuVgKNnB6-ZzpKVGbB7RYJXwfEtkKNuUc3UWmbwxcsCTuW4TOScqJUh4dA5vlgLjB3-Q79yEMRYB8n6jetkR4z25RkYRXvTxkHIVQd2qr8BchdUcmHsZvG_tXI0-bxx_f_TGyfgi8ol7L5SRfWfOtYHCXSVHOCwnDj7GN4rIrwt3qWRcPkdTMw1RguDZW0eTpCpZyCJH_z3xVfpVh5lgf7Nu4tH-CpFRrOaJc79K1lSuIZs8yvjh5dbYAH4rKQ28OOFRu2MmU7Ko8Of4CECcJMhohFtVW6nTCB48-Pl8owiGM5_2uBJOJRAsyu3fHHbKqKvZ-0kYmN9ypyTAxQjgDiCOE3J1txPiqRRRRSaFZgLPNacdyjGO2y2SpWwzYudx8tEq3tBDAPBCXwWqwefcG__iN5OMRgCIAvr-9qfl2iSaVR5LZ-kBluVoW27o0hIUtgdry03bmUN50ob4hwCz8xVoupcHjI3Cy0nLpgiGixjo4afafQPE_TXJf-NixlWN-cH2a4ZzU6Qc5KKzIciwnt6Hx-iRQzB_uK-pBDjC8boVXolOsFyaqWsoLgkghTo2qCFZuxP2GKzS9wQ5sBWxTMEPGryHxaylpXXmUjlBJ-j9p4vJN9YxjQEbyuTVYy0PxmtDbyh6g_n3Lr09ttCg40hqfWBhCT9P4-uFoAjozUciHQFBfI8t04dKZnobLbVq-f_HJGzUZu5zHRHsPI939tJxODDJxiflfHLwxXjQS2cq9Vj-kvn1pgXAN5unYh8Y7-nqepxc0KkO2v8mU-r8fYFmUFJdZu6HR23P2y7ndsozZEKdUAVay36pmW_gvVQuSA_jzLwXn3Ee2y-A7G-w96bTe82gJG95PsSOt2L6AcuF8mqWL_EVBjIZJMN63T__0UHh9VPDCRTUITwn35t7Z0aGYHnssPVAxXLh7y2LhCaIN0u6lnbiDlKAdKc1-4qYbr1sHORC8tjSG8cjWLkgBcNkFo7rqhKQSNtU1H44aT8ceG08a8cSpze8aC6dMVaz6DxEaFIZ-aRqfqO0QV6ty2-6hrcRVedypt1Twd7UEkXZM5Erjb-_8jq4RzshqXVzKEqPfIYpmtHqkmeJq8BLfc1GT9UGrmPpYO4-K8LM-u7aOpcxcagPn2S3McsWI3a8CWkU9t4g9WEPNH-5s8VqF-3rSmgi5kk40Y7HjEyA-6clhNhl9lbP6hIbf9TKHO9fWwzTz8NieUPNZZPgrBrULggzHXPrfJIxl8eLSrKuD8n2Pbumu2k4ljMV_WIq9qCJ1wPofdIoWHWiz7oV2snLve1CFPUCdAhLkHQ8KpO6xvSi6mKY9WsOhOLxKm92vsWLv-rfM2CW4XUja5arRpGynr7cF9CDuEGWIxkPjOF_5x8ZXg2x1TJcrgvLDO_S4u2zKl2tQGRW4NHU1zF9h_3SQkpbwWH5KOPisP6c8vb5rg_rZ5laFedxQQSpguSq5el9-ddzvlr4C8Q22eDQvwUEO_P6c6VZN5A2QWBGZsJoaZ4gZ8UArmGLxSihBj_5oOdDdUcbUOhGUIWrtYrs4PJKxpnHDFUZaYwIbtnLyAoORKYvq8LgAH0SP57KeeYkZzUGP1f0jkDzAmwV4ZHE0pnZhEo3XkXVuIHc6MXZ-RniZaS_vaoY3Bq6XHrKoWZdLiCoU6aqPc-ZpPnvXmnKHyLLs4e96M1wGKIyT28_VCR6EDRJPxbZ9Ig1kN8TIHCF3tE8y2It5hkz1-zNYT6uw3SDkFSdrV_DRiAVqUhxrQdUPhpD92zVgsWdJR0TZLU7CBLlOuBVwyfmtHMUBL6dIvYie47Kr47nOJ5i2ka8EZGZf-Y8aD6xv6hpBbybU_5oGfYLRG4MiNRhML4u90tQ3hBxBbGYK8sWOzui2UEx0ynB_a8jz8eEs7u_9ylTD1v1f-gC8JYQMNAZIm46pvl2s1X07B8Gf7Laj4aozcWqg8DgC_8aLypoTffyxjWw4Fpd8LWn1fRPsFOdeV0UrS7FNtUakvYq_qxphGu5mNuINIJIMJzgI3giGnyCbr2IrsJ1ITmEGnggLQYes1t3j44v1quvVwQXqHX6HhSnoJlN2IlT5DuZ2kx6-pb68nK62xVJaOS-wDeeJnQ8zzhqJACstuF7g-jidRoJmGc8yChHfCN8ZFOhT0poNQB-Jf5IUZ7aSCXmceYN4VUhmB_w-Db1XZUNHOJqGiTgcT1KzejzNpN49b0QUjcRJiOpEhJp_LzBUiRQSnweOSFrWlTs5Jf9p3wqN9zFYZ_3Xz6IR2klwyLQXc-LbBd1QFwkB17HTYMspUXjrSpJULdQ90OxzbSEafF4RKvgIL4sAU1pCMTa2bVrcUmY2MiECVIbwPNN0CjZeoEAd1dP5FFjlwGG7xUNRO1E20CqHZJ1oqeEur06ZXvPK1zy3SlF-_lKF6eRfNClzR2ERGYqf-zEQwwkPNiMNnURPcdt64pw4kcjTKBIkorum3ruuqJZMitcZx0YiANx7ssy8dMuVteEFFCQnmglgTCsEZTK_xzigPie_f8Q5p1vsJPje5Z2cugsaW-vOXbuOE471n6LuIyoII2dWq0m8H3_8pxlErkZ5E7OY--w3InCuSCv2ubxaZ9AbaNuuyGw49fI3zvRurTYespYO-Aj1FcjDrxqRB3bihJm_u3a56fwnoyOeE0071TY_AlVlq1RYauV4-7L-RAFJZo0wKnPZM9Hs7VB_cCwJ_oPe1y0XBF95agtAQdicj42KdstIlpjWtdGb4LpHgVQI_56G3As0H81-uj47VuBourA2hUay0BpHAvcwbNLyu8OcZB31I6dfy2797wGlrWwAN-Xt3M3CVW9SvIN_GMlg0RB75rUEtgPkR-VPRdPH_Jb19wVoFPPpwjP6cYzVW1U_iRymFKaNpMo4CWFN6t54wshlCVwkfZKbhSP14z74oMKxy-qqt-WKNhkOr1uh_sevNa57iHBnFlHzt_eaZoPNTsCmzqnC4boOlK9o5_hFn8hiw33R3NQC-RD-w1XEl8-hpdZYdCcnexwRYd9sH2LMHySL59Kp_09yIwAE_ukVMDa6Yd9OHrbSCycQNZSI_0fMnF5s9oWTXnsxecDpRKgSWJQIQPUb6dlOdGOT0-MnebivpKgbDxzx52Zr0EMS7aU5eJxEdO9rdiFda8kQk5IeBgr1QcqIFs_1UIp6oQneXgwTlpXXxLHs16ShDG1qkLmDZjb4vrb_Ha2YCBIqid6wVKjec-UwEwWyvfV4UAPFgiNRJN7TdQNRxbSZJ8XWeA2gor9PN5JkMS0l_qGKoke3sbWDsp-G_B0KUjwUBTtPsKRhdnc0JyV_akuZ8jxAmXDDydxOy_EqNMgrDGN_4FuSY7XNLy2OXXJG3bB9a_lxEzdVNPWzM0cijTQFLzIiAKAyWTfwPNagcvgLUAeHxlQ22E0V37-sFwkstvpJ-s8C2yqxQKcv4GfMZOfSYEaZAhiO_y8EXgFknGGwjLB7K3CgvGwBRWWcgx-eqXYs9rAygf_X2_7-rBG_7Rxj3GW957PwwzwZjZDkdRHik8sj0htIkDRAyHo2EsPwObKXK-W32JKUX3VSgiY8AzCUhUUIWwFVVLXEvB1jtU7G7wRaj5_z9QywvgoIqnOTmpm4TTRA0cCJkiYoJcl8BOIHoWuYznL89zWjWy_ZQDKaYAsHugQYXaKI_UaaLV4gVFjDNqZCgqjAFyMjG4qZR64jkaI71mefUaDLLwsqIiLpOWZi8BlvP0YcOVeTyo2mJbq3EXfjXyDvPuZuZ9SAjqwCdLr902yzLm4DdzYRyfPbpt8rGUu-Uw27Ix2oZRe_zj0G_3FdCw0"];
 
-		const storymodels1 = ["erebus","nerys","nerybus","janeway","hermes","airoboros","chrono","llama","wizard","mantis","myth","xwin","spicyboros","mlewd","mxlewd","mistral","maid","mixtral","estopia","fighter"];
+		const storymodels1 = ["erebus","nerys","nerybus","janeway","hermes","airoboros","chrono","llama","wizard","mantis","myth","xwin","spicyboros","mlewd","mxlewd","mistral","maid","mixtral","estopia","fighter","fimbul"];
 		const storymodels2 = ["opt","vicuna","manticore","alpaca"];
-		const adventuremodels1 = ["nerys","nerybus","skein","adventure","hermes","airoboros","chrono","llama","wizard","mantis","myth","xwin","spicyboros","mlewd","mxlewd","mistral","maid","mixtral","estopia","fighter"];
+		const adventuremodels1 = ["nerys","nerybus","skein","adventure","hermes","airoboros","chrono","llama","wizard","mantis","myth","xwin","spicyboros","mlewd","mxlewd","mistral","maid","mixtral","estopia","fighter","fimbul"];
 		const adventuremodels2 = ["erebus","janeway","opt","vicuna","manticore","alpaca"];
-		const chatmodels1 = ["pygmalion-6","pygmalion-v8","pygmalion-2","hermes","airoboros","chrono","llama","wizard","mantis","myth","xwin","spicyboros","mlewd","mxlewd","mistral","maid","mixtral","estopia","fighter"];
+		const chatmodels1 = ["pygmalion-6","pygmalion-v8","pygmalion-2","hermes","airoboros","chrono","llama","wizard","mantis","myth","xwin","spicyboros","mlewd","mxlewd","mistral","maid","mixtral","estopia","fighter","fimbul"];
 		const chatmodels2 = ["pygmalion","janeway","nerys","erebus","nerybus","opt","vicuna","manticore","alpaca"];
-		const instructmodels1 = ["gpt4all","supercot","hermes","airoboros","chrono","wizard","mantis","vicuna","manticore","alpaca","myth","xwin","spicyboros","mlewd","mxlewd","mistral","maid","mixtral","estopia","fighter"];
+		const instructmodels1 = ["gpt4all","supercot","hermes","airoboros","chrono","wizard","mantis","vicuna","manticore","alpaca","myth","xwin","spicyboros","mlewd","mxlewd","mistral","maid","mixtral","estopia","fighter","fimbul"];
 		const instructmodels2 = ["erebus","nerys","nerybus","janeway","opt","llama"];
-		const defaultmodels = ["gpt4all","supercot","hermes","airoboros","chrono","wizard","mantis","vicuna","manticore","alpaca","myth","xwin","spicyboros","mlewd","mxlewd","llama","mistral","maid","mixtral","estopia","fighter"];
+		const defaultmodels = ["gpt4all","supercot","hermes","airoboros","chrono","wizard","mantis","vicuna","manticore","alpaca","myth","xwin","spicyboros","mlewd","mxlewd","llama","mistral","maid","mixtral","estopia","fighter","fimbul"];
 
 		const instructstartplaceholder = "\n{{[INPUT]}}\n";
 		const instructendplaceholder = "\n{{[OUTPUT]}}\n";
@@ -2951,6 +2985,15 @@ Current version: 120
 		}
 		return proxy_part + url;
 	}
+	function get_kobold_header()
+	{
+		let header = {'Content-Type': 'application/json'};
+		if(custom_kobold_key!="")
+		{
+			header['Authorization'] = 'Bearer ' + custom_kobold_key;
+		}
+		return header;
+	}
 
 	//instead of a single fetch, optionally break it up into multiple repeated requests which update a local variable
 	function kobold_api_stream(sub_endpt,submit_payload,synchro_streaming_tokens_left,trackedgenid,synchro_streaming_response = "",tokens_per_tick = 4096)
@@ -2972,7 +3015,7 @@ Current version: 120
 
 			let reqOpt = {
 			method: 'POST', // or 'PUT'
-			headers: {'Content-Type': 'application/json',},
+			headers: get_kobold_header(),
 			body: JSON.stringify(new_submit_payload),
 			};
 			if(globalabortcontroller)
@@ -3089,13 +3132,22 @@ Current version: 120
 		synchro_pending_stream = "";
 		let reqOpt =
 		{method: 'POST',
-		headers: {'Content-Type': 'application/json'},
+		headers: get_kobold_header(),
 		body: JSON.stringify(submit_payload)};
 		if(globalabortcontroller)
 		{
 			reqOpt.signal = globalabortcontroller.signal;
 		}
 		fetch(sub_endpt, reqOpt)
+		.then(x => {
+			if(x.ok)
+			{
+				return x;
+			}else{
+				throw new Error('Error occurred while SSE streaming: ' + (x.statusText));
+				return null;
+			}
+		})
 		.then(resp => {
 			resp.body
 			.pipeThrough(new TextDecoderStream())
@@ -3400,7 +3452,7 @@ Current version: 120
 
 	const XTTS_ID = 1000;
 	const ALLTALK_ID = 1001;
-	const HD_RES_PX = 400;
+	const HD_RES_PX = 512;
 	const NO_HD_RES_PX = 256;
 
 	//all configurable globals
@@ -3442,6 +3494,7 @@ Current version: 120
 	//key is ID, body is {done:false,queue:10,result:""}
 	var stablemodels = [{"name": "stable_diffusion","count": 1}]; //stored as {name,count}
 	var custom_kobold_endpoint = ""; //if set, does not use horde. Instead, attempts to use this sync endpoint
+	var custom_kobold_key = ""; //only kcpp can potentially use this
 	var custom_oai_endpoint = "";
 	var custom_oai_key = ""; //if set, uses the OpenAI API to generate
 	var custom_oai_model = "";
@@ -3461,8 +3514,10 @@ Current version: 120
 	var last_known_filename = "saved_story.json";
 	var localmodeport = 5000;
 	var localmodehost = "localhost";
+	var localmodekey = "";
 	var kobold_endpoint_version = ""; //used to track problematic versions to avoid sending extra fields
 	var koboldcpp_version = ""; //detect if we are using koboldcpp
+	var koboldcpp_has_vision = false;
 	var last_request_str = "No Requests Available"; //full context of last submitted request
 	var lastcheckgenkey = ""; //for checking polled-streaming unique id when generating in kcpp
 	var globalabortcontroller = null;
@@ -3483,8 +3538,11 @@ Current version: 120
 		saved_claude_addr: default_claude_base, //do not ever share this in save files!
 		saved_palm_key: "", //do not ever share this in save files!
 		saved_kai_addr: "", //do not ever share this in save files!
+		saved_kai_key: "", //do not ever share this in save files!
 		saved_oai_jailbreak: "", //customized oai system prompt
 		saved_oai_jailbreak2: "", //oai assistant postfix
+		saved_claude_jailbreak: "", //claude system prompt
+		saved_claude_jailbreak2: "", //claude assistant postfix
 		saved_oai_custommodel: "", //customized oai custom model
 		saved_oai_role: 0, //0=user,1=assistant,2=system
 		saved_a1111_url: default_a1111_base,
@@ -3525,6 +3583,8 @@ Current version: 120
 		img_cfgscale: 7,
 		img_allowhd: false,
 		img_steps: 20,
+		img_sampler: "Euler a",
+		img_aspect:0, //0=square,1=portrait,2=landscape
 		save_images: true,
 		save_remote_images: false,
 		prompt_for_savename: false,
@@ -3729,6 +3789,13 @@ Current version: 120
 			}else if(window.location.hostname && window.location.hostname!="" && !is_using_web_lite()){
 				localmodehost = window.location.hostname;
 			}
+
+			let inputkey = urlParams.get('key');
+			if(inputkey)
+			{
+				localmodekey = inputkey;
+			}
+
 		}
 
 		const fromfile = ( window.location.protocol == 'file:' );
@@ -3971,7 +4038,11 @@ Current version: 120
 			{
 				protocol = "https://";
 			}
-			document.getElementById("customendpoint").value =  protocol + localmodehost + ":" + localmodeport;
+			if(localmodekey)
+			{
+				document.getElementById("customkoboldkey").value = localmodekey;
+			}
+			document.getElementById("customkoboldendpoint").value =  protocol + localmodehost + ":" + localmodeport;
 			connect_custom_endpoint();
 			document.getElementById("lastreq").innerHTML = document.getElementById("lastreq2").innerHTML =
 			`<span class=color_gray>You're using Kobold Lite Embedded.</span>`;
@@ -4179,7 +4250,7 @@ Current version: 120
 		let a1111_t2i_payload = {
 			"prompt": prompt,
 			"seed": parsedseed,
-			"sampler_name": "Euler a",
+			"sampler_name": req_payload.params.sampler_name,
 			"batch_size": 1,
 			"n_iter": 1,
 			"steps": req_payload.params.steps,
@@ -4231,6 +4302,9 @@ Current version: 120
 			if(resp.images && resp.images.length>0)
 			{
 				onImagesDone(resp.images[0]);
+			}else{
+				console.log("Generation Error!");
+				onImagesDone(null);
 			}
 
 		}).catch((error) => {
@@ -4424,6 +4498,10 @@ Current version: 120
 	function is_using_kcpp_with_added_memory()
 	{
 		return (custom_kobold_endpoint!="" && koboldcpp_version && koboldcpp_version!="" && compare_version_str(koboldcpp_version, "1.49") >= 0);
+	}
+	function is_using_kcpp_with_llava()
+	{
+		return (custom_kobold_endpoint!="" && koboldcpp_version && koboldcpp_version!="" && compare_version_str(koboldcpp_version, "1.61") >= 0 && koboldcpp_has_vision);
 	}
 
 	//0 is none, 1 is pseudostreaming, 2 is true poll-streaming, 3 is sse-streaming
@@ -4855,6 +4933,7 @@ Current version: 120
 			new_save_storyobj.savedsettings.saved_claude_key = "";
 			new_save_storyobj.savedsettings.saved_claude_addr = "";
 			new_save_storyobj.savedsettings.saved_kai_addr = "";
+			new_save_storyobj.savedsettings.saved_kai_key = "";
 			new_save_storyobj.savedsettings.saved_openrouter_key = "";
 
 			new_save_storyobj.savedsettings.modelhashes = [];
@@ -5153,6 +5232,7 @@ Current version: 120
 					let tmp_claude2 = localsettings.saved_claude_addr;
 					let tmp_palm1 = localsettings.saved_palm_key;
 					let tmp_kai = localsettings.saved_kai_addr;
+					let tmp_kai2 = localsettings.saved_kai_key;
 					let tmp_a1111 = localsettings.saved_a1111_url;
 					let tmp_xtts = localsettings.saved_xtts_url;
 					let tmp_imggen = localsettings.generate_images_mode;
@@ -5186,6 +5266,7 @@ Current version: 120
 					localsettings.saved_claude_addr = tmp_claude2;
 					localsettings.saved_palm_key = tmp_palm1;
 					localsettings.saved_kai_addr = tmp_kai;
+					localsettings.saved_kai_key = tmp_kai2;
 					localsettings.saved_a1111_url = tmp_a1111;
 					localsettings.saved_xtts_url = tmp_xtts;
 					localsettings.generate_images_mode = tmp_imggen;
@@ -6714,15 +6795,20 @@ Current version: 120
 					var option = dropdown.options[i];
 					dropdown.remove(option);
 				}
+				let selidx = 0;
 				for(var i = 0; i < data.data.length; i++) {
 					var opt = data.data[i];
 					var el = document.createElement("option");
 					el.textContent = opt.id;
 					el.value = opt.id;
+					if(isOpenrouter && opt.id=="mistralai/mistral-7b-instruct")
+					{
+						selidx = i;
+					}
 					dropdown.appendChild(el);
 				}
 				dropdown.appendChild(lastOption);
-				dropdown.selectedIndex = 0;
+				dropdown.selectedIndex = selidx;
 				oai_model_change();
 			}
 			else
@@ -6754,6 +6840,7 @@ Current version: 120
 		}
 	}
 
+	let openrouter_fetch_attempted = false;
 	function customapi_dropdown()
 	{
 		let epchoice = document.getElementById("customapidropdown").value;
@@ -6769,7 +6856,8 @@ Current version: 120
 			document.getElementById("koboldcustom").classList.remove("hidden");
 			if(!localflag)
 			{
-				document.getElementById("customendpoint").value = localsettings.saved_kai_addr;
+				document.getElementById("customkoboldendpoint").value = localsettings.saved_kai_addr;
+				document.getElementById("customkoboldkey").value = localsettings.saved_kai_key;
 			}
 		}
 		else if(epchoice==1 || epchoice==5)
@@ -6783,6 +6871,15 @@ Current version: 120
 				document.getElementById("custom_oai_endpoint").value = default_openrouter_base;
 				document.getElementById("custom_oai_endpoint").classList.add("hidden");
 				document.getElementById("custom_oai_key").value = localsettings.saved_openrouter_key;
+				if(!openrouter_fetch_attempted)
+				{
+					openrouter_fetch_attempted = true;
+					let dropdown = document.getElementById("custom_openrouter_model");
+					if(dropdown.options.length < 10)
+					{
+						oai_fetch_models(); //autofetch openrouter models
+					}
+				}
 			}
 			else
 			{
@@ -6803,10 +6900,12 @@ Current version: 120
 		}
 		else if(epchoice==3)
 		{
+			toggleclaudemodel();
 			document.getElementById("claudecustom").classList.remove("hidden");
 			document.getElementById("custom_claude_key").value = localsettings.saved_claude_key;
 			document.getElementById("custom_claude_endpoint").value = (localsettings.saved_claude_addr?localsettings.saved_claude_addr:default_claude_base);
-
+			document.getElementById("claudesystemprompt").value = localsettings.saved_claude_jailbreak;
+			document.getElementById("claudejailbreakprompt").value = localsettings.saved_claude_jailbreak2;
 		}
 		else if(epchoice==4)
 		{
@@ -6825,7 +6924,10 @@ Current version: 120
 				allow_update_kobold_model_display_timestamp = performance.now() + 60000;
 				console.log("Updating selected model name...");
 				let murl = apply_proxy_url(custom_kobold_endpoint + kobold_custom_mdl_endpoint);
-				fetch(murl)
+				fetch(murl, {
+					method: 'GET',
+					headers: get_kobold_header(),
+				})
 				.then(x => x.json())
 				.then(values => {
 					if(custom_kobold_endpoint!="" && values && values.result!="")
@@ -6846,6 +6948,7 @@ Current version: 120
 	function connect_custom_endpoint()
 	{
 		custom_kobold_endpoint = "";
+		custom_kobold_key = "";
 		custom_oai_key = "";
 		custom_scale_key = "";
 		custom_claude_key = "";
@@ -6854,25 +6957,30 @@ Current version: 120
 		let epchoice = document.getElementById("customapidropdown").value;
 		if(epchoice==0) //connect to kobold endpoint
 		{
-			let tmpep = document.getElementById("customendpoint").value;
-			if (tmpep != null && tmpep.trim() != "") {
+			let desiredkoboldendpoint = document.getElementById("customkoboldendpoint").value;
+			let desiredkoboldkey = document.getElementById("customkoboldkey").value;
+
+			if (desiredkoboldendpoint != null && desiredkoboldendpoint.trim() != "") {
 				hide_popups();
-				tmpep = tmpep.trim();
+				desiredkoboldendpoint = desiredkoboldendpoint.trim();
 
 				//remove trailing slash and pound
-				tmpep = tmpep.endsWith('#') ? tmpep.slice(0, -1) : tmpep;
-				tmpep = tmpep.endsWith('/') ? tmpep.slice(0, -1) : tmpep;
+				desiredkoboldendpoint = desiredkoboldendpoint.endsWith('#') ? desiredkoboldendpoint.slice(0, -1) : desiredkoboldendpoint;
+				desiredkoboldendpoint = desiredkoboldendpoint.endsWith('/') ? desiredkoboldendpoint.slice(0, -1) : desiredkoboldendpoint;
 
-				if (tmpep != "" && (tmpep.trim().endsWith("/api") || tmpep.trim().endsWith("/api/v1")))
+				if (desiredkoboldendpoint != "" && (desiredkoboldendpoint.trim().endsWith("/api") || desiredkoboldendpoint.trim().endsWith("/api/v1")))
 				{
-					tmpep = tmpep.split("/api")[0];
+					desiredkoboldendpoint = desiredkoboldendpoint.split("/api")[0];
 				}
 
 				let urls1 = [
-					apply_proxy_url(tmpep + kobold_custom_mdl_endpoint),
+					apply_proxy_url(desiredkoboldendpoint + kobold_custom_mdl_endpoint),
 				];
 
-				Promise.all(urls1.map(url => fetch(url)
+				Promise.all(urls1.map(url => fetch(url,{
+						method: 'GET',
+						headers: get_kobold_header(),
+					})
 					.then(response => response.json())))
 					.then(values => {
 						console.log(values);
@@ -6892,8 +7000,10 @@ Current version: 120
 						} else {
 
 							//good to go
-							custom_kobold_endpoint = tmpep;
+							custom_kobold_endpoint = desiredkoboldendpoint;
+							custom_kobold_key = desiredkoboldkey;
 							localsettings.saved_kai_addr = custom_kobold_endpoint;
+							localsettings.saved_kai_key = custom_kobold_key;
 							selected_models = [{ "performance": 100.0, "queued": 0.0, "eta": 0, "name": mdlname, "count": 1 }];
 							selected_workers = [];
 							if (perfdata == null) {
@@ -6914,7 +7024,11 @@ Current version: 120
 							{
 								//now we get the version number, however this is optional
 								//if it fails we can still proceed
-								fetch(apply_proxy_url(tmpep + kobold_custom_version_endpoint))
+								fetch(apply_proxy_url(desiredkoboldendpoint + kobold_custom_version_endpoint),
+								{
+									method: 'GET',
+									headers: get_kobold_header(),
+								})
 								.then(response => response.json())
 								.then(values2 => {
 									console.log(values2);
@@ -6925,7 +7039,11 @@ Current version: 120
 								});
 
 								//also get max ctx supported
-								fetch(apply_proxy_url(tmpep + kobold_custom_maxctxlen_endpoint))
+								fetch(apply_proxy_url(desiredkoboldendpoint + kobold_custom_maxctxlen_endpoint),
+								{
+									method: 'GET',
+									headers: get_kobold_header(),
+								})
 								.then(response => response.json())
 								.then(values3 => {
 									console.log(values3);
@@ -6944,16 +7062,26 @@ Current version: 120
 							//allow kcpp version check for remote endpoints too
 							{
 								//for local mode, check if we are using koboldcpp, if so we can use streaming if permitted by version
-								fetch(apply_proxy_url(tmpep + koboldcpp_version_endpoint))
+								fetch(apply_proxy_url(desiredkoboldendpoint + koboldcpp_version_endpoint),
+								{
+									method: 'GET',
+									headers: get_kobold_header(),
+								})
 								.then(x => x.json())
 								.then(data => {
 									if(data && data!="" && data.version && data.version!="")
 									{
 										koboldcpp_version = data.version;
 										console.log("KoboldCpp Detected: " + koboldcpp_version);
+										koboldcpp_has_vision = (data.vision?true:false);
+										let has_password = (data.protected?true:false);
 
 										//also check against kcpp's max true context length
-										fetch(apply_proxy_url(tmpep + koboldcpp_truemaxctxlen_endpoint))
+										fetch(apply_proxy_url(desiredkoboldendpoint + koboldcpp_truemaxctxlen_endpoint),
+										{
+											method: 'GET',
+											headers: get_kobold_header(),
+										})
 										.then(response => response.json())
 										.then(values4 => {
 											console.log(values4);
@@ -6968,7 +7096,11 @@ Current version: 120
 										});
 
 										//and check if there's a kcpp savefile preloaded
-										fetch(apply_proxy_url(tmpep + koboldcpp_preloadstory_endpoint))
+										fetch(apply_proxy_url(desiredkoboldendpoint + koboldcpp_preloadstory_endpoint),
+										{
+											method: 'GET',
+											headers: get_kobold_header(),
+										})
 										.then(response => response.json())
 										.then(values5 => {
 											let tmpstory = values5;
@@ -6987,7 +7119,7 @@ Current version: 120
 										});
 
 										//check if image gen is supported
-										fetch(apply_proxy_url(tmpep + a1111_models_endpoint))
+										fetch(apply_proxy_url(desiredkoboldendpoint + a1111_models_endpoint))
 										.then(response => response.json())
 										.then(values6 => {
 											console.log(values6);
@@ -6999,7 +7131,7 @@ Current version: 120
 												{
 													console.log("Connect to KoboldCpp Image Gen");
 													localsettings.generate_images_mode = 2;
-													localsettings.saved_a1111_url = tmpep;
+													localsettings.saved_a1111_url = desiredkoboldendpoint;
 													connect_to_a1111(true);
 													render_gametext(true);
 												}
@@ -7007,7 +7139,7 @@ Current version: 120
 											else
 											{
 												//hide the add img if the image server is down
-												if(localsettings.generate_images_mode==2 && localsettings.saved_a1111_url==tmpep)
+												if(localsettings.generate_images_mode==2 && localsettings.saved_a1111_url==desiredkoboldendpoint)
 												{
 													localsettings.generate_images_mode = 0;
 													localsettings.saved_a1111_url = default_a1111_base
@@ -7018,6 +7150,19 @@ Current version: 120
 										}).catch(error => {
 											console.log("Failed to get local image models: " + error);
 										});
+
+										//prompt to request password for kcpp
+										if(localflag && has_password && !localmodekey)
+										{
+											console.log("Password protection detected. Prompting for password...");
+											inputBox("This KoboldCpp instance may be password protected.\nPlease input password:","Kobold API Key Required",localsettings.saved_kai_key,"(Input Kobold API Key)", ()=>{
+												let userinput = getInputBoxValue();
+												userinput = userinput.trim();
+												if (userinput != null && userinput!="") {
+													custom_kobold_key = document.getElementById("customkoboldkey").value = localmodekey = localsettings.saved_kai_key = userinput.trim();
+												}
+											},false);
+										}
 
 									}else{
 										console.log("Unknown KoboldCpp Check Response: " + data);
@@ -7040,7 +7185,7 @@ Current version: 120
 							|| !custom_kobold_endpoint.toLowerCase().includes(".")); //hostname without dots cannot be wan accessible
 
 						if (uses_cors_proxy || is_local) {
-							msgbox("Failed to connect to Custom Kobold Endpoint!\n\nPlease check if KoboldAI is running at the url: " + tmpep + "");
+							msgbox("Failed to connect to Custom Kobold Endpoint!\n\nPlease check if KoboldAI is running at the url: " + desiredkoboldendpoint + "");
 							selected_models = [];
 							selected_workers = [];
 							custom_kobold_endpoint = "";
@@ -7217,6 +7362,8 @@ Current version: 120
 				custom_claude_key = desired_claude_key;
 				localsettings.saved_claude_key = custom_claude_key;
 				localsettings.saved_claude_addr = custom_claude_endpoint;
+				localsettings.saved_claude_jailbreak = document.getElementById("claudesystemprompt").value;
+				localsettings.saved_claude_jailbreak2 = document.getElementById("claudejailbreakprompt").value;
 				custom_claude_model = document.getElementById("custom_claude_model").value.trim();
 
 				selected_models = [{ "performance": 100.0, "queued": 0.0, "eta": 0, "name": custom_claude_model, "count": 1 }];
@@ -7789,6 +7936,10 @@ Current version: 120
 		if (x && x.type === "password") {
 			x.type = "text";
 		}
+		x = document.getElementById("customkoboldkey");
+		if (x && x.type === "password") {
+			x.type = "text";
+		}
 	}
 	function blur_api_keys() {
 		var x = document.getElementById("apikey");
@@ -7800,6 +7951,10 @@ Current version: 120
 			x.type = "password";
 		}
 		x = document.getElementById("custom_claude_key");
+		if (x && x.type === "text") {
+			x.type = "password";
+		}
+		x = document.getElementById("customkoboldkey");
 		if (x && x.type === "text") {
 			x.type = "password";
 		}
@@ -7963,6 +8118,8 @@ Current version: 120
 		document.getElementById("save_images").checked = localsettings.save_images;
 		document.getElementById("save_remote_images").checked = localsettings.save_remote_images;
 		document.getElementById("img_cfgscale").value = localsettings.img_cfgscale;
+		document.getElementById("img_aspect").value = localsettings.img_aspect;
+		document.getElementById("img_sampler").value = localsettings.img_sampler;
 		document.getElementById("img_steps").value = localsettings.img_steps;
 		document.getElementById("prompt_for_savename").checked = localsettings.prompt_for_savename;
 		document.getElementById("img_allownsfw").checked = localsettings.img_allownsfw;
@@ -8071,11 +8228,11 @@ Current version: 120
 	function update_genimg_button_visiblility()
 	{
 		if (localsettings.generate_images_mode==0) {
-			document.getElementById("btn_genimg").classList.add("hidden");
-			document.getElementById("btn_genimg2").classList.add("hidden");
+			document.getElementById("btn_inner_genimg_auto").disabled = true;
+			document.getElementById("btn_inner_genimg_custom").disabled = true;
 		} else {
-			document.getElementById("btn_genimg").classList.remove("hidden");
-			document.getElementById("btn_genimg2").classList.remove("hidden");
+			document.getElementById("btn_inner_genimg_auto").disabled = false;
+			document.getElementById("btn_inner_genimg_custom").disabled = false;
 		}
 	}
 
@@ -8183,6 +8340,8 @@ Current version: 120
 		update_genimg_button_visiblility();
 
 		localsettings.img_cfgscale = parseFloat(document.getElementById("img_cfgscale").value);
+		localsettings.img_aspect = parseInt(document.getElementById("img_aspect").value);
+		localsettings.img_sampler = document.getElementById("img_sampler").value;
 		localsettings.img_steps = parseInt(document.getElementById("img_steps").value);
 		if(isNaN(localsettings.img_steps))
 		{
@@ -8191,6 +8350,10 @@ Current version: 120
 		if(isNaN(localsettings.img_cfgscale))
 		{
 			localsettings.img_cfgscale = defaultsettings.img_cfgscale;
+		}
+		if(isNaN(localsettings.img_aspect))
+		{
+			localsettings.img_aspect = defaultsettings.img_aspect;
 		}
 
 		if((localsettings.gui_type_story!=0 && localsettings.opmode==1)
@@ -8871,9 +9034,7 @@ Current version: 120
 			//we can use abort functions
 			fetch(custom_kobold_endpoint + koboldcpp_abort_endpoint, {
 			method: 'POST', // or 'PUT'
-			headers: {
-				'Content-Type': 'application/json',
-			},
+			headers: get_kobold_header(),
 			body: JSON.stringify({
 				"genkey": lastcheckgenkey
 			}),
@@ -8899,11 +9060,11 @@ Current version: 120
 		generate_new_image(sentence);
 		document.getElementById("btn_genimg").disabled = true;
 		document.getElementById("btn_genimg2").disabled = true;
-		//disable it for 10 sec to prevent spam
+		//disable it for 8 sec to prevent spam
 		setTimeout(() => {
 			document.getElementById("btn_genimg").disabled = false;
 			document.getElementById("btn_genimg2").disabled = false;
-		}, 10000);
+		}, 8000);
 	}
 
 	function do_auto_gen_image(truncated_context)
@@ -8959,9 +9120,11 @@ Current version: 120
 					let nimgtag = "[<|p|" + imgid + "|p|>]";
 					gametext_arr.push(nimgtag);
 					image_db[imgid] = { done: false, queue: "Generating", result: "", prompt:"", local:true };
-
+					image_db[imgid].aspect = 0;
+					image_db[imgid].imsource = 1; //0=generated,1=uploaded
+					let origImg = img.target.result;
 					let imgres = localsettings.img_allowhd?HD_RES_PX:NO_HD_RES_PX;
-					compressImage(img.target.result, (newDataUri) => {
+					compressImage(origImg, (newDataUri) => {
 						image_db[imgid].done = true;
 						image_db[imgid].result = newDataUri;
 					}, true, true, imgres,0.35,true);
@@ -9659,6 +9822,10 @@ Current version: 120
 			{
 				submit_payload.params.memory = truncated_memory;
 			}
+			if(is_using_kcpp_with_llava() && insertAIVisionImages.length>0)
+			{
+				submit_payload.params.images = insertAIVisionImages;
+			}
 
 			if(localsettings.sampler_seed>=1)
 			{
@@ -10347,8 +10514,32 @@ Current version: 120
 		//remove ###
 		sentence = sentence.replace(/###/gm, "");
 
+		let usedsampler = localsettings.img_sampler;
+
 		if (localsettings.generate_images_mode==1) {
 			sentence = sanitize_horde_image_prompt(sentence);
+			switch(usedsampler)
+			{
+				case "Euler a":
+					usedsampler = "k_euler_a";
+					break;
+				case "Euler":
+					usedsampler = "k_euler";
+					break;
+				case "Heun":
+					usedsampler = "k_heun";
+					break;
+				case "DPM2":
+					usedsampler = "k_dpm_2";
+					break;
+				case "DPM++ 2M":
+					usedsampler = "k_dpmpp_2m";
+					break;
+				default:
+					usedsampler = "k_euler_a";
+					break;
+			}
+
 		}
 
 		console.log("Generating image for: " + sentence);
@@ -10365,13 +10556,24 @@ Current version: 120
 			negprompt = "";
 		}
 
+		let iwidth = 512;
+		let iheight = 512;
+		if(localsettings.img_aspect==1)
+		{
+			iheight = 768;
+		}
+		else if(localsettings.img_aspect==2)
+		{
+			iwidth = 768;
+		}
+
 		let genimg_payload = {
 			"prompt": (sentence + negprompt),
 			"params": {
 				"cfg_scale": localsettings.img_cfgscale,
-				"sampler_name": "k_euler_a",
-				"height": 512,
-				"width": 512,
+				"sampler_name": usedsampler,
+				"height": iheight,
+				"width": iwidth,
 				"steps": localsettings.img_steps,
 				"karras": false,
 				"n": 1,
@@ -10405,6 +10607,8 @@ Current version: 120
 					let nimgtag = "[<|p|" + data.id + "|p|>]";
 					gametext_arr.push(nimgtag);
 					image_db[data.id] = { done: false, queue: "Starting", result: "", prompt:sentence, local:false };
+					image_db[data.id].aspect = (iwidth>iheight?2:(iwidth<iheight?1:0));
+					image_db[data.id].imsource = 0; //0=generated,1=uploaded
 					console.log("New image queued " + nimgtag);
 				}
 				else {
@@ -10425,6 +10629,8 @@ Current version: 120
 			let nimgtag = "[<|p|" + imgid + "|p|>]";
 			gametext_arr.push(nimgtag);
 			image_db[imgid] = { done: false, queue: "Generating", result: "", prompt:sentence, local:true };
+			image_db[imgid].aspect = (iwidth>iheight?2:(iwidth<iheight?1:0));
+			image_db[imgid].imsource = 0; //0=generated,1=uploaded
 			generate_a1111_image(genimg_payload,(outputimg)=>{
 				if(outputimg)
 				{
@@ -10434,7 +10640,7 @@ Current version: 120
 					compressImage(origImg, (newDataUri) => {
 						image_db[imgid].done = true;
 						image_db[imgid].result = newDataUri;
-					}, true, true, imgres);
+					}, true, false, imgres,0.35,false);
 				}else{
 					image_db[imgid].queue = "Failed";
 					msgbox("Image Generation Failed!\n\nPlease make sure A1111 is running and properly configured!\nIn your local install of Automatic1111 WebUi, modify webui-user.bat and add these flags to enable API access:\n\nset COMMANDLINE_ARGS= --api --listen --cors-allow-origins=*\n");
@@ -10453,6 +10659,8 @@ Current version: 120
 				let nimgtag = "[<|p|" + imgid + "|p|>]";
 				gametext_arr.push(nimgtag);
 				image_db[imgid] = { done: false, queue: "Generating", result: "", prompt:sentence, local:true };
+				image_db[imgid].aspect = 0;
+				image_db[imgid].imsource = 0; //0=generated,1=uploaded
 				generate_dalle_image(genimg_payload,(outputimg)=>{
 					if(outputimg)
 					{
@@ -10462,7 +10670,7 @@ Current version: 120
 						compressImage(origImg, (newDataUri) => {
 							image_db[imgid].done = true;
 							image_db[imgid].result = newDataUri;
-						}, true, true, imgres);
+						}, true, true, imgres,0.35,false);
 					}else{
 						image_db[imgid].queue = "Failed";
 						msgbox("Image Generation Failed!\n\nPlease make sure your OpenAI key is set correctly and you are allowed to use DALL-E.\n");
@@ -10472,14 +10680,14 @@ Current version: 120
 		}
 	}
 
-	function interrogate_new_image(base64img, imghash)
+	function interrogate_new_image(base64img, imghash, use_horde=true)
 	{
 		let parts = base64img.split(',');
 		if (parts.length === 2 && parts[0].startsWith('data:image')) {
 			base64img = parts[1];
 		}
 
-		if(localsettings.generate_images_mode==2) //a1111
+		if(!use_horde) //a1111
 		{
 			let payload = {
 			"image": base64img,
@@ -10555,15 +10763,15 @@ Current version: 120
 		let savedmeta = completed_imgs_meta[imghash];
 		if(savedmeta)
 		{
-			savedmeta.enabled = !savedmeta.enabled;
-			if(!savedmeta.desc && savedmeta.enabled)
+			savedmeta.visionmode = document.getElementById("aivisionmode").value;
+			if(!savedmeta.desc && (savedmeta.visionmode==1 || savedmeta.visionmode==2))
 			{
 				//request a new interrogation
 				var alreadysent = Object.values(interrogation_db).some(item => item.imghash === imghash);
 				if(!alreadysent)
 				{
 					let b64 = document.getElementById("zoomedimg").src;
-					interrogate_new_image(b64,imghash);
+					interrogate_new_image(b64,imghash,(savedmeta.visionmode==1));
 				}
 			}
 			update_clicked_image(imghash);
@@ -10579,20 +10787,52 @@ Current version: 120
 		let savedmeta = completed_imgs_meta[imghash];
 		if(!savedmeta && imghash!="")
 		{
-			savedmeta = completed_imgs_meta[imghash] = {prompt:"", desc:"", enabled:false};
+			savedmeta = completed_imgs_meta[imghash] = {prompt:"", desc:"", visionmode:0, aspect:0};
 		}
 
 		if(savedmeta)
 		{
+			document.getElementById("zoomedimg").classList.remove("portrait");
+			document.getElementById("zoomedimg").classList.remove("landscape");
+			if(savedmeta.aspect==1)
+			{
+				document.getElementById("zoomedimg").classList.add("portrait");
+			}
+			else if(savedmeta.aspect==2)
+			{
+				document.getElementById("zoomedimg").classList.add("landscape");
+			}
+
+			if(!savedmeta.visionmode)
+			{
+				savedmeta.visionmode = 0;
+			}
+
 			let origprompt = (savedmeta.prompt?replaceAll(savedmeta.prompt,"\n"," ") : "No Saved Description");
 			latest_orig_prompt = origprompt;
-			let visionstatus = (savedmeta.enabled?(savedmeta.desc?`<span class="color_green">Active</span>`:`<span class="color_yellow">Analyzing...</span>`):`<span class="color_red">Inactive</span>`);
-			let togglebtn = (savedmeta.enabled?`<button type="button" class="bg_red btn btn-primary" style="width: 84px; padding: 2px; margin: 3px; font-size:12px;" onclick="toggle_ai_vision(\'`+imghash+`\')">Disable</button>`:`<button type="button" class="bg_green btn btn-primary" style="width: 84px; padding: 2px; margin: 3px; font-size:12px;" onclick="toggle_ai_vision(\'`+imghash+`\')">👁️ Enable 👁️</button>`);
+			let hasllava = is_using_kcpp_with_llava();
+			let visionstatus = "";
+			if(savedmeta.visionmode==3)
+			{
+				visionstatus = ((!savedmeta.visionmode || savedmeta.visionmode==0)?`<span class="color_red">Inactive</span>`:(hasllava?`<span class="color_green">Active</span>`:`<span class="color_yellow">Unsupported</span>`));
+			}
+			else
+			{
+				visionstatus = ((!savedmeta.visionmode || savedmeta.visionmode==0)?`<span class="color_red">Inactive</span>`:(savedmeta.desc?`<span class="color_green">Active</span>`:`<span class="color_yellow">Analyzing</span>`));
+			}
+
+			let togglebtn = `<select class="form-control" id="aivisionmode" style="display:inline;height:24px;width: 134px; padding: 2px; margin: 3px; font-size:12px;" onchange="toggle_ai_vision(\'`+imghash+`\')">
+								<option value="0">Disabled</option>
+								<option value="1">Interrogate (Horde)</option>
+								<option value="2">Interrogate (A1111)</option>
+								<option value="3">Multimodal (LLaVA)</option>
+							</select>`;
 			document.getElementById("zoomedimgdesc").innerHTML = `
-			AI Vision: `+visionstatus+` <span class="helpicon">?<span class="helptext">This allows the AI to visually recognize this image, to see and react to this image. Uses Horde or Local A1111 for image interrogation if enabled.</span></span>
+			AI Vision: `+visionstatus+` <span class="helpicon">?<span class="helptext">This allows the AI to visually recognize this image and react to it. On KoboldCpp, LLaVA models can be used. Otherwise, uses Horde or Local A1111 for image interrogation if enabled.</span></span>
 			`+togglebtn+`
 			<br><button type="button" class="btn btn-primary" style="width: 140px; padding: 2px; margin: 3px; font-size:12px;" onclick="show_orig_prompt()">View Original Prompt</button>
 			`;
+			document.getElementById("aivisionmode").value = savedmeta.visionmode;
 		}
 		else
 		{
@@ -10642,6 +10882,8 @@ Current version: 120
 
 	function render_image_html(data, pend_txt = "", float=true, center=false) {
 		var dim = (localsettings.opmode == 2 ? 160 : 180); //adventure mode has smaller pictures
+		dimW = dim;
+		dimH = dim;
 		let siclass = (float?"storyimgfloat":(center?"storyimgcenter":"storyimgside"));
 		let reinvertcolor = localsettings.invert_colors?" invert_colors":"";
 		let alttxt = "";
@@ -10662,8 +10904,18 @@ Current version: 120
 			let imghash = cyrb_hash(data).trim();
 			if (completed_imgs_meta[imghash] != null) {
 				alttxt = completed_imgs_meta[imghash].prompt?escapeHtml(completed_imgs_meta[imghash].prompt):"";
+				if(completed_imgs_meta[imghash].aspect==1) //portrait
+				{
+					dimH *= 1.35;
+					dimW *= 0.9;
+				}
+				else if(completed_imgs_meta[imghash].aspect==2) //landscape
+				{
+					dimW *= 1.35;
+					dimH *= 0.9;
+				}
 			}
-			return prefix + `<div class="`+siclass+reinvertcolor+`"><img src="` + data + `" width=` + dim + ` height=` + dim + ` title="`+alttxt+`" style="border-radius: 6%; cursor: pointer;" onclick="return click_image(this,\'`+imghash+`\');"></div>` + suffix;
+			return prefix + `<div class="`+siclass+reinvertcolor+`"><img src="` + data + `" width=` + dimW + ` height=` + dimH + ` title="`+alttxt+`" style="border-radius: 6%; cursor: pointer;" onclick="return click_image(this,\'`+imghash+`\');"></div>` + suffix;
 		}
 	}
 
@@ -10969,7 +11221,9 @@ Current version: 120
 										let origImg = "data:image/jpeg;base64," + finalimg.generations[0].img;
 										//console.log("Original image: " + origImg);
 										let imgres = localsettings.img_allowhd?HD_RES_PX:NO_HD_RES_PX;
-										compressImage(origImg, (newDataUri) => { img.result = newDataUri; }, true, true, imgres);
+										compressImage(origImg, (newDataUri) => {
+											img.result = newDataUri;
+										}, true, false, imgres,0.35,false);
 									}
 								})
 								.catch((error) => {
@@ -11008,7 +11262,8 @@ Current version: 120
 							console.log("Replacing with Image: " + matchstr);
 							gametext_arr[i] = gametext_arr[i].replace(matchstr, newstr);
 							let metaid = cyrb_hash(img.result);
-							completed_imgs_meta[metaid] = {prompt:image_db[key].prompt, desc:"", enabled:false};
+							//default to llava if supported, and image is self uploaded
+							completed_imgs_meta[metaid] = {prompt:image_db[key].prompt, desc:"", visionmode:((image_db[key].imsource==1 && is_using_kcpp_with_llava())?3:0), aspect:image_db[key].aspect};
 							delete image_db[key];
 						}
 					}
@@ -11040,23 +11295,15 @@ Current version: 120
 			if(!fixedSize)
 			{
 				//otherwise, we preserve the original ratio but scale them down to fit
-				let newwidth = maxSize;
-				let newheight = maxSize;
-				let scalef = 1;
-				if(origW>=origH)
+				let maxImgDim = Math.max(origW,origH);
+				wantedWidth = origW;
+				wantedHeight = origH;
+				if(maxImgDim > maxSize)
 				{
-					newwidth = origW>maxSize?maxSize:origW;
-					scalef = newwidth/origW;
-					newheight = origH*scalef;
+					let scalef = maxImgDim/maxSize;
+					wantedWidth = origW/scalef;
+					wantedHeight = origH/scalef;
 				}
-				else
-				{
-					newheight = origH>maxSize?maxSize:origH;
-					scalef = newheight/origH;
-					newwidth = origW*scalef;
-				}
-				wantedWidth = newwidth;
-				wantedHeight = newheight;
 			}
 
 			canvas.width = wantedWidth;
@@ -11182,9 +11429,7 @@ Current version: 120
 							//get in-progress results
 							fetch(custom_kobold_endpoint + koboldcpp_check_endpoint, {
 								method: 'POST',
-								headers: {
-									'Content-Type': 'application/json',
-								},
+								headers: get_kobold_header(),
 								body: JSON.stringify({
 								"genkey": lastcheckgenkey
 								}),
@@ -11485,6 +11730,7 @@ Current version: 120
 		}
 	}
 
+	var insertAIVisionImages = []; //concat gametext will populate this
 	function concat_gametext(stripimg = false, stripimg_replace_str = "", append_before_segment="",append_after_segment="",escapeTxt=false,insertAIVision=false) {
 		let fulltxt = "";
 		for (let i = 0; i < gametext_arr.length; ++i) {
@@ -11519,9 +11765,6 @@ Current version: 120
 				let a = escapeHtml(localsettings.chatname);
 				fulltxt = replaceAll(fulltxt,a,localsettings.chatname);
 
-				// let b = escapeHtml(localsettings.chatopponent);
-				// fulltxt = replaceAll(fulltxt,b,localsettings.chatopponent);
-
 				//unescape other chat opponents too (match anything that is NOT us)
 				var regex = new RegExp("\n(?!" + localsettings.chatname + ").+?\: ", "gi");
 				fulltxt = fulltxt.replace(regex, function (m) {
@@ -11540,13 +11783,25 @@ Current version: 120
 		{
 			if(insertAIVision)
 			{
+				insertAIVisionImages = []; //a bit hacky
 				fulltxt = fulltxt.replace(/\[<\|d\|.+?\|d\|>\]/g, function (m) {
 					// m here means the whole matched string
 					let inner = m.substring(5, m.length - 5);
 					let imghash = cyrb_hash(inner);
 					let foundmeta = completed_imgs_meta[imghash];
-					if (foundmeta != null && foundmeta.enabled && foundmeta.desc) {
-						return "\n(Attached Image: " + foundmeta.desc + ")\n";
+					if (foundmeta != null) {
+						if(foundmeta.desc && (foundmeta.visionmode==1||foundmeta.visionmode==2))
+						{
+							return "\n(Attached Image: " + foundmeta.desc + ")\n";
+						}
+						else if(foundmeta.visionmode==3)
+						{
+							let parts = inner.split(',');
+							if (parts.length === 2 && parts[0].startsWith('data:image')) {
+								insertAIVisionImages.push(parts[1]);
+							}
+							return "\n(Attached Image)\n";
+						}
 					}
 					return "";
 				});
@@ -13515,7 +13770,8 @@ Current version: 120
 				You can use this to connect to a KoboldAI instance running via a remote tunnel such as <span class="color_orange" style="font-weight: bold;">trycloudflare, localtunnel, ngrok</span>.<br><br>
 				Localhost IPs require host mode enabled. You can use the remote address displayed in the <span class="color_orange" style="font-weight: bold;">remote-play.bat</span> window or <span class="color_orange" style="font-weight: bold;">colab window</span>, note that the model must be loaded first.<br><br>
 				<span class="color_green" style="font-weight: bold;">Please input URL of the KoboldAI instance.</span><br><br>
-				<input class="form-control" id="customendpoint" placeholder="https://sample-remote-address.trycloudflare.com" value="">
+				<input class="form-control" id="customkoboldendpoint" placeholder="https://sample-remote-address.trycloudflare.com" value="">
+				<input class="form-control" type="password" id="customkoboldkey" placeholder="Kobold API Key (Optional)" value="" onfocus="focus_api_keys()" onblur="blur_api_keys()"><br>
 				<div class="box flex flex-push-right">
 					<input type="checkbox" id="remoteconsolelog">
 					<div class="box-label" title="Will display outputs to the remote endpoint's console logs, useful for debugging.">Show Console Logging</div>
@@ -13692,6 +13948,28 @@ Current version: 120
 			<div class="popupfooter">
 				<button type="button" class="btn btn-primary" onclick="advload_btnok()">Ok</button>
 				<button type="button" class="btn btn-primary" onclick="hide_popups()">Cancel</button>
+			</div>
+		</div>
+	</div>
+
+	<div class="popupcontainer flex hidden" id="zoomedimgcontainer">
+		<div class="popupbg flex"></div>
+		<div class="nspopup flexsize highest">
+			<div class="popuptitlebar">
+				<div class="popuptitletext">Image Information</div>
+			</div>
+
+			<div class="zoomedimgdiv">
+				<img class="zoomedimg" id="zoomedimg" src="">
+			</div>
+
+			<div class="aidgpopuplistheader anotelabel zoomedimgdesc" id="zoomedimgdesc" style="word-wrap: break-word;">
+				Loading...
+			</div>
+			<br>
+			<div class="popupfooter">
+				<button type="button" class="bg_red btn btn-primary" style="width: 124px;" onclick="delete_curr_image();hide_popups();">Delete Image</button>
+				<button type="button" class="btn btn-primary" onclick="hide_popups()">Close</button>
 			</div>
 		</div>
 	</div>
@@ -13930,8 +14208,8 @@ Current version: 120
 								<input type="checkbox" id="inject_timestamps_instruct" style="margin:0px 0 0;">
 							</div>
 							<div class="settinglabel">
-								<div class="justifyleft settingsmall">Auto Jailbreak <span class="helpicon">?<span
-									class="helptext">Injects a jailbreak message after every query to make the AI more likely to obey you.</span></span></div>
+								<div class="justifyleft settingsmall">Assistant Jailbreak <span class="helpicon">?<span
+									class="helptext">Automatically injects a jailbreak message after every query to make the AI more likely to obey you.</span></span></div>
 								<input type="checkbox" id="inject_jailbreak_instruct" style="margin:0px 0 0;">
 							</div>
 						</div>
@@ -14102,7 +14380,9 @@ Current version: 120
 								   <input type="checkbox" id="save_images" style="margin:0px 0 0;">
 								</div>
 								</td>
-								<td class="settingsmall"><a class="color_blueurl" href="#" onclick="selectImgStyle()">Style<br>🎨</a></td>
+								<td class="settingsmall">
+									<button type="button" class="btn btn-primary" onclick="selectImgStyle()" style="font-size:11px; padding: 0px 4px; margin: 0px 1px 0px 1px;">Style<br>🎨</button>
+								</td>
 								</tr>
 								</table>
 							</div>
@@ -14444,28 +14724,6 @@ Current version: 120
 		</div>
 	</div>
 
-	<div class="popupcontainer flex hidden" id="zoomedimgcontainer">
-		<div class="popupbg flex"></div>
-		<div class="nspopup fixsize higher">
-			<div class="popuptitlebar">
-				<div class="popuptitletext">Image Information</div>
-			</div>
-
-			<div class="zoomedimgdiv">
-				<img id="zoomedimg" src="" style="border-radius: 6%;" width="320px" height="320px">
-			</div>
-
-			<div class="aidgpopuplistheader anotelabel zoomedimgdesc" id="zoomedimgdesc" style="word-wrap: break-word;">
-				Loading...
-			</div>
-			<br>
-			<div class="popupfooter">
-				<button type="button" class="bg_red btn btn-primary" style="width: 124px;" onclick="delete_curr_image();hide_popups();">Delete Image</button>
-				<button type="button" class="btn btn-primary" onclick="hide_popups()">Close</button>
-			</div>
-		</div>
-	</div>
-
 	<div class="popupcontainer flex hidden" id="dynatempcontainer">
 		<div class="popupbg flex"></div>
 		<div class="nspopup fixsize">
@@ -14512,7 +14770,7 @@ Current version: 120
 
 	<div class="popupcontainer flex hidden" id="imagestylecontainer">
 		<div class="popupbg flex"></div>
-		<div class="nspopup fixsize">
+		<div class="nspopup fixsize moderate">
 			<div class="popuptitlebar">
 				<div class="popuptitletext">Image Generation Settings</div>
 			</div>
@@ -14528,6 +14786,27 @@ Current version: 120
 			<div class="inlinelabel">
 				<div class="justifyleft" style="padding:4px">Cfg. Scale: </div>
 				<input type="text" inputmode="decimal" id="img_cfgscale" style="width:60px">
+			</div>
+			<div class="inlinelabel">
+				<div class="justifyleft" style="padding:4px">Sampler: </div>
+				<select style="padding:1px; height:23px; width: 100px;" class="form-control" id="img_sampler">
+					<option value="Euler a">Euler A</option>
+					<option value="Euler">Euler</option>
+					<option value="Heun">Heun</option>
+					<option value="DPM2">DPM2</option>
+					<option value="LCM">LCM</option>
+					<option value="DPM++ 2M">DPM++ 2M</option>
+				</select>
+			</div>
+			<div class="inlinelabel">
+				<div class="justifyleft" style="padding:4px">Aspect Ratio<span class="helpicon">?
+					<span class="helptext">Square is recommended. Changing aspect ratio will affect the resolution used to generate. This may impact quality or memory usage.</span>
+				</span>: </div>
+				<select style="padding:1px; height:23px; width: 100px;" class="form-control" id="img_aspect">
+					<option value="0">Square</option>
+					<option value="1">Portrait</option>
+					<option value="2">Landscape</option>
+				</select>
 			</div>
 			<div class="inlinelabel">
 				<div class="justifyleft" style="padding:4px">Save Higher-Res <span class="helpicon">?
@@ -14550,14 +14829,19 @@ Current version: 120
 				<div class="popuptitletext">Add New Image</div>
 			</div>
 			<div class="aidgpopuplistheader anotelabel">
-				<button type="button" class="btn btn-primary bg_green" onclick="add_img_btn_auto()">Generate Image (Automatic)</button>
+				<button type="button" class="btn btn-primary bg_green" id="btn_inner_genimg_auto" onclick="add_img_btn_auto()">Generate Image (Automatic)</button>
 			</div>
 			<div class="aidgpopuplistheader anotelabel">
-				<button type="button" class="btn btn-primary bg_green" onclick="add_img_btn_custom()">Generate Image (Custom Prompt)</button>
+				<button type="button" class="btn btn-primary bg_green" id="btn_inner_genimg_custom" onclick="add_img_btn_custom()">Generate Image (Custom Prompt)</button>
 			</div>
 			<div class="aidgpopuplistheader anotelabel">
 				<button type="button" class="btn btn-primary bg_green" onclick="add_img_btn_upload()">Upload Image File</button>
 			</div>
+			<div class="aidgpopuplistheader anotelabel">
+				<button type="button" class="btn btn-primary" onclick="hide_popups();display_settings();selectImgStyle();">Customize Settings</button>
+			</div>
+
+
 			<br>
 			<input type="file" id="addimgfileinput" style="display:none" accept="image/*">
 			<div class="popupfooter">

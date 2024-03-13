@@ -184,6 +184,10 @@
                             "description": "KoboldCpp ONLY. If set, forcefully appends this string to the beginning of any submitted prompt text. If resulting context exceeds the limit, forcefully overwrites text from the beginning of the main prompt until it can fit. Useful to guarantee full memory insertion even when you cannot determine exact token count.",
                             "type": "string"
                          },
+                         "images": {
+                            "description": "KoboldCpp ONLY. If set, takes an array of base64 encoded strings, each one representing an image to be processed.",
+                            "type": "array"
+                         },
                           "trim_stop": {
                             "default": false,
                             "description": "KoboldCpp ONLY. If true, also removes detected stop_sequences from the output and truncates all text after them. Does not work with SSE streaming.",
@@ -345,7 +349,7 @@
              "info": {
                 "title": "KoboldCpp API",
                 "description": "For swagger.json, <a href=\"?json=1\">click here</a>.",
-                "version": "1.60"
+                "version": "1.61"
              },
              "openapi": "3.0.3",
              "paths": {
@@ -544,7 +548,10 @@
                                "application/json": {
                                   "example": {
                                      "result": "KoboldCpp",
-                                     "version": "1.46"
+                                     "version": "1.61",
+                                     "protected": false,
+                                     "txt2img": false,
+                                     "vision": false
                                   },
                                   "schema": {
                                      "$ref": "#/components/schemas/KcppVersion"
@@ -997,6 +1004,60 @@
                       ]
                    }
                 },
+                "/sdapi/v1/interrogate": {
+                   "post": {
+                      "description": "Generates a short text caption describing an image.",
+                      "requestBody": {
+                         "content": {
+                            "application/json": {
+                               "example": {
+                                  "image": "base64_image_data",
+                                  "model": "clip"
+                               },
+                               "schema": {
+                                  "properties": {
+                                     "image": {
+                                        "type": "string",
+                                        "description": "A base64 string containing the encoded PNG of the image."
+                                     },
+                                     "model": {
+                                        "type": "string",
+                                        "description": "Not used."
+                                     },
+                                  },
+                                  "type": "object"
+                               }
+                            }
+                         },
+                         "required": false
+                      },
+                      "responses": {
+                         "200": {
+                            "content": {
+                               "application/json": {
+                                  "example":
+                                  {
+                                     "caption":"A picture of a white cottage with a flagpole."
+                                  },
+                                  "schema": {
+                                     "properties": {
+                                        "caption": {
+                                           "type": "string",
+                                           "description": "A short text description of the image."
+                                        }
+                                     }
+                                  }
+                               }
+                            },
+                            "description": "Successful request"
+                         }
+                      },
+                      "summary": "Generates a short text caption describing an image",
+                      "tags": [
+                         "sdapi/v1"
+                      ]
+                   }
+                },
                 "/v1/completions": {
                    "post": {
                       "summary": "Generates text continuations given a prompt. Please refer to OpenAI documentation",
@@ -1050,6 +1111,7 @@
              ]
           };
     </script>
+
 
    <script>
       //self destruct into json if requested

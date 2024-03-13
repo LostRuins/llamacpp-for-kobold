@@ -1,5 +1,5 @@
 default: koboldcpp_default koboldcpp_failsafe koboldcpp_openblas koboldcpp_noavx2 koboldcpp_clblast koboldcpp_clblast_noavx2 koboldcpp_cublas koboldcpp_hipblas koboldcpp_vulkan koboldcpp_vulkan_noavx2
-tools: quantize_gpt2 quantize_gptj quantize_llama quantize_neox quantize_mpt
+tools: quantize_gpt2 quantize_gptj quantize_gguf quantize_neox quantize_mpt quantize_clip
 dev: koboldcpp_openblas
 dev2: koboldcpp_clblast
 
@@ -414,6 +414,10 @@ ggml-alloc.o: ggml-alloc.c ggml.h ggml-alloc.h
 	$(CC)  $(CFLAGS) -c $< -o $@
 ggml-backend.o: ggml-backend.c ggml.h ggml-backend.h
 	$(CC)  $(CFLAGS) -c $< -o $@
+llava.o: examples/llava/llava.cpp examples/llava/llava.h
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+llavaclip.o: examples/llava/clip.cpp examples/llava/clip.h
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 #version 3 libs
 ggml_v3.o: otherarch/ggml_v3.c otherarch/ggml_v3.h
@@ -503,7 +507,7 @@ gpttype_adapter_vulkan_noavx2.o: $(GPTTYPE_ADAPTER)
 	$(CXX) $(CXXFLAGS) $(FAILSAFE_FLAGS) $(VULKAN_FLAGS) -c $< -o $@
 
 clean:
-	rm -vf *.o main sdmain quantize_llama quantize_gpt2 quantize_gptj quantize_neox quantize_mpt quantize-stats perplexity embedding benchmark-matmult save-load-state gguf imatrix imatrix.exe gguf.exe main.exe quantize_llama.exe quantize_gptj.exe quantize_gpt2.exe quantize_neox.exe quantize_mpt.exe koboldcpp_default.dll koboldcpp_openblas.dll koboldcpp_failsafe.dll koboldcpp_noavx2.dll koboldcpp_clblast.dll koboldcpp_clblast_noavx2.dll koboldcpp_cublas.dll koboldcpp_hipblas.dll koboldcpp_vulkan.dll koboldcpp_vulkan_noavx2.dll koboldcpp_default.so koboldcpp_openblas.so koboldcpp_failsafe.so koboldcpp_noavx2.so koboldcpp_clblast.so koboldcpp_clblast_noavx2.so koboldcpp_cublas.so koboldcpp_hipblas.so koboldcpp_vulkan.so koboldcpp_vulkan_noavx2.so
+	rm -vf *.o main sdmain quantize_gguf quantize_clip quantize_gpt2 quantize_gptj quantize_neox quantize_mpt quantize-stats perplexity embedding benchmark-matmult save-load-state gguf imatrix imatrix.exe gguf.exe main.exe quantize_clip.exe quantize_gguf.exe quantize_gptj.exe quantize_gpt2.exe quantize_neox.exe quantize_mpt.exe koboldcpp_default.dll koboldcpp_openblas.dll koboldcpp_failsafe.dll koboldcpp_noavx2.dll koboldcpp_clblast.dll koboldcpp_clblast_noavx2.dll koboldcpp_cublas.dll koboldcpp_hipblas.dll koboldcpp_vulkan.dll koboldcpp_vulkan_noavx2.dll koboldcpp_default.so koboldcpp_openblas.so koboldcpp_failsafe.so koboldcpp_noavx2.so koboldcpp_clblast.so koboldcpp_clblast_noavx2.so koboldcpp_cublas.so koboldcpp_hipblas.so koboldcpp_vulkan.so koboldcpp_vulkan_noavx2.so
 
 # useful tools
 main: examples/main/main.cpp common/sampling.cpp build-info.h ggml.o ggml-quants.o ggml-alloc.o ggml-backend.o llama.o common.o console.o grammar-parser.o $(OBJS)
@@ -518,11 +522,11 @@ gguf: examples/gguf/gguf.cpp build-info.h ggml.o llama.o $(OBJS)
 
 
 #generated libraries
-koboldcpp_default: ggml.o ggml_v3.o ggml_v2.o ggml_v1.o expose.o common.o gpttype_adapter.o ggml-quants.o ggml-alloc.o ggml-backend.o grammar-parser.o sdcpp_default.o $(OBJS)
+koboldcpp_default: ggml.o ggml_v3.o ggml_v2.o ggml_v1.o expose.o common.o gpttype_adapter.o ggml-quants.o ggml-alloc.o ggml-backend.o llava.o llavaclip.o grammar-parser.o sdcpp_default.o $(OBJS)
 	$(DEFAULT_BUILD)
 
 ifdef OPENBLAS_BUILD
-koboldcpp_openblas: ggml_v4_openblas.o ggml_v3_openblas.o ggml_v2_openblas.o ggml_v1.o expose.o common.o gpttype_adapter.o ggml-quants.o ggml-alloc.o ggml-backend.o grammar-parser.o sdcpp_default.o $(OBJS)
+koboldcpp_openblas: ggml_v4_openblas.o ggml_v3_openblas.o ggml_v2_openblas.o ggml_v1.o expose.o common.o gpttype_adapter.o ggml-quants.o ggml-alloc.o ggml-backend.o llava.o llavaclip.o grammar-parser.o sdcpp_default.o $(OBJS)
 	$(OPENBLAS_BUILD)
 else
 koboldcpp_openblas:
@@ -530,7 +534,7 @@ koboldcpp_openblas:
 endif
 
 ifdef FAILSAFE_BUILD
-koboldcpp_failsafe: ggml_v4_failsafe.o ggml_v3_failsafe.o ggml_v2_failsafe.o ggml_v1_failsafe.o expose.o common.o gpttype_adapter_failsafe.o ggml-quants_failsafe.o ggml-alloc.o ggml-backend.o grammar-parser.o sdcpp_default.o $(OBJS)
+koboldcpp_failsafe: ggml_v4_failsafe.o ggml_v3_failsafe.o ggml_v2_failsafe.o ggml_v1_failsafe.o expose.o common.o gpttype_adapter_failsafe.o ggml-quants_failsafe.o ggml-alloc.o ggml-backend.o llava.o llavaclip.o grammar-parser.o sdcpp_default.o $(OBJS)
 	$(FAILSAFE_BUILD)
 else
 koboldcpp_failsafe:
@@ -538,7 +542,7 @@ koboldcpp_failsafe:
 endif
 
 ifdef NOAVX2_BUILD
-koboldcpp_noavx2: ggml_v4_noavx2.o ggml_v3_noavx2.o ggml_v2_noavx2.o ggml_v1_failsafe.o expose.o common.o gpttype_adapter_failsafe.o ggml-quants_noavx2.o ggml-alloc.o ggml-backend.o grammar-parser.o sdcpp_default.o $(OBJS)
+koboldcpp_noavx2: ggml_v4_noavx2.o ggml_v3_noavx2.o ggml_v2_noavx2.o ggml_v1_failsafe.o expose.o common.o gpttype_adapter_failsafe.o ggml-quants_noavx2.o ggml-alloc.o ggml-backend.o llava.o llavaclip.o grammar-parser.o sdcpp_default.o $(OBJS)
 	$(NOAVX2_BUILD)
 else
 koboldcpp_noavx2:
@@ -546,10 +550,10 @@ koboldcpp_noavx2:
 endif
 
 ifdef CLBLAST_BUILD
-koboldcpp_clblast: ggml_v4_clblast.o ggml_v3_clblast.o ggml_v2_clblast.o ggml_v1.o expose.o common.o gpttype_adapter_clblast.o ggml-opencl.o ggml_v3-opencl.o ggml_v2-opencl.o ggml_v2-opencl-legacy.o ggml-quants.o ggml-alloc.o ggml-backend.o grammar-parser.o sdcpp_default.o $(OBJS)
+koboldcpp_clblast: ggml_v4_clblast.o ggml_v3_clblast.o ggml_v2_clblast.o ggml_v1.o expose.o common.o gpttype_adapter_clblast.o ggml-opencl.o ggml_v3-opencl.o ggml_v2-opencl.o ggml_v2-opencl-legacy.o ggml-quants.o ggml-alloc.o ggml-backend.o llava.o llavaclip.o grammar-parser.o sdcpp_default.o $(OBJS)
 	$(CLBLAST_BUILD)
 ifdef NOAVX2_BUILD
-koboldcpp_clblast_noavx2: ggml_v4_clblast_noavx2.o ggml_v3_clblast_noavx2.o ggml_v2_clblast_noavx2.o ggml_v1_failsafe.o expose.o common.o gpttype_adapter_clblast_noavx2.o ggml-opencl.o ggml_v3-opencl.o ggml_v2-opencl.o ggml_v2-opencl-legacy.o ggml-quants_noavx2.o ggml-alloc.o ggml-backend.o grammar-parser.o sdcpp_default.o $(OBJS)
+koboldcpp_clblast_noavx2: ggml_v4_clblast_noavx2.o ggml_v3_clblast_noavx2.o ggml_v2_clblast_noavx2.o ggml_v1_failsafe.o expose.o common.o gpttype_adapter_clblast_noavx2.o ggml-opencl.o ggml_v3-opencl.o ggml_v2-opencl.o ggml_v2-opencl-legacy.o ggml-quants_noavx2.o ggml-alloc.o ggml-backend.o llava.o llavaclip.o grammar-parser.o sdcpp_default.o $(OBJS)
 	$(CLBLAST_BUILD)
 else
 koboldcpp_clblast_noavx2:
@@ -563,7 +567,7 @@ koboldcpp_clblast_noavx2:
 endif
 
 ifdef CUBLAS_BUILD
-koboldcpp_cublas: ggml_v4_cublas.o ggml_v3_cublas.o ggml_v2_cublas.o ggml_v1.o expose.o common.o gpttype_adapter_cublas.o ggml-quants.o ggml-alloc.o ggml-backend.o grammar-parser.o sdcpp_cublas.o $(CUBLAS_OBJS) $(OBJS)
+koboldcpp_cublas: ggml_v4_cublas.o ggml_v3_cublas.o ggml_v2_cublas.o ggml_v1.o expose.o common.o gpttype_adapter_cublas.o ggml-quants.o ggml-alloc.o ggml-backend.o llava.o llavaclip.o grammar-parser.o sdcpp_cublas.o $(CUBLAS_OBJS) $(OBJS)
 	$(CUBLAS_BUILD)
 else
 koboldcpp_cublas:
@@ -571,7 +575,7 @@ koboldcpp_cublas:
 endif
 
 ifdef HIPBLAS_BUILD
-koboldcpp_hipblas: ggml_v4_cublas.o ggml_v3_cublas.o ggml_v2_cublas.o ggml_v1.o expose.o common.o gpttype_adapter_cublas.o ggml-quants.o ggml-alloc.o ggml-backend.o grammar-parser.o sdcpp_cublas.o $(HIP_OBJS) $(OBJS)
+koboldcpp_hipblas: ggml_v4_cublas.o ggml_v3_cublas.o ggml_v2_cublas.o ggml_v1.o expose.o common.o gpttype_adapter_cublas.o ggml-quants.o ggml-alloc.o ggml-backend.o llava.o llavaclip.o grammar-parser.o sdcpp_cublas.o $(HIP_OBJS) $(OBJS)
 	$(HIPBLAS_BUILD)
 else
 koboldcpp_hipblas:
@@ -579,10 +583,10 @@ koboldcpp_hipblas:
 endif
 
 ifdef VULKAN_BUILD
-koboldcpp_vulkan: ggml_v4_vulkan.o ggml_v3.o ggml_v2.o ggml_v1.o expose.o common.o gpttype_adapter_vulkan.o ggml-vulkan.o ggml-quants.o ggml-alloc.o ggml-backend.o grammar-parser.o sdcpp_default.o $(OBJS)
+koboldcpp_vulkan: ggml_v4_vulkan.o ggml_v3.o ggml_v2.o ggml_v1.o expose.o common.o gpttype_adapter_vulkan.o ggml-vulkan.o ggml-quants.o ggml-alloc.o ggml-backend.o llava.o llavaclip.o grammar-parser.o sdcpp_default.o $(OBJS)
 	$(VULKAN_BUILD)
 ifdef NOAVX2_BUILD
-koboldcpp_vulkan_noavx2: ggml_v4_vulkan_noavx2.o ggml_v3_noavx2.o ggml_v2_noavx2.o ggml_v1_failsafe.o expose.o common.o gpttype_adapter_vulkan_noavx2.o ggml-vulkan.o ggml-quants_noavx2.o ggml-alloc.o ggml-backend.o grammar-parser.o sdcpp_default.o $(OBJS)
+koboldcpp_vulkan_noavx2: ggml_v4_vulkan_noavx2.o ggml_v3_noavx2.o ggml_v2_noavx2.o ggml_v1_failsafe.o expose.o common.o gpttype_adapter_vulkan_noavx2.o ggml-vulkan.o ggml-quants_noavx2.o ggml-alloc.o ggml-backend.o llava.o llavaclip.o grammar-parser.o sdcpp_default.o $(OBJS)
 	$(VULKAN_BUILD)
 else
 koboldcpp_vulkan_noavx2:
@@ -596,7 +600,7 @@ koboldcpp_vulkan_noavx2:
 endif
 
 # tools
-quantize_llama: examples/quantize/quantize.cpp ggml.o llama.o ggml-quants.o ggml-alloc.o ggml-backend.o
+quantize_gguf: examples/quantize/quantize.cpp ggml.o llama.o ggml-quants.o ggml-alloc.o ggml-backend.o
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 quantize_gptj: ggml.o llama.o ggml-quants.o ggml-alloc.o ggml-backend.o otherarch/tools/gptj_quantize.cpp otherarch/tools/common-ggml.cpp
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
@@ -605,6 +609,8 @@ quantize_gpt2: ggml.o llama.o ggml-quants.o ggml-alloc.o ggml-backend.o otherarc
 quantize_neox: ggml.o llama.o ggml-quants.o ggml-alloc.o ggml-backend.o otherarch/tools/neox_quantize.cpp otherarch/tools/common-ggml.cpp
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 quantize_mpt: ggml.o llama.o ggml-quants.o ggml-alloc.o ggml-backend.o otherarch/tools/mpt_quantize.cpp otherarch/tools/common-ggml.cpp
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+quantize_clip: ggml.o llama.o ggml-quants.o ggml-alloc.o ggml-backend.o examples/llava/clip.cpp examples/llava/clip.h examples/llava/quantclip.cpp
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
 #window simple clinfo
