@@ -616,7 +616,7 @@ maxhordelen = 256
 modelbusy = threading.Lock()
 requestsinqueue = 0
 defaultport = 5001
-KcppVersion = "1.61.1"
+KcppVersion = "1.61.2"
 showdebug = True
 showsamplerwarning = True
 showmaxctxwarning = True
@@ -2686,6 +2686,8 @@ def main(launch_args,start_server=True):
     if args.config and len(args.config)==1:
         if isinstance(args.config[0], str) and os.path.exists(args.config[0]):
            loadconfigfile(args.config[0])
+        elif args.ignoremissing:
+            print("Ignoring missing kcpp config file...")
         else:
             global exitcounter
             exitcounter = 999
@@ -2781,34 +2783,50 @@ def main(launch_args,start_server=True):
     #handle loading text model
     if args.model_param:
         if not os.path.exists(args.model_param):
-            exitcounter = 999
             print(f"Cannot find text model file: {args.model_param}")
-            time.sleep(3)
-            sys.exit(2)
+            if args.ignoremissing:
+                print(f"Ignoring missing model file...")
+                args.model_param = None
+            else:
+                exitcounter = 999
+                time.sleep(3)
+                sys.exit(2)
 
         if args.lora and args.lora[0]!="":
             if not os.path.exists(args.lora[0]):
-                exitcounter = 999
                 print(f"Cannot find lora file: {args.lora[0]}")
-                time.sleep(3)
-                sys.exit(2)
+                if args.ignoremissing:
+                    print(f"Ignoring missing lora file...")
+                    args.lora = None
+                else:
+                    exitcounter = 999
+                    time.sleep(3)
+                    sys.exit(2)
             else:
                 args.lora[0] = os.path.abspath(args.lora[0])
                 if len(args.lora) > 1:
                     if not os.path.exists(args.lora[1]):
-                        exitcounter = 999
                         print(f"Cannot find lora base: {args.lora[1]}")
-                        time.sleep(3)
-                        sys.exit(2)
+                        if args.ignoremissing:
+                            print(f"Ignoring missing lora file...")
+                            args.lora = None
+                        else:
+                            exitcounter = 999
+                            time.sleep(3)
+                            sys.exit(2)
                     else:
                         args.lora[1] = os.path.abspath(args.lora[1])
 
         if args.mmproj and args.mmproj!="":
             if not os.path.exists(args.mmproj):
-                exitcounter = 999
                 print(f"Cannot find mmproj file: {args.mmproj}")
-                time.sleep(3)
-                sys.exit(2)
+                if args.ignoremissing:
+                    print(f"Ignoring missing mmproj file...")
+                    args.mmproj = None
+                else:
+                    exitcounter = 999
+                    time.sleep(3)
+                    sys.exit(2)
             else:
                 global mmprojpath
                 args.mmproj = os.path.abspath(args.mmproj)
@@ -2838,22 +2856,27 @@ def main(launch_args,start_server=True):
     if args.sdconfig:
         imgmodel = args.sdconfig[0]
         if not imgmodel or not os.path.exists(imgmodel):
-            exitcounter = 999
             print(f"Cannot find image model file: {imgmodel}")
-            time.sleep(3)
-            sys.exit(2)
-        imgmodel = os.path.abspath(imgmodel)
-        fullsdmodelpath = imgmodel
-        friendlysdmodelname = os.path.basename(imgmodel)
-        friendlysdmodelname = os.path.splitext(friendlysdmodelname)[0]
-        friendlysdmodelname = sanitize_string(friendlysdmodelname)
-        loadok = sd_load_model(imgmodel)
-        print("Load Image Model OK: " + str(loadok))
-        if not loadok:
-            exitcounter = 999
-            print("Could not load image model: " + imgmodel)
-            time.sleep(3)
-            sys.exit(3)
+            if args.ignoremissing:
+                print(f"Ignoring missing sdconfig img model file...")
+                args.sdconfig = None
+            else:
+                exitcounter = 999
+                time.sleep(3)
+                sys.exit(2)
+        else:
+            imgmodel = os.path.abspath(imgmodel)
+            fullsdmodelpath = imgmodel
+            friendlysdmodelname = os.path.basename(imgmodel)
+            friendlysdmodelname = os.path.splitext(friendlysdmodelname)[0]
+            friendlysdmodelname = sanitize_string(friendlysdmodelname)
+            loadok = sd_load_model(imgmodel)
+            print("Load Image Model OK: " + str(loadok))
+            if not loadok:
+                exitcounter = 999
+                print("Could not load image model: " + imgmodel)
+                time.sleep(3)
+                sys.exit(3)
 
     #load embedded lite
     try:
@@ -3066,5 +3089,6 @@ if __name__ == '__main__':
     parser.add_argument("--sdconfig", help="Specify a stable diffusion safetensors model to enable image generation. If quick is specified, force optimal generation settings for speed.",metavar=('[sd_filename]', '[normal|quick|clamped] [threads] [quant|noquant]'), nargs='+')
     parser.add_argument("--mmproj", help="Select a multimodal projector file for LLaVA.", default="")
     parser.add_argument("--password", help="Enter a password required to use this instance. This key will be required for all text endpoints. Image endpoints are not secured.", default=None)
+    parser.add_argument("--ignoremissing", help="Ignores all missing non-essential files, just skipping them instead.", action='store_true')
 
     main(parser.parse_args(),start_server=True)

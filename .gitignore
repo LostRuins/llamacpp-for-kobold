@@ -83,6 +83,8 @@ examples/jeopardy/results.txt
 poetry.lock
 poetry.toml
 
+ggml-metal-merged.metal
+
 # Test binaries
 tests/test-grammar-parser
 /tests/test-llama-grammar

@@ -315,13 +315,13 @@ static struct ggml_metal_context * ggml_metal_init(int n_cb) {
             GGML_METAL_LOG_INFO("%s: GGML_METAL_PATH_RESOURCES = %s\n", __func__, ggmlMetalPathResources ? [ggmlMetalPathResources UTF8String] : "nil");
 
             if (ggmlMetalPathResources) {
-                sourcePath = [ggmlMetalPathResources stringByAppendingPathComponent:@"ggml-metal.metal"];
+                sourcePath = [ggmlMetalPathResources stringByAppendingPathComponent:@"ggml-metal-merged.metal"];
             } else {
-                sourcePath = [bundle pathForResource:@"ggml-metal" ofType:@"metal"];
+                sourcePath = [bundle pathForResource:@"ggml-metal-merged" ofType:@"metal"];
             }
             if (sourcePath == nil) {
-                GGML_METAL_LOG_WARN("%s: error: could not use bundle path to find ggml-metal.metal, falling back to trying cwd\n", __func__);
-                sourcePath = @"ggml-metal.metal";
+                GGML_METAL_LOG_WARN("%s: error: could not use bundle path to find ggml-metal-merged.metal, falling back to trying cwd\n", __func__);
+                sourcePath = @"ggml-metal-merged.metal";
             }
             GGML_METAL_LOG_INFO("%s: loading '%s'\n", __func__, [sourcePath UTF8String]);
             NSString * src = [NSString stringWithContentsOfFile:sourcePath encoding:NSUTF8StringEncoding error:&error];
@@ -2820,6 +2820,11 @@ static struct ggml_backend_i ggml_backend_metal_i = {
     /* .graph_plan_compute      = */ NULL,
     /* .graph_compute           = */ ggml_backend_metal_graph_compute,
     /* .supports_op             = */ ggml_backend_metal_supports_op,
+    /* .event_new               = */ NULL,
+    /* .event_free              = */ NULL,
+    /* .event_record            = */ NULL,
+    /* .event_wait              = */ NULL,
+    /* .event_synchronize       = */ NULL,
 };
 
 void ggml_backend_metal_log_set_callback(ggml_log_callback log_callback, void * user_data) {
