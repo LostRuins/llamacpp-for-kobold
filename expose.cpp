@@ -251,6 +251,10 @@ extern "C"
     int get_total_gens() {
         return total_gens;
     }
+    int get_total_img_gens()
+    {
+        return total_img_gens;
+    }
     int get_last_stop_reason() {
         return (int)last_stop_reason;
     }

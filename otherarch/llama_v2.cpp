@@ -10,7 +10,7 @@
 
 #include "ggml_v2.h"
 
-#ifdef GGML_USE_CUBLAS
+#ifdef GGML_USE_CUDA
 #include "ggml_v2-cuda.h"
 #endif
 #if defined(GGML_USE_CLBLAST)
@@ -1063,7 +1063,7 @@ static void llama_v2_model_load_internal(
     ml->load_all_data(progress_callback, progress_callback_user_data, use_mlock ? &lctx.model.mlock_mmap : NULL);
 
     model.mapping = std::move(ml->mapping);
-#if defined(GGML_USE_CUBLAS)
+#if defined(GGML_USE_CUDA)
     {
         const int n_gpu = std::min(n_gpu_layers, int(hparams.n_layer));
         if(GetQuantsUnshuffled())

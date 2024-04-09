@@ -108,6 +108,8 @@ class sd_load_model_inputs(ctypes.Structure):
 class sd_generation_inputs(ctypes.Structure):
     _fields_ = [("prompt", ctypes.c_char_p),
                 ("negative_prompt", ctypes.c_char_p),
+                ("init_images", ctypes.c_char_p),
+                ("denoising_strength", ctypes.c_float),
                 ("cfg_scale", ctypes.c_float),
                 ("sample_steps", ctypes.c_int),
                 ("width", ctypes.c_int),
@@ -527,6 +529,9 @@ def sd_generate(genparams):
     global maxctx, args, currentusergenkey, totalgens, pendingabortkey
     prompt = genparams.get("prompt", "high quality")
     negative_prompt = genparams.get("negative_prompt", "")
+    init_images_arr = genparams.get("init_images", [])
+    init_images = ("" if (not init_images_arr or len(init_images_arr)==0 or not init_images_arr[0]) else init_images_arr[0])
+    denoising_strength = genparams.get("denoising_strength", 0.6)
     cfg_scale = genparams.get("cfg_scale", 5)
     sample_steps = genparams.get("steps", 20)
     width = genparams.get("width", 512)
@@ -534,7 +539,6 @@ def sd_generate(genparams):
     seed = genparams.get("seed", -1)
     sample_method = genparams.get("sampler_name", "k_euler_a")
     is_quiet = True if args.quiet else False
-
 
     #clean vars
     width = width - (width%64)
@@ -569,7 +573,9 @@ def sd_generate(genparams):
     inputs = sd_generation_inputs()
     inputs.prompt = prompt.encode("UTF-8")
     inputs.negative_prompt = negative_prompt.encode("UTF-8")
+    inputs.init_images = init_images.encode("UTF-8")
     inputs.cfg_scale = cfg_scale
+    inputs.denoising_strength = denoising_strength
     inputs.sample_steps = sample_steps
     inputs.width = width
     inputs.height = height
@@ -616,7 +622,7 @@ maxhordelen = 256
 modelbusy = threading.Lock()
 requestsinqueue = 0
 defaultport = 5001
-KcppVersion = "1.61.2"
+KcppVersion = "1.62.1"
 showdebug = True
 showsamplerwarning = True
 showmaxctxwarning = True
@@ -633,9 +639,12 @@ args = None #global args
 gui_layers_untouched = True
 runmode_untouched = True
 preloaded_story = None
+chatcompl_adapter = None
 sslvalid = False
 nocertify = False
 start_time = time.time()
+last_req_time = time.time()
+last_non_horde_req_time = time.time()
 
 class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
     sys_version = ""
@@ -657,7 +666,8 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
         pass
 
     async def generate_text(self, genparams, api_format, stream_flag):
-        global friendlymodelname
+        from datetime import datetime
+        global friendlymodelname, chatcompl_adapter
         is_quiet = args.quiet
         def run_blocking(): #api format 1=basic,2=kai,3=oai,4=oai-chat
 
@@ -690,7 +700,8 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                 if api_format==4:
                     # translate openai chat completion messages format into one big string.
                     messages_array = genparams.get('messages', [])
-                    adapter_obj = genparams.get('adapter', {})
+                    default_adapter = {} if chatcompl_adapter is None else chatcompl_adapter
+                    adapter_obj = genparams.get('adapter', default_adapter)
                     messages_string = ""
                     system_message_start = adapter_obj.get("system_start", "\n### Instruction:\n")
                     system_message_end = adapter_obj.get("system_end", "")
@@ -731,12 +742,21 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                     genparams["prompt"] = messages_string
                     if len(images_added)>0:
                         genparams["images"] = images_added
+                    if len(genparams.get('stop_sequence', []))==0: #only set stop seq if it wont overwrite existing
+                        genparams["stop_sequence"] = [user_message_start.strip(),assistant_message_start.strip()]
+                    genparams["trim_stop"] = True
 
             elif api_format==5:
                     firstimg = genparams.get('image', "")
                     genparams["images"] = [firstimg]
                     genparams["max_length"] = 32
                     genparams["prompt"] = "### Instruction: In one sentence, write a descriptive caption for this image.\n### Response:"
+
+            #flag instance as non-idle for a while
+            washordereq = genparams.get('genkey', '').startswith('HORDEREQ_')
+            if not washordereq:
+                global last_non_horde_req_time
+                last_non_horde_req_time = time.time()
 
             return generate(
                 prompt=genparams.get('prompt', ""),
@@ -780,6 +800,12 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
             recvtxt = await loop.run_in_executor(executor, run_blocking)
         else:
             recvtxt = run_blocking()
+
+        #flag instance as non-idle for a while
+        washordereq = genparams.get('genkey', '').startswith('HORDEREQ_')
+        if not washordereq:
+            global last_non_horde_req_time
+            last_non_horde_req_time = time.time()
 
         if (args.debugmode != -1 and not is_quiet) or args.debugmode >= 1:
             utfprint("\nOutput: " + recvtxt)
@@ -1047,14 +1073,17 @@ Enter Prompt:<br>
             response_body = (json.dumps({"result":"KoboldCpp","version":KcppVersion, "protected":has_password ,"txt2img":has_txt2img,"vision":has_vision}).encode())
 
         elif self.path.endswith(('/api/extra/perf')):
+            global last_req_time, start_time
             lastp = handle.get_last_process_time()
             laste = handle.get_last_eval_time()
             lastc = handle.get_last_token_count()
             totalgens = handle.get_total_gens()
+            totalimggens = handle.get_total_img_gens()
             stopreason = handle.get_last_stop_reason()
             lastseed = handle.get_last_seed()
             uptime = time.time() - start_time
-            response_body = (json.dumps({"last_process":lastp,"last_eval":laste,"last_token_count":lastc, "last_seed":lastseed, "total_gens":totalgens, "stop_reason":stopreason, "queue":requestsinqueue, "idle":(0 if modelbusy.locked() else 1), "hordeexitcounter":exitcounter, "uptime":uptime}).encode())
+            idletime = time.time() - last_req_time
+            response_body = (json.dumps({"last_process":lastp,"last_eval":laste,"last_token_count":lastc, "last_seed":lastseed, "total_gens":totalgens, "stop_reason":stopreason, "total_img_gens":totalimggens, "queue":requestsinqueue, "idle":(0 if modelbusy.locked() else 1), "hordeexitcounter":exitcounter, "uptime":uptime, "idletime":idletime}).encode())
 
         elif self.path.endswith('/api/extra/generate/check'):
             if not self.secure_endpoint():
@@ -1086,7 +1115,7 @@ Enter Prompt:<br>
            response_body = (json.dumps([]).encode())
 
 
-        elif self.path=="/api":
+        elif self.path=="/api" or self.path=="/docs" or self.path.startswith(('/api/?json=','/api?json=','/docs/?json=','/docs?json=')):
             content_type = 'text/html'
             if self.embedded_kcpp_docs is None:
                 response_body = (f"KoboldCpp API is running!\n\nAPI usage reference can be found at the wiki: https://github.com/LostRuins/koboldcpp/wiki").encode()
@@ -1215,7 +1244,7 @@ Enter Prompt:<br>
             sse_stream_flag = False
 
             api_format = 0 #1=basic,2=kai,3=oai,4=oai-chat,5=interrogate
-            is_txt2img = False
+            is_imggen = False
 
             if self.path.endswith('/request'):
                 api_format = 1
@@ -1245,12 +1274,14 @@ Enter Prompt:<br>
                     return
                 api_format = 5
 
-            if self.path.endswith('/sdapi/v1/txt2img'):
-                is_txt2img = True
+            if self.path.endswith('/sdapi/v1/txt2img') or self.path.endswith('/sdapi/v1/img2img'):
+                is_imggen = True
 
-            if is_txt2img or api_format > 0:
+            if is_imggen or api_format > 0:
+                global last_req_time
+                last_req_time = time.time()
 
-                if not is_txt2img and api_format<5:
+                if not is_imggen and api_format<5:
                     if not self.secure_endpoint():
                         return
 
@@ -1291,7 +1322,7 @@ Enter Prompt:<br>
                         time.sleep(0.2) #short delay
                     return
 
-                elif is_txt2img: #image gen
+                elif is_imggen: #image gen
                     try:
                         gen = sd_generate(genparams)
                         genresp = (json.dumps({"images":[gen],"parameters":{},"info":""}).encode())
@@ -1507,7 +1538,7 @@ def show_new_gui():
     nocertifymode = ctk.IntVar(value=0)
 
     lowvram_var = ctk.IntVar()
-    mmq_var = ctk.IntVar(value=0)
+    mmq_var = ctk.IntVar(value=1)
     blas_threads_var = ctk.StringVar()
     blas_size_var = ctk.IntVar()
     version_var = ctk.StringVar(value="0")
@@ -1521,6 +1552,7 @@ def show_new_gui():
     customrope_var = ctk.IntVar()
     customrope_scale = ctk.StringVar(value="1.0")
     customrope_base = ctk.StringVar(value="10000")
+    chatcompletionsadapter_var = ctk.StringVar()
 
     model_var = ctk.StringVar()
     lora_var = ctk.StringVar()
@@ -1752,6 +1784,7 @@ def show_new_gui():
                 gui_layers_zeroed = gpulayers_var.get()=="" or gpulayers_var.get()=="0"
                 if (gui_layers_untouched or gui_layers_zeroed) and layerlimit>0:
                     gpulayers_var.set(str(layerlimit))
+                    mmq_var.set(0 if layerlimit>=200 else 1)
                     gui_layers_untouched = old_gui_layers_untouched
                     if gui_layers_zeroed:
                         gui_layers_untouched = True
@@ -1971,6 +2004,7 @@ def show_new_gui():
                 item.grid_forget()
     makecheckbox(tokens_tab,  "Custom RoPE Config", variable=customrope_var, row=22, command=togglerope,tooltiptxt="Override the default RoPE configuration with custom RoPE scaling.")
     togglerope(1,1,1)
+    makefileentry(tokens_tab, "ChatCompletions Adapter:", "Select ChatCompletions Adapter File", chatcompletionsadapter_var, 30,tooltiptxt="Select an optional ChatCompletions Adapter JSON file to force custom instruct tags.")
 
     # Model Tab
     model_tab = tabcontent["Model Files"]
@@ -2101,6 +2135,8 @@ def show_new_gui():
 
         if customrope_var.get()==1:
             args.ropeconfig = [float(customrope_scale.get()),float(customrope_base.get())]
+
+        args.chatcompletionsadapter = None if chatcompletionsadapter_var.get() == "" else chatcompletionsadapter_var.get()
 
         args.model_param = None if model_var.get() == "" else model_var.get()
         args.lora = None if lora_var.get() == "" else ([lora_var.get()] if lora_base_var.get()=="" else [lora_var.get(), lora_base_var.get()])
@@ -2236,6 +2272,9 @@ def show_new_gui():
         if "preloadstory" in dict and dict["preloadstory"]:
             preloadstory_var.set(dict["preloadstory"])
 
+        if "chatcompletionsadapter" in dict and dict["chatcompletionsadapter"]:
+            chatcompletionsadapter_var.set(dict["chatcompletionsadapter"])
+
         if "port_param" in dict and dict["port_param"]:
             port_var.set(dict["port_param"])
 
@@ -2348,6 +2387,9 @@ def make_url_request(url, data, method='POST', headers={}):
     global nocertify
     try:
         request = None
+        ssl_cert_dir = os.environ.get('SSL_CERT_DIR')
+        if not ssl_cert_dir and not nocertify and os.name != 'nt':
+            os.environ['SSL_CERT_DIR'] = '/etc/ssl/certs'
         ssl_context = ssl.create_default_context()
         if nocertify:
             ssl_context.check_hostname = False
@@ -2420,9 +2462,9 @@ def run_horde_worker(args, api_key, worker_name):
     session_starttime = datetime.now()
     sleepy_counter = 0 #if this exceeds a value, worker becomes sleepy (slower)
     exitcounter = 0
-    print(f"===\nEmbedded Horde Worker '{worker_name}' Starting...\n(To use your own KAI Bridge/Scribe worker instead, don't set your API key)")
+    print(f"===\nEmbedded Horde Worker '{worker_name}' Starting...\n(To use your own Horde Bridge/Scribe worker instead, don't set your API key)")
     BRIDGE_AGENT = f"KoboldCppEmbedWorker:2:https://github.com/LostRuins/koboldcpp"
-    cluster = "https://horde.koboldai.net"
+    cluster = "https://aihorde.net"
     while exitcounter < 10:
         time.sleep(3)
         readygo = make_url_request_horde(f'{epurl}/api/v1/info/version', None,'GET')
@@ -2444,6 +2486,14 @@ def run_horde_worker(args, api_key, worker_name):
                 time.sleep(60 * penaltytime)
             else:
                  print_with_time(f"Horde Worker Exit limit reached, too many errors.")
+
+        global last_non_horde_req_time
+        sec_since_non_horde = time.time() - last_non_horde_req_time
+        no_recent_local_usage = sec_since_non_horde>20
+        if not no_recent_local_usage:
+            #print_with_time(f"Recent Local Usage - Horde Worker Waiting...")
+            time.sleep(1)
+            continue
 
         #first, make sure we are not generating
         if modelbusy.locked():
@@ -2492,6 +2542,7 @@ def run_horde_worker(args, api_key, worker_name):
                     currentjob_attempts += 1
                     if currentjob_attempts>5:
                         break
+
             print_with_time(f"Server Busy - Not ready to generate...")
             time.sleep(5)
 
@@ -2672,6 +2723,31 @@ def loadconfigfile(filename):
         for key, value in config.items():
             setattr(args, key, value)
 
+
+def delete_old_pyinstaller():
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        return # not running from pyinstaller
+    if not base_path:
+        return
+
+    import time, os, shutil
+    selfdirpath = os.path.abspath(base_path)
+    temp_parentdir_path = os.path.abspath(os.path.join(base_path, '..'))
+    for dirname in os.listdir(temp_parentdir_path):
+        absdirpath = os.path.abspath(os.path.join(temp_parentdir_path, dirname))
+        if os.path.isdir(absdirpath) and os.path.basename(absdirpath).startswith('_MEI'): #only delete kobold pyinstallers
+            if absdirpath!=selfdirpath and (time.time() - os.path.getctime(absdirpath)) > 14400: # remove if older than 4 hours
+                kobold_itemcheck1 = os.path.join(absdirpath, 'koboldcpp_default.dll')
+                kobold_itemcheck2 = os.path.join(absdirpath, 'koboldcpp_default.so')
+                if os.path.exists(kobold_itemcheck1) or os.path.exists(kobold_itemcheck2):
+                    try:
+                        shutil.rmtree(absdirpath)
+                        print(f"Deleted orphaned pyinstaller dir: {absdirpath}")
+                    except Exception as e:
+                        print(f"Error deleting orphaned pyinstaller dir: {absdirpath}: {e}")
+
 def sanitize_string(input_string):
     # alphanumeric characters, dots, dashes, and underscores
     import re
@@ -2683,6 +2759,14 @@ def main(launch_args,start_server=True):
     args = launch_args
     embedded_kailite = None
     embedded_kcpp_docs = None
+
+    #perform some basic cleanup of old temporary directories
+    try:
+        delete_old_pyinstaller()
+    except Exception as e:
+        print(f"Error cleaning up orphaned pyinstaller dirs: {e}")
+
+
     if args.config and len(args.config)==1:
         if isinstance(args.config[0], str) and os.path.exists(args.config[0]):
            loadconfigfile(args.config[0])
@@ -2725,6 +2809,18 @@ def main(launch_args,start_server=True):
                 print("Saved story preloaded.")
         else:
             print(f"Warning: Saved story file {args.preloadstory} invalid or not found. No story will be preloaded into server.")
+
+    # try to read chat completions adapter
+    if args.chatcompletionsadapter:
+        if isinstance(args.chatcompletionsadapter, str) and os.path.exists(args.chatcompletionsadapter):
+            print(f"Loading Chat Completions Adapter...")
+            with open(args.chatcompletionsadapter, 'r') as f:
+                global chatcompl_adapter
+                chatcompl_adapter = json.load(f)
+                print(f"Chat Completions Adapter Loaded")
+        else:
+            print(f"Warning: Chat Completions Adapter {args.chatcompletionsadapter} invalid or not found.")
+
 
     # sanitize and replace the default vanity name. remember me....
     if args.model_param and args.model_param!="":
@@ -2996,8 +3092,9 @@ def main(launch_args,start_server=True):
     if start_server:
         if args.remotetunnel:
             setuptunnel()
-        # Flush stdout for previous win32 issue so the client can see output.
-        print(f"======\nPlease connect to custom endpoint at {epurl}", flush=True)
+        else:
+            # Flush stdout for previous win32 issue so the client can see output.
+            print(f"======\nPlease connect to custom endpoint at {epurl}", flush=True)
         asyncio.run(RunServerMultiThreaded(args.host, args.port, embedded_kailite, embedded_kcpp_docs))
     else:
         # Flush stdout for previous win32 issue so the client can see output.
@@ -3090,5 +3187,6 @@ if __name__ == '__main__':
     parser.add_argument("--mmproj", help="Select a multimodal projector file for LLaVA.", default="")
     parser.add_argument("--password", help="Enter a password required to use this instance. This key will be required for all text endpoints. Image endpoints are not secured.", default=None)
     parser.add_argument("--ignoremissing", help="Ignores all missing non-essential files, just skipping them instead.", action='store_true')
+    parser.add_argument("--chatcompletionsadapter", help="Select an optional ChatCompletions Adapter JSON file to force custom instruct tags.", default="")
 
     main(parser.parse_args(),start_server=True)

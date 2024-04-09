@@ -31,10 +31,15 @@
     fprintf(stderr, "%s: built with %s for %s\n", __func__, LLAMA_COMPILER, LLAMA_BUILD_TARGET);    \
 } while(0)
 
+// build info
+
+struct llama_control_vector_load_info;
+
+int32_t get_num_physical_cores();
+
 //
 // CLI argument parsing
 //
-int32_t get_num_physical_cores();
 
 struct gpt_params {
     uint32_t seed                 = LLAMA_DEFAULT_SEED; // RNG seed
@@ -99,23 +104,33 @@ struct gpt_params {
     // // sampling parameters
     struct llama_sampling_params sparams;
 
-    std::string model             = "models/7B/ggml-model-f16.gguf"; // model path
-    std::string model_draft       = "";                              // draft model for speculative decoding
-    std::string model_alias       = "unknown"; // model alias
-    std::string prompt            = "";
-    std::string prompt_file       = "";  // store the external prompt file name
-    std::string path_prompt_cache = "";  // path to file for saving/loading prompt eval state
-    std::string input_prefix      = "";  // string to prefix user inputs with
-    std::string input_suffix      = "";  // string to suffix user inputs with
+    std::string model                = "models/7B/ggml-model-f16.gguf"; // model path
+    std::string model_draft          = "";  // draft model for speculative decoding
+    std::string model_alias          = "unknown"; // model alias
+    std::string model_url            = "";  // model url to download
+    std::string hf_repo              = "";  // HF repo
+    std::string hf_file              = "";  // HF file
+    std::string prompt               = "";
+    std::string prompt_file          = "";  // store the external prompt file name
+    std::string path_prompt_cache    = "";  // path to file for saving/loading prompt eval state
+    std::string input_prefix         = "";  // string to prefix user inputs with
+    std::string input_suffix         = "";  // string to suffix user inputs with
     std::vector<std::string> antiprompt; // string upon seeing which more user input is prompted
-    std::string logdir            = "";  // directory in which to save YAML log files
-    std::string logits_file       = "";  // file for saving *all* logits
+    std::string logdir               = "";  // directory in which to save YAML log files
+    std::string lookup_cache_static  = ""; // path of static ngram cache file for lookup decoding
+    std::string lookup_cache_dynamic = ""; // path of dynamic ngram cache file for lookup decoding
+    std::string logits_file          = "";  // file for saving *all* logits
 
     std::vector<llama_model_kv_override> kv_overrides;
 
     // TODO: avoid tuple, use struct
     std::vector<std::tuple<std::string, float>> lora_adapter; // lora adapter path with user defined scale
     std::string lora_base  = "";                              // base model path for the lora adapter
+
+    std::vector<llama_control_vector_load_info> control_vectors; // control vector with user defined scale
+
+    int32_t control_vector_layer_start = -1; // layer range for control vector
+    int32_t control_vector_layer_end   = -1; // layer range for control vector
 
     int  ppl_stride        = 0;     // stride for perplexity calculations. If left at 0, the pre-existing approach will be used.
     int  ppl_output_type   = 0;     // = 0 -> ppl output is as usual, = 1 -> ppl output is num_tokens, ppl, one per line
@@ -144,7 +159,7 @@ struct gpt_params {
     bool interactive_first = false; // wait for user input immediately
     bool multiline_input   = false; // reverse the usage of `\`
     bool simple_io         = false; // improves compatibility with subprocesses and limited consoles
-    bool cont_batching     = false; // insert new sequences for decoding on-the-fly
+    bool cont_batching     = true;  // insert new sequences for decoding on-the-fly
 
     bool input_prefix_bos  = false; // prefix BOS to user inputs, preceding input_prefix
     bool ignore_eos        = false; // ignore generated EOS tokens
@@ -172,11 +187,15 @@ bool gpt_params_parse(int argc, char ** argv, gpt_params & params);
 
 void gpt_print_usage(int argc, char ** argv, const gpt_params & params);
 
+bool gpt_params_find_arg(int argc, char ** argv, const std::string & arg, gpt_params & params, int & i, bool & invalid_param);
+
 std::string get_system_info(const gpt_params & params);
 
 std::string gpt_random_prompt(std::mt19937 & rng);
 
 void process_escapes(std::string& input);
+
+bool validate_file_name(const std::string & filename);
 
 //
 // String utils
@@ -196,6 +215,9 @@ std::tuple<struct llama_model *, struct llama_context *> llama_init_from_gpt_par
 
 struct llama_model_params   llama_model_params_from_gpt_params  (const gpt_params & params);
 struct llama_context_params llama_context_params_from_gpt_params(const gpt_params & params);
+
+struct llama_model * llama_load_model_from_url(const char * model_url, const char * path_model, const struct llama_model_params & params);
+struct llama_model * llama_load_model_from_hf(const char * repo, const char * file, const char * path_model, const struct llama_model_params & params);
 
 // Batch utils
 
@@ -282,3 +304,32 @@ void dump_kv_cache_view_seqs(const llama_kv_cache_view & view, int row_size = 40
 
 void llama_embd_normalize(const float * inp, float * out, int n);
 
+float llama_embd_similarity_cos(const float * embd1, const float * embd2, int n);
+
+//
+// Control vector utils
+//
+
+struct llama_control_vector_data {
+    int n_embd;
+
+    // stores data for layers [1, n_layer] where n_layer = data.size() / n_embd
+    std::vector<float> data;
+};
+
+struct llama_control_vector_load_info {
+    float strength;
+
+    std::string fname;
+};
+
+// Load control vectors, scale each by strength, and add them together.
+// On error, returns {-1, empty}
+llama_control_vector_data llama_control_vector_load(const std::vector<llama_control_vector_load_info> & load_infos);
+
+//
+// Split utils
+//
+static const char * const LLM_KV_SPLIT_NO_STR            = "split.no";
+static const char * const LLM_KV_SPLIT_COUNT_STR         = "split.count";
+static const char * const LLM_KV_SPLIT_TENSORS_COUNT_STR = "split.tensors.count";

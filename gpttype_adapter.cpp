@@ -748,6 +748,10 @@ ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in
     kcpp_params->n_threads_batch = inputs.blasthreads;
     bool isGguf = (file_format == FileFormat::GGUF_GENERIC);
     kcpp_params->n_batch = GetBatchSize(inputs.blasbatchsize, in_file_format);
+    if(kcpp_params->n_batch>512)
+    {
+        kcpp_params->n_ubatch = (kcpp_params->n_batch>1024?1024:kcpp_params->n_batch);
+    }
     modelname = kcpp_params->model = inputs.model_filename;
     useSmartContext = inputs.use_smartcontext;
     useContextShift = inputs.use_contextshift;
@@ -825,7 +829,7 @@ ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in
     int cu_parseinfo_maindevice = inputs.cublas_info<=0?0:inputs.cublas_info;
 
     printf("System Info: %s\n", llama_print_system_info());
-    #if defined(GGML_USE_CUBLAS)
+    #if defined(GGML_USE_CUDA)
     if(file_format!=FileFormat::GGUF_GENERIC)
     {
         if(ggml_v3_cpu_has_gpublas() && cu_parseinfo_maindevice>0)
@@ -905,7 +909,7 @@ ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in
         llama_ctx_params.rope_freq_scale = rope_freq_scale;
         llama_ctx_params.n_batch = kcpp_params->n_batch;
 
-        #if defined(GGML_USE_CUBLAS) || defined(GGML_USE_VULKAN)
+        #if defined(GGML_USE_CUDA) || defined(GGML_USE_VULKAN)
         bool ts_all_zero = true;
         for (int i = 0; i < tensor_split_max; ++i) {
             if (inputs.tensor_split[i] != 0.0f) {
@@ -993,7 +997,7 @@ ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in
             }
         }
         #endif
-        #if defined(GGML_USE_CUBLAS)
+        #if defined(GGML_USE_CUDA)
         if(ggml_cpu_has_gpublas() && cu_parseinfo_maindevice>0)
         {
             printf("CUBLAS: Set main device to %d\n",cu_parseinfo_maindevice);
@@ -1002,7 +1006,7 @@ ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in
         #endif
         model_params.main_gpu = cu_parseinfo_maindevice;
 
-        #if defined(GGML_USE_CUBLAS)
+        #if defined(GGML_USE_CUDA)
         model_params.split_mode = (inputs.use_rowsplit?llama_split_mode::LLAMA_SPLIT_MODE_ROW:llama_split_mode::LLAMA_SPLIT_MODE_LAYER);
         #else
         model_params.split_mode = llama_split_mode::LLAMA_SPLIT_MODE_LAYER;
@@ -1012,7 +1016,7 @@ ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in
         llama_ctx_params.n_threads = kcpp_params->n_threads;
         llama_ctx_params.n_threads_batch = kcpp_params->n_threads_batch;
 
-        #if defined(GGML_USE_CUBLAS) || defined(GGML_USE_VULKAN)
+        #if defined(GGML_USE_CUDA) || defined(GGML_USE_VULKAN)
         bool ts_all_zero = true;
         for (int i = 0; i < tensor_split_max; ++i) {
             if (inputs.tensor_split[i] != 0.0f) {
@@ -2309,7 +2313,7 @@ generation_outputs gpttype_generate(const generation_inputs inputs)
     float pt2 = (time2*1000.0/(realnpredict==0?1:realnpredict));
     float ts2 = (1000.0/pt2);
     float tokens_per_second = (realnpredict == 0 ? 0 : realnpredict / (time1 + time2));
-    printf("\nCtxLimit: %d/%d, Process:%.2fs (%.1fms/T = %.2fT/s), Generate:%.2fs (%.1fms/T = %.2fT/s), Total:%.2fs (%.2fT/s)",current_context_tokens.size(),nctx, time1, pt1, ts1, time2, pt2, ts2, (time1 + time2), tokens_per_second);
+    printf("\nCtxLimit: %d/%d, Process:%.2fs (%.1fms/T = %.2fT/s), Generate:%.2fs (%.1fms/T = %.2fT/s), Total:%.2fs (%.2fT/s)",(int)current_context_tokens.size(),(int)nctx, time1, pt1, ts1, time2, pt2, ts2, (time1 + time2), tokens_per_second);
     fflush(stdout);
     output.status = 1;
     generation_finished = true;

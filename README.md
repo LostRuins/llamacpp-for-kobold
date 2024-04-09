@@ -116,7 +116,8 @@ You can then run koboldcpp anywhere from the terminal by running `koboldcpp` to 
 - Please check out https://github.com/YellowRoseCx/koboldcpp-rocm
 
 ## Docker
-- KoboldCpp has a few unofficial third-party community created docker images. Feel free to try them out, but do not expect up-to-date support:
+- The official docker can be found at https://hub.docker.com/r/koboldai/koboldcpp
+- KoboldCpp also has a few unofficial third-party community created docker images. Feel free to try them out, but do not expect up-to-date support:
   - https://github.com/korewaChino/koboldCppDocker
   - https://github.com/noneabove1182/koboldcpp-docker
 - If you're building your own docker, remember to set CUDA_DOCKER_ARCH or enable LLAMA_PORTABLE

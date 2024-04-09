@@ -16,7 +16,7 @@
 
 #include "model_adapter.h"
 
-#ifdef GGML_USE_CUBLAS
+#ifdef GGML_USE_CUDA
 #include "ggml_v3-cuda.h"
 #endif
 #if defined(GGML_USE_CLBLAST)
@@ -295,7 +295,7 @@ bool mpt_model_load(const std::string & fname, mpt_model & model, gpt_vocab & vo
     fin.close();
 
     //gpu offload
-    #if defined(GGML_USE_CLBLAST) || defined(GGML_USE_CUBLAS)
+    #if defined(GGML_USE_CLBLAST) || defined(GGML_USE_CUDA)
     if(gpulayers>0)
     {
         const auto & hparams = model.hparams;

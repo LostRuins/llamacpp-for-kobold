@@ -13,7 +13,7 @@
 
 #include "ggml_v3.h"
 #include "otherarch.h"
-#ifdef GGML_USE_CUBLAS
+#ifdef GGML_USE_CUDA
 #include "ggml_v3-cuda.h"
 #endif
 #if defined(GGML_USE_CLBLAST)
@@ -61,7 +61,7 @@ static void llama_v3_log_callback_default(llama_v3_log_level level, const char *
 #define LLAMA_V3_LOG_WARN(...)  llama_v3_log_internal(LLAMA_V3_LOG_LEVEL_WARN , __VA_ARGS__)
 #define LLAMA_V3_LOG_ERROR(...) llama_v3_log_internal(LLAMA_V3_LOG_LEVEL_ERROR, __VA_ARGS__)
 
-#if !defined(GGML_USE_CUBLAS)
+#if !defined(GGML_USE_CUDA)
 #define LLAMA_V3_USE_ALLOCATOR
 #else
 #define LLAMA_V3_USE_SCRATCH
@@ -270,10 +270,10 @@ struct llama_v3_kv_cache {
             ggml_v3_free(ctx);
         }
 
-#ifdef GGML_USE_CUBLAS
+#ifdef GGML_USE_CUDA
         ggml_v3_cuda_free_data(k);
         ggml_v3_cuda_free_data(v);
-#endif // GGML_USE_CUBLAS
+#endif // GGML_USE_CUDA
     }
 };
 
@@ -329,7 +329,7 @@ struct llama_v3_model {
             ggml_v3_free(ctx);
         }
 
-#ifdef GGML_USE_CUBLAS
+#ifdef GGML_USE_CUDA
         for (size_t i = 0; i < tensors_by_name.size(); ++i) {
             ggml_v3_cuda_free_data(tensors_by_name[i].second);
         }
@@ -795,7 +795,7 @@ struct llama_v3_model_loader {
                         lmlock->grow_to(lock_size);
                     }
                     break;
-#if defined(GGML_USE_CUBLAS)
+#if defined(GGML_USE_CUDA)
                 case GGML_V3_BACKEND_GPU:
                 case GGML_V3_BACKEND_GPU_SPLIT:
                     ggml_v3_cuda_transform_tensor(lt.data, lt.ggml_v3_tensor);
@@ -882,14 +882,14 @@ static bool kv_cache_init(
     ggml_v3_set_name(cache.v, "cache_v");
 
     (void) n_gpu_layers;
-#ifdef GGML_USE_CUBLAS
+#ifdef GGML_USE_CUDA
     if (n_gpu_layers > n_layer + 1) {
         ggml_v3_cuda_assign_buffers_no_scratch(cache.v);
     }
     if (n_gpu_layers > n_layer + 2) {
         ggml_v3_cuda_assign_buffers_no_scratch(cache.k);
     }
-#endif // GGML_USE_CUBLAS
+#endif // GGML_USE_CUDA
 
     return true;
 }
@@ -1181,7 +1181,7 @@ static void llama_v3_model_load_internal(
 
     (void) main_gpu;
     (void) mul_mat_q;
-#if defined(GGML_USE_CUBLAS)
+#if defined(GGML_USE_CUDA)
     LLAMA_V3_LOG_INFO("%s: using CUDA for GPU acceleration\n", __func__);
     ggml_v3_cuda_set_main_device(main_gpu);
     ggml_v3_cuda_set_mul_mat_q(mul_mat_q);
@@ -1298,7 +1298,7 @@ static void llama_v3_model_load_internal(
 
         (void) vram_scratch;
         (void) n_batch;
-#ifdef GGML_USE_CUBLAS
+#ifdef GGML_USE_CUDA
         if (low_vram) {
             LLAMA_V3_LOG_INFO("%s: not allocating a VRAM scratch buffer due to low VRAM option\n", __func__);
             ggml_v3_cuda_set_scratch_size(0); // disable scratch
@@ -1313,9 +1313,9 @@ static void llama_v3_model_load_internal(
                         (vram_scratch + MB3 - 1) / MB3); // round up
             }
         }
-#endif // GGML_USE_CUBLAS
+#endif // GGML_USE_CUDA
 
-#if defined(GGML_USE_CUBLAS) || defined(GGML_USE_CLBLAST)
+#if defined(GGML_USE_CUDA) || defined(GGML_USE_CLBLAST)
         const int n_gpu = std::min(n_gpu_layers, int(hparams.n_layer));
 
         LLAMA_V3_LOG_INFO("%s: offloading %d repeating layers to GPU\n", __func__, n_gpu);
@@ -1324,7 +1324,7 @@ static void llama_v3_model_load_internal(
         }
         size_t vram_kv_cache = 0;
 
-#ifdef GGML_USE_CUBLAS
+#ifdef GGML_USE_CUDA
         const int max_backend_supported_layers = hparams.n_layer + 3;
         const int max_offloadable_layers = low_vram ? hparams.n_layer + 1 : hparams.n_layer + 3;
         if (n_gpu_layers > (int) hparams.n_layer + 1) {
@@ -1346,7 +1346,7 @@ static void llama_v3_model_load_internal(
 #elif defined(GGML_USE_CLBLAST)
         const int max_backend_supported_layers = hparams.n_layer + 1;
         const int max_offloadable_layers = hparams.n_layer + 1;
-#endif // GGML_USE_CUBLAS
+#endif // GGML_USE_CUDA
 
         LLAMA_V3_LOG_INFO("%s: offloaded %d/%d layers to GPU\n",
                 __func__, std::min(n_gpu_layers, max_offloadable_layers), max_backend_supported_layers);
@@ -1354,7 +1354,7 @@ static void llama_v3_model_load_internal(
                 __func__, (vram_weights + vram_scratch + vram_kv_cache + MB3 - 1) / MB3); // round up
 #else
         (void) n_gpu_layers;
-#endif // defined(GGML_USE_CUBLAS) || defined(GGML_USE_CLBLAST)
+#endif // defined(GGML_USE_CUDA) || defined(GGML_USE_CLBLAST)
     }
 
     // populate `tensors_by_name`
@@ -1363,7 +1363,7 @@ static void llama_v3_model_load_internal(
     }
 
     (void) tensor_split;
-#if defined(GGML_USE_CUBLAS)
+#if defined(GGML_USE_CUDA)
     {
         ggml_v3_cuda_set_tensor_split(tensor_split);
     }
@@ -1510,7 +1510,7 @@ static struct ggml_v3_cgraph * llama_v3_build_graph(
     offload_func_v3_t offload_func_kq = llama_v3_nop;
     offload_func_v3_t offload_func_v  = llama_v3_nop;
 
-#ifdef GGML_USE_CUBLAS
+#ifdef GGML_USE_CUDA
     if (n_gpu_layers > n_layer) {
         offload_func_nr = ggml_v3_cuda_assign_buffers;
     }
@@ -1520,7 +1520,7 @@ static struct ggml_v3_cgraph * llama_v3_build_graph(
     if (n_gpu_layers > n_layer + 2) {
         offload_func_kq = ggml_v3_cuda_assign_buffers;
     }
-#endif // GGML_USE_CUBLAS
+#endif // GGML_USE_CUDA
 
     struct ggml_v3_tensor * KQ_scale = ggml_v3_new_tensor_1d(ctx0, GGML_V3_TYPE_F32, 1);
 #ifdef LLAMA_V3_USE_ALLOCATOR
@@ -1541,11 +1541,11 @@ static struct ggml_v3_cgraph * llama_v3_build_graph(
 
         offload_func_v3_t offload_func = llama_v3_nop;
 
-#ifdef GGML_USE_CUBLAS
+#ifdef GGML_USE_CUDA
         if (il >= i_gpu_start) {
             offload_func = ggml_v3_cuda_assign_buffers;
         }
-#endif // GGML_USE_CUBLAS
+#endif // GGML_USE_CUDA
 
         struct ggml_v3_tensor * inpSA = inpL;
 
@@ -3661,19 +3661,19 @@ int llama_v3_apply_lora_from_file_internal(const struct llama_v3_model & model, 
             offload_func_v3_t offload_func = llama_v3_nop;
             offload_func_v3_t offload_func_force_inplace = llama_v3_nop;
 
-#if defined(GGML_USE_CUBLAS) || defined(GGML_USE_CLBLAST)
+#if defined(GGML_USE_CUDA) || defined(GGML_USE_CLBLAST)
             if (dest_t->backend == GGML_V3_BACKEND_GPU || dest_t->backend == GGML_V3_BACKEND_GPU_SPLIT) {
                 if (dest_t->type != GGML_V3_TYPE_F16) {
                     printf("\nError: the simultaneous use of LoRAs and GPU acceleration is only supported for f16 models\n");
                     throw std::runtime_error(format_old(
                         "%s: error: lora failed", __func__));
                 }
-#if defined(GGML_USE_CUBLAS)
+#if defined(GGML_USE_CUDA)
                 offload_func = ggml_v3_cuda_assign_buffers;
                 offload_func_force_inplace = ggml_v3_cuda_assign_buffers_force_inplace;
 #endif
             }
-#endif // GGML_USE_CUBLAS
+#endif // GGML_USE_CUDA
 
             ggml_v3_tensor * base_t;
             if (model_loader) {

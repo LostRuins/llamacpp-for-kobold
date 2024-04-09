@@ -1,4 +1,4 @@
-#include "utils.h"
+#include "otherarch/utils.h"
 #include "common-ggml.h"
 
 #include <cassert>
@@ -24,7 +24,7 @@ struct mpt_hparams {
 
 // quantize a model
 bool mpt_model_quantize(const std::string & fname_inp,
-                        const std::string & fname_out, ggml_ftype ftype) {
+                        const std::string & fname_out, ggml_v3_ftype ftype) {
 
     printf("%s: loading model from '%s'\n", __func__, fname_inp.c_str());
 
@@ -68,8 +68,8 @@ bool mpt_model_quantize(const std::string & fname_inp,
         finp.read((char *) &hparams.clip_qkv,       sizeof(hparams.clip_qkv));
         finp.read((char *) &hparams.ftype,          sizeof(hparams.ftype));
 
-        const int32_t qntvr_src =    hparams.ftype / GGML_QNT_VERSION_FACTOR;
-        const int32_t ftype_dst = GGML_QNT_VERSION * GGML_QNT_VERSION_FACTOR + ftype;
+        const int32_t qntvr_src =    hparams.ftype / GGML_V3_QNT_VERSION_FACTOR;
+        const int32_t ftype_dst = GGML_V3_QNT_VERSION * GGML_V3_QNT_VERSION_FACTOR + ftype;
 
         printf("%s: d_model        = %d\n", __func__, hparams.d_model);
         printf("%s: max_seq_len    = %d\n", __func__, hparams.max_seq_len);
@@ -81,7 +81,7 @@ bool mpt_model_quantize(const std::string & fname_inp,
         printf("%s: ftype (src) = %d\n", __func__, hparams.ftype);
         printf("%s: qntvr (src) = %d\n", __func__, qntvr_src);
         printf("%s: ftype (dst) = %d\n", __func__, ftype_dst);
-        printf("%s: qntvr (dst) = %d\n", __func__, GGML_QNT_VERSION);
+        printf("%s: qntvr (dst) = %d\n", __func__, GGML_V3_QNT_VERSION);
 
         fout.write((char *) &hparams.d_model,        sizeof(hparams.d_model));
         fout.write((char *) &hparams.max_seq_len,    sizeof(hparams.max_seq_len));
@@ -116,7 +116,7 @@ bool mpt_model_quantize(const std::string & fname_inp,
         ".*weight",
     };
 
-    if (!ggml_common_quantize_0(finp, fout, ftype, to_quant, {})) {
+    if (!ggml_v3_common_quantize_0(finp, fout, ftype, to_quant, {})) {
         fprintf(stderr, "%s: failed to quantize model '%s'\n", __func__,
                 fname_inp.c_str());
         return false;
@@ -136,42 +136,42 @@ int main(int argc, char ** argv) {
     if (argc != 4) {
         fprintf(stderr, "usage: %s model-f32.bin model-quant.bin type\n",
                 argv[0]);
-        ggml_print_ftypes(stderr);
+        ggml_v3_print_ftypes(stderr);
         return 1;
     }
 
     // needed to initialize f16 tables
     {
-        struct ggml_init_params params = {0, NULL, false};
-        struct ggml_context * ctx = ggml_init(params);
-        ggml_free(ctx);
+        struct ggml_v3_init_params params = {0, NULL, false};
+        struct ggml_v3_context * ctx = ggml_v3_init(params);
+        ggml_v3_free(ctx);
     }
 
     const std::string fname_inp = argv[1];
     const std::string fname_out = argv[2];
 
-    const ggml_ftype ftype = ggml_parse_ftype(argv[3]);
+    const ggml_v3_ftype ftype = ggml_v3_parse_ftype(argv[3]);
 
-    const int64_t t_main_start_us = ggml_time_us();
+    const int64_t t_main_start_us = ggml_v3_time_us();
 
     int64_t t_quantize_us = 0;
 
     // load the model
     {
-        const int64_t t_start_us = ggml_time_us();
+        const int64_t t_start_us = ggml_v3_time_us();
 
-        if (!mpt_model_quantize(fname_inp, fname_out, ggml_ftype(ftype))) {
+        if (!mpt_model_quantize(fname_inp, fname_out, ggml_v3_ftype(ftype))) {
             fprintf(stderr, "%s: failed to quantize model from '%s'\n",
                     __func__, fname_inp.c_str());
             return 1;
         }
 
-        t_quantize_us = ggml_time_us() - t_start_us;
+        t_quantize_us = ggml_v3_time_us() - t_start_us;
     }
 
     // report timing
     {
-        const int64_t t_main_end_us = ggml_time_us();
+        const int64_t t_main_end_us = ggml_v3_time_us();
 
         printf("\n");
         printf("%s: quantize time = %8.2f ms\n", __func__,

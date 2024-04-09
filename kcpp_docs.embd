@@ -151,6 +151,11 @@
                              "exclusiveMinimum": 0,
                              "type": "number"
                          },
+                         "dynatemp_exponent": {
+                            "default": 1,
+                            "description": "Exponent used in dynatemp.",
+                            "type": "number"
+                         },
                          "mirostat": {
                             "description": "KoboldCpp ONLY. Sets the mirostat mode, 0=disabled, 1=mirostat_v1, 2=mirostat_v2",
                             "minimum": 0,
@@ -1004,6 +1009,98 @@
                       ]
                    }
                 },
+                "/sdapi/v1/img2img": {
+                   "post": {
+                      "description": "Transforms an existing image into a new image, guided by a text prompt, and returns a base64 encoded png.",
+                      "requestBody": {
+                         "content": {
+                            "application/json": {
+                               "example": {
+                                  "prompt": "picture of a kobold, high quality HD render",
+                                  "negative_prompt": "ugly, deformed, censored",
+                                  "cfg_scale": 5,
+                                  "steps": 20,
+                                  "width": 512,
+                                  "height": 512,
+                                  "seed": -1,
+                                  "sampler_name": "Euler a",
+                                  "denoising_strength": 0.6,
+                                  "init_images":["base64_image_data"],
+                               },
+                               "schema": {
+                                  "properties": {
+                                     "prompt": {
+                                        "type": "string"
+                                     },
+                                     "negative_prompt": {
+                                        "type": "string"
+                                     },
+                                     "cfg_scale": {
+                                        "type": "number"
+                                     },
+                                     "steps": {
+                                        "type": "number"
+                                     },
+                                     "width": {
+                                        "type": "number"
+                                     },
+                                     "height": {
+                                        "type": "number"
+                                     },
+                                     "seed": {
+                                        "type": "number"
+                                     },
+                                     "sampler_name": {
+                                        "type": "string"
+                                     },
+                                     "denoising_strength": {
+                                        "type": "number"
+                                     },
+                                     "init_images": {
+                                        "type": "array"
+                                     },
+                                  },
+                                  "type": "object"
+                               }
+                            }
+                         },
+                         "required": false
+                      },
+                      "responses": {
+                         "200": {
+                            "content": {
+                               "application/json": {
+                                  "example":
+                                  {
+                                     "images":["base64_image_data"],"parameters":{},"info":""
+                                  },
+                                  "schema": {
+                                     "properties": {
+                                        "images": {
+                                           "type": "string",
+                                           "description": "A base64 string containing the encoded PNG of the generated image."
+                                        },
+                                        "parameters": {
+                                           "type": "object",
+                                           "description": "Not used. Will be empty."
+                                        },
+                                           "info": {
+                                           "type": "string",
+                                           "description": "Not used. Will be empty."
+                                        }
+                                     }
+                                  }
+                               }
+                            },
+                            "description": "Successful request"
+                         }
+                      },
+                      "summary": "Transforms an existing image into a new image",
+                      "tags": [
+                         "sdapi/v1"
+                      ]
+                   }
+                },
                 "/sdapi/v1/interrogate": {
                    "post": {
                       "description": "Generates a short text caption describing an image.",
@@ -1111,7 +1208,6 @@
              ]
           };
     </script>
-
 
    <script>
       //self destruct into json if requested

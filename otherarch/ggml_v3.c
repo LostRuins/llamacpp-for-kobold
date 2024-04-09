@@ -1367,7 +1367,7 @@ inline static void * ggml_v3_aligned_malloc(size_t size) {
 #else
 #include <cblas.h>
 #endif
-#elif defined(GGML_USE_CUBLAS)
+#elif defined(GGML_USE_CUDA)
 #include "ggml_v3-cuda.h"
 #elif defined(GGML_USE_CLBLAST)
 #include "ggml_v3-opencl.h"
@@ -3413,7 +3413,7 @@ struct ggml_v3_context * ggml_v3_init(struct ggml_v3_init_params params) {
             GGML_V3_PRINT_DEBUG("%s: g_state initialized in %f ms\n", __func__, (t_end - t_start)/1000.0f);
         }
 
-#if defined(GGML_USE_CUBLAS)
+#if defined(GGML_USE_CUDA)
         ggml_v3_init_cublas();
 #elif defined(GGML_USE_CLBLAST)
         ggml_v3_cl_init();
@@ -11325,7 +11325,7 @@ static void ggml_v3_compute_forward_out_prod_f32(
     // nb01 >= nb00 - src0 is not transposed
     //   compute by src0 rows
 
-    // TODO: #if defined(GGML_USE_CUBLAS) ggml_v3_cuda_out_prod
+    // TODO: #if defined(GGML_USE_CUDA) ggml_v3_cuda_out_prod
     // TODO: #if defined(GGML_USE_CLBLAST)
 
 #if defined(GGML_USE_ACCELERATE) || defined(GGML_USE_OPENBLAS)
@@ -11520,7 +11520,7 @@ static void ggml_v3_compute_forward_out_prod_q_f32(
     // nb01 >= nb00 - src0 is not transposed
     //   compute by src0 rows
 
-    // TODO: #if defined(GGML_USE_CUBLAS) ggml_v3_cuda_out_prod
+    // TODO: #if defined(GGML_USE_CUDA) ggml_v3_cuda_out_prod
     // TODO: #if defined(GGML_USE_ACCELERATE) || defined(GGML_USE_OPENBLAS) || defined(GGML_USE_CLBLAST)
 
     if (params->type == GGML_V3_TASK_INIT) {
@@ -15587,14 +15587,14 @@ static void ggml_v3_compute_forward(struct ggml_v3_compute_params * params, stru
         return;
     }
 
-#ifdef GGML_USE_CUBLAS
+#ifdef GGML_USE_CUDA
     bool skip_cpu = ggml_v3_cuda_compute_forward(params, tensor);
     if (skip_cpu) {
         return;
     }
     GGML_V3_ASSERT(tensor->src[0] == NULL || tensor->src[0]->backend == GGML_V3_BACKEND_CPU);
     GGML_V3_ASSERT(tensor->src[1] == NULL || tensor->src[1]->backend == GGML_V3_BACKEND_CPU);
-#endif // GGML_USE_CUBLAS
+#endif // GGML_USE_CUDA
 
     switch (tensor->op) {
         case GGML_V3_OP_DUP:
@@ -21106,7 +21106,7 @@ int ggml_v3_cpu_has_wasm_simd(void) {
 }
 
 int ggml_v3_cpu_has_blas(void) {
-#if defined(GGML_USE_ACCELERATE) || defined(GGML_USE_OPENBLAS) || defined(GGML_USE_CUBLAS) || defined(GGML_USE_CLBLAST)
+#if defined(GGML_USE_ACCELERATE) || defined(GGML_USE_OPENBLAS) || defined(GGML_USE_CUDA) || defined(GGML_USE_CLBLAST)
     return 1;
 #else
     return 0;
@@ -21114,7 +21114,7 @@ int ggml_v3_cpu_has_blas(void) {
 }
 
 int ggml_v3_cpu_has_cublas(void) {
-#if defined(GGML_USE_CUBLAS)
+#if defined(GGML_USE_CUDA)
     return 1;
 #else
     return 0;

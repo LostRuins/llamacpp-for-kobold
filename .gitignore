@@ -13,6 +13,8 @@
 .vs/
 .vscode/
 
+ggml-metal-embed.metal
+
 lcov-report/
 gcovr-report/
 

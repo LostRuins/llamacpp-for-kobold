@@ -16,7 +16,7 @@
 
 #include "model_adapter.h"
 
-#ifdef GGML_USE_CUBLAS
+#ifdef GGML_USE_CUDA
 #include "ggml_v3-cuda.h"
 #endif
 #if defined(GGML_USE_CLBLAST)
@@ -342,7 +342,7 @@ ModelLoadResult gptj_model_load(const std::string & fname, gptj_model & model, g
     fin.close();
 
     //gpu offload
-    #if defined(GGML_USE_CLBLAST) || defined(GGML_USE_CUBLAS)
+    #if defined(GGML_USE_CLBLAST) || defined(GGML_USE_CUDA)
     if(gpulayers>0)
     {
         const auto & hparams = model.hparams;

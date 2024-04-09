@@ -6,7 +6,7 @@
 #include "rwkv_v3.h"
 #include "ggml_v3.h"
 
-#ifdef GGML_USE_CUBLAS
+#ifdef GGML_USE_CUDA
 #include "ggml_v3-cuda.h"
 #endif
 #if defined(GGML_USE_CLBLAST)
@@ -1076,7 +1076,7 @@ struct rwkv_future_tensor rwkv_future_graph_work(struct rwkv_future_ctx & ctx,
     const size_t n_threads,
     const size_t sequence_len = 1
 ) {
-#if defined(GGML_USE_CLBLAST) || defined(GGML_USE_CUBLAS)
+#if defined(GGML_USE_CLBLAST) || defined(GGML_USE_CUDA)
     enum ggml_v3_type mul_mat_type = type == GGML_V3_TYPE_F32 ? GGML_V3_TYPE_F32 : GGML_V3_TYPE_F16;
 #else
     enum ggml_v3_type mul_mat_type = ggml_v3_is_quantized(type) ? GGML_V3_TYPE_Q8_1 : type;
@@ -1566,7 +1566,7 @@ struct rwkv_context * rwkv_clone_context(struct rwkv_context * ctx, const uint32
 }
 
 bool rwkv_gpu_offload_layers(struct rwkv_context * ctx, const uint32_t n_layers) {
-#if defined(GGML_USE_CLBLAST) || defined(GGML_USE_CUBLAS)
+#if defined(GGML_USE_CLBLAST) || defined(GGML_USE_CUDA)
     printf("\nOffloading %u (or fewer) layers...",n_layers);
     const auto offload = [&](struct ggml_v3_tensor * tensor) {
         // TODO support multi-GPU

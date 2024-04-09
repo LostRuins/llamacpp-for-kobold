@@ -7,7 +7,7 @@ Just copy this single static HTML file anywhere and open it in a browser, or fro
 Please go to https://github.com/LostRuins/lite.koboldai.net for updates on Kobold Lite.
 If you are submitting a pull request for Lite, PLEASE use the above repo, not the KoboldCpp one.
 Kobold Lite is under the AGPL v3.0 License unless otherwise exempted. Please do not remove this line.
-Current version: 124
+Current version: 129
 -Concedo
 -->
 
@@ -197,8 +197,15 @@ Current version: 124
 			margin-top: 6px;
 		}
 
-		#actionmenuitems button {
-			width: 80px;
+		#actionmenuitems button,#actionmenuitems2 button {
+			width: 76px;
+		}
+		@media (max-width: 720px) {
+			#actionmenuitems button,#actionmenuitems2 button {
+				width: 60px;
+				padding: 4px 4px;
+				font-size: 12px;
+			}
 		}
 
 		#messagefield {
@@ -373,21 +380,6 @@ Current version: 124
 			margin-top: 100px;
 		}
 
-
-		.loadpopup {
-			width: 600px;
-			background-color: #262626;
-			margin-top: 150px;
-		}
-
-		@media (max-width: 768px) {
-			.loadpopup {
-				width: 100%;
-				background-color: #262626;
-				margin-top: 150px;
-			}
-		}
-
 		.workerpopup {
 			background-color: #262626;
 			margin-top: 170px;
@@ -420,7 +412,7 @@ Current version: 124
 			width: 330px;
 		}
 		.nspopup.flexsize {
-			width: 540px;
+			width: 600px;
 		}
 		@media (max-width: 620px) {
 			.nspopup.flexsize {
@@ -432,6 +424,19 @@ Current version: 124
 		}
 		@media (max-width: 520px) {
 			.nspopup.flexsizesmall {
+			width: 100%;
+			}
+		}
+		.nspopup.flexsizebig {
+			width: 940px;
+		}
+		@media (max-width: 992px) {
+			.nspopup.flexsizebig {
+			width: 740px;
+			}
+		}
+		@media (max-width: 750px) {
+			.nspopup.flexsizebig {
 			width: 100%;
 			}
 		}
@@ -1888,13 +1893,13 @@ Current version: 124
 	{
 		height: calc(98vh - 240px);
 	}
-	@media (max-width: 720px) {
+	@media (max-width: 598px) {
 		.normal_viewport_height
 		{
 			height: calc(98vh - 270px);
 		}
 	}
-	@media (max-width: 406px) {
+	@media (max-width: 342px) {
 		.normal_viewport_height
 		{
 			height: calc(98vh - 300px);
@@ -1918,7 +1923,7 @@ Current version: 124
 	}
 	.aesthetic_viewport_height.withmenu
 	{
-		height: calc(98vh - 206px);
+		height: calc(98vh - 198px);
 	}
 	.aesthetic_viewport_height.withtyping
 	{
@@ -1926,7 +1931,7 @@ Current version: 124
 	}
 	.aesthetic_viewport_height.withmenu.withtyping
 	{
-		height: calc(98vh - 256px);
+		height: calc(98vh - 248px);
 	}
 
 	/**
@@ -2966,7 +2971,7 @@ Current version: 124
 		}
 	}
 
-	function apply_proxy_url(url)
+	function apply_proxy_url(url, proxy_by_default=false)
 	{
 		let proxy_part = "";
 
@@ -2980,7 +2985,7 @@ Current version: 124
 				!url.toLowerCase().includes("."));
 		}
 
-		if (uses_cors_proxy && !is_local) {
+		if ((uses_cors_proxy||proxy_by_default) && !is_local) {
 			proxy_part = cors_proxy + "?";
 		}
 		return proxy_part + url;
@@ -3357,7 +3362,7 @@ Current version: 124
 
 	const text_hordes = [
 		{
-			baseurl: "https://horde.koboldai.net",
+			baseurl: "https://aihorde.net",
 			tag: "🤖",
 			sort_order: 1,
 			client_agent: default_client_agent,
@@ -3415,8 +3420,6 @@ Current version: 124
 
 	const default_oai_image_endpoint = "/images/generations";
 
-	const scale_submit_endpoint = "https://dashboard.scale.com/spellbook/api/v2/deploy/"
-
 	const claude_submit_endpoint = "/complete";
 	const claude_submit_endpoint_v3 = "/messages";
 
@@ -3424,11 +3427,14 @@ Current version: 124
 	const default_oai_base = "https://api.openai.com";
 	const default_claude_base = "https://api.anthropic.com";
 	const default_palm_base = "https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=";
-	const default_gemini_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=";
+	const default_gemini_base = "https://generativelanguage.googleapis.com/v1beta/models/";
+	const default_gemini_suffix = ":generateContent?key=";
+	const default_cohere_base = "https://api.cohere.ai/v1/chat";
 
 	const a1111_models_endpoint = "/sdapi/v1/sd-models";
     const a1111_options_endpoint = "/sdapi/v1/options";
     const a1111_txt2img_endpoint = "/sdapi/v1/txt2img";
+	const a1111_img2img_endpoint = "/sdapi/v1/img2img";
 	const a1111_interrogate_endpoint = "/sdapi/v1/interrogate";
 
 	const xtts_gen_endpoint = "/tts_to_audio/";
@@ -3498,9 +3504,9 @@ Current version: 124
 	var custom_oai_endpoint = "";
 	var custom_oai_key = ""; //if set, uses the OpenAI API to generate
 	var custom_oai_model = "";
-	var custom_scale_key = "";
 	var custom_palm_key = "";
-	var custom_scale_ID = "";
+	var custom_cohere_key = "";
+	var custom_cohere_model = "";
 	var custom_claude_endpoint = "";
 	var custom_claude_key = "";
 	var custom_claude_model = "";
@@ -3539,10 +3545,12 @@ Current version: 124
 		saved_palm_key: "", //do not ever share this in save files!
 		saved_kai_addr: "", //do not ever share this in save files!
 		saved_kai_key: "", //do not ever share this in save files!
+		saved_cohere_key: "", //do not ever share this in save files!
 		saved_oai_jailbreak: "", //customized oai system prompt
 		saved_oai_jailbreak2: "", //oai assistant postfix
 		saved_claude_jailbreak: "", //claude system prompt
 		saved_claude_jailbreak2: "", //claude assistant postfix
+		saved_cohere_preamble: "", //cohere preamble
 		saved_oai_custommodel: "", //customized oai custom model
 		saved_oai_role: 0, //0=user,1=assistant,2=system
 		saved_a1111_url: default_a1111_base,
@@ -3582,6 +3590,7 @@ Current version: 124
 		img_allownsfw: true,
 		img_cfgscale: 7,
 		img_allowhd: false,
+		img_img2imgstr: 0.6,
 		img_steps: 20,
 		img_sampler: "Euler a",
 		img_aspect:0, //0=square,1=portrait,2=landscape
@@ -3826,8 +3835,8 @@ Current version: 124
 					if(!localflag && pending_eptype>0)
 					{
 						msgboxYesNo("Reconnect to previous custom endpoint?","Custom Endpoint Reconnect",()=>{
-							document.getElementById("customapidropdown").value = (pending_eptype - 1).toString();
-							display_custom_endpoint();
+							document.getElementById("customapidropdown").value = (pending_eptype).toString();
+							display_endpoint_container();
 						},null);
 					}
 				}
@@ -4032,7 +4041,7 @@ Current version: 124
 	function attempt_connect(popup_aiselect = true)
 	{
 		if (localflag) {
-			document.getElementById("customapidropdown").value = 0;
+			document.getElementById("customapidropdown").value = 1;
 			let protocol = "http://";
 			if(window.location.protocol.includes('https') && !is_using_web_lite())
 			{
@@ -4077,7 +4086,7 @@ Current version: 124
 						}
 					}
 					document.body.classList.add("connected");
-					document.getElementById("connectstatus").innerHTML = "Connected to KoboldAI Horde";
+					document.getElementById("connectstatus").innerHTML = "Connected to AI Horde";
 					document.getElementById("connectstatus").classList.remove("color_orange");
 					document.getElementById("connectstatus").classList.add("color_green");
 					render_gametext(false);
@@ -4085,12 +4094,12 @@ Current version: 124
 					read_url_params_data();
 
 					if (popup_aiselect) {
-						display_models();
+						display_endpoint_container();
 					}
 
 				}
 				else {
-					msgbox("Failed to connect to KAI Horde!\nPlease check your network connection.");
+					msgbox("Failed to connect to AI Service!\nPlease check your network connection.");
 					document.body.classList.remove("connected");
 					document.getElementById("connectstatus").innerHTML = "Offline Mode";
 					document.getElementById("connectstatus").classList.add("color_orange");
@@ -4279,6 +4288,14 @@ Current version: 124
 			}
 		}
 
+		let ep = a1111_txt2img_endpoint;
+		if(req_payload.source_image && req_payload.source_image!="")
+		{
+			ep = a1111_img2img_endpoint;
+			a1111_t2i_payload.init_images = [req_payload.source_image];
+			a1111_t2i_payload.denoising_strength = req_payload.params.denoising_strength;
+		}
+
 		if(localsettings.save_remote_images)
 		{
 			a1111_t2i_payload["save_images"] = true;
@@ -4287,7 +4304,7 @@ Current version: 124
 		//remove all null fields
 		a1111_t2i_payload = Object.fromEntries(Object.entries(a1111_t2i_payload).filter(([_, v]) => v != null));
 
-		let gen_endpoint = localsettings.saved_a1111_url + a1111_txt2img_endpoint;
+		let gen_endpoint = localsettings.saved_a1111_url + ep;
 		console.log(a1111_t2i_payload);
 		fetch(gen_endpoint, {
 			method: 'POST',
@@ -4475,7 +4492,7 @@ Current version: 124
 
 	function is_using_custom_ep()
 	{
-		return (custom_oai_key!=""||custom_kobold_endpoint!=""||custom_scale_key!=""||custom_claude_key!=""||custom_palm_key!="");
+		return (custom_oai_key!=""||custom_kobold_endpoint!=""||custom_claude_key!=""||custom_palm_key!=""||custom_cohere_key!="");
 	}
 
 	function is_using_kcpp_with_streaming()
@@ -4935,6 +4952,8 @@ Current version: 124
 			new_save_storyobj.savedsettings.saved_kai_addr = "";
 			new_save_storyobj.savedsettings.saved_kai_key = "";
 			new_save_storyobj.savedsettings.saved_openrouter_key = "";
+			new_save_storyobj.savedsettings.saved_palm_key = "";
+			new_save_storyobj.savedsettings.saved_cohere_key = "";
 
 			new_save_storyobj.savedsettings.modelhashes = [];
 
@@ -5231,6 +5250,7 @@ Current version: 124
 					let tmp_claude1 = localsettings.saved_claude_key;
 					let tmp_claude2 = localsettings.saved_claude_addr;
 					let tmp_palm1 = localsettings.saved_palm_key;
+					let tmp_cohere1 = localsettings.saved_cohere_key;
 					let tmp_kai = localsettings.saved_kai_addr;
 					let tmp_kai2 = localsettings.saved_kai_key;
 					let tmp_a1111 = localsettings.saved_a1111_url;
@@ -5265,6 +5285,7 @@ Current version: 124
 					localsettings.saved_claude_key = tmp_claude1;
 					localsettings.saved_claude_addr = tmp_claude2;
 					localsettings.saved_palm_key = tmp_palm1;
+					localsettings.saved_cohere_key = tmp_cohere1;
 					localsettings.saved_kai_addr = tmp_kai;
 					localsettings.saved_kai_key = tmp_kai2;
 					localsettings.saved_a1111_url = tmp_a1111;
@@ -5517,7 +5538,7 @@ Current version: 124
 				//remove common malformed ids to reduce load
 				if(userinput!="" && isNumeric(userinput) && userinput>0 && userinput<50000)
 				{
-					fetch(cors_proxy+"?https://aetherroom.club/api/"+userinput)
+					fetch(apply_proxy_url("https://aetherroom.club/api/"+userinput,true))
 					.then(x => x.json())
 					.then(data => {
 						console.log(data);
@@ -5718,12 +5739,13 @@ Current version: 124
 					};
 
 					document.getElementById("scenariodesc").innerText = "Loading scenario from Pygmalion.Chat...";
-					fetch(cors_proxy+"?https://server.pygmalion.chat/galatea.v1.PublicCharacterService/CharacterExport", {
-					method: 'POST',
+					let charurl = "https://server.pygmalion.chat/api/export/character/"+userinput+"/v2";
+					fetch(apply_proxy_url(charurl,true), {
+					method: 'GET',
 					headers: {
 						'Content-Type': 'application/json',
 					},
-					body: JSON.stringify({ "character_id": userinput }),
+				//	body: JSON.stringify({ "character_id": userinput }),
 					referrerPolicy: 'no-referrer',
 					})
 					.then(x => {
@@ -5738,12 +5760,12 @@ Current version: 124
 					})
 					.then(data => {
 						console.log(data);
-						if(data && data.card) //if fetch was successful
+						if(data && data.character) //if fetch was successful
 						{
-							load_temp_scenario_from_tavernobj(data.card,true);
-							if(data.card.data && data.card.data.avatar)
+							load_temp_scenario_from_tavernobj(data.character,true);
+							if(data.character.data && data.character.data.avatar)
 							{
-								const compressedImg = compressImage(data.card.data.avatar, (compressedImageURI, aspectratio)=>{
+								const compressedImg = compressImage(data.character.data.avatar, (compressedImageURI, aspectratio)=>{
 									temp_scenario.image = compressedImageURI;
 									temp_scenario.image_aspect = aspectratio;
 									preview_temp_scenario();
@@ -6433,7 +6455,6 @@ Current version: 124
 	{
 		return !(
 			document.getElementById("saveloadcontainer").classList.contains("hidden") &&
-			document.getElementById("loadmodelcontainer").classList.contains("hidden") &&
 			document.getElementById("newgamecontainer").classList.contains("hidden") &&
 			document.getElementById("yesnocontainer").classList.contains("hidden") &&
 			document.getElementById("settingscontainer").classList.contains("hidden") &&
@@ -6456,7 +6477,6 @@ Current version: 124
 	}
 	function hide_popups() {
 		document.getElementById("saveloadcontainer").classList.add("hidden");
-		document.getElementById("loadmodelcontainer").classList.add("hidden");
 		document.getElementById("newgamecontainer").classList.add("hidden");
 		document.getElementById("yesnocontainer").classList.add("hidden");
 		document.getElementById("settingscontainer").classList.add("hidden");
@@ -6525,7 +6545,7 @@ Current version: 124
 
 	function explain_horde()
 	{
-		msgbox("The AI Horde generates text using crowdsourced GPUs by volunteer workers. By default your inputs are not logged, but as Horde workers are open source, they can be modified to do so. <br><br>In all cases, the sender will *always be anonymous*, however you are still advised to avoid sending privacy sensitive information.<br><br>For any issues, you can find us on discord at <a class=\"color_blueurl\" href=\"https://koboldai.org/discord\">https://koboldai.org/discord</a>","Disclaimer",true);
+		msgbox("The AI Horde generates text using crowdsourced GPUs by volunteer workers. By default your inputs are not logged, but as Horde workers are open source, they can be modified to do so. <br><br>In all cases, the sender will *always be anonymous*, however you are still advised to avoid sending privacy sensitive information.<br>","Disclaimer",true);
 	}
 
 	function selectImgStyle()
@@ -6723,9 +6743,26 @@ Current version: 124
 		togglejailbreak2();
 	}
 
+	function togglecoherepreamble()
+	{
+		if(localsettings.saved_cohere_preamble=="")
+		{
+			document.getElementById("cohere_preamble").value = "";
+		}else{
+			document.getElementById("cohere_preamble").value = localsettings.saved_cohere_preamble;
+		}
+
+		if(document.getElementById("useocoherepreamble").checked)
+		{
+			document.getElementById("useocoherepreamblebox").classList.remove("hidden");
+		}else{
+			document.getElementById("useocoherepreamblebox").classList.add("hidden");
+		}
+	}
+
 	function select_custom_oai_model()
 	{
-		let isOpenrouter = (document.getElementById("customapidropdown").value==5);
+		let isOpenrouter = (document.getElementById("customapidropdown").value==3);
 		inputBox("Enter custom model name","Custom Model Name",localsettings.saved_oai_custommodel,"", ()=>{
 			let coai = getInputBoxValue().trim();
 			let dropdown = (isOpenrouter?document.getElementById("custom_openrouter_model"):document.getElementById("custom_oai_model"));
@@ -6742,7 +6779,7 @@ Current version: 124
 	}
 	function oai_model_change()
 	{
-		let isOpenrouter = (document.getElementById("customapidropdown").value==5);
+		let isOpenrouter = (document.getElementById("customapidropdown").value==3);
 		let dropdown = (isOpenrouter?document.getElementById("custom_openrouter_model"):document.getElementById("custom_oai_model"));
 		let non_completions = (dropdown.value.includes("davinci-002") || dropdown.value.includes("text-davinci-003") || dropdown.value.includes("text-davinci-002")
 		|| dropdown.value.includes("text-davinci-001") || dropdown.value.includes("gpt-3.5-turbo-instruct") || dropdown.value == "davinci");
@@ -6790,7 +6827,7 @@ Current version: 124
 
 			if (!data.error && data.data && data.data.length > 0)
 			{
-				let isOpenrouter = (document.getElementById("customapidropdown").value==5);
+				let isOpenrouter = (document.getElementById("customapidropdown").value==3);
 				let dropdown = (isOpenrouter?document.getElementById("custom_openrouter_model"):document.getElementById("custom_oai_model"));
 				var lastOption = dropdown.lastElementChild;
 				for (var i = dropdown.options.length - 1; i >= 0; i--) {
@@ -6848,12 +6885,19 @@ Current version: 124
 		let epchoice = document.getElementById("customapidropdown").value;
 		document.getElementById("oaicustom").classList.add("hidden");
 		document.getElementById("koboldcustom").classList.add("hidden");
-		document.getElementById("scalecustom").classList.add("hidden");
 		document.getElementById("claudecustom").classList.add("hidden");
 		document.getElementById("palmcustom").classList.add("hidden");
 		document.getElementById("custom_oai_model").classList.add("hidden");
 		document.getElementById("custom_openrouter_model").classList.add("hidden");
+		document.getElementById("hordeloadmodelcontainer").classList.add("hidden");
+		document.getElementById("coherecustom").classList.add("hidden");
+
 		if(epchoice==0)
+		{
+			document.getElementById("hordeloadmodelcontainer").classList.remove("hidden");
+			display_horde_models();
+		}
+		else if(epchoice==1)
 		{
 			document.getElementById("koboldcustom").classList.remove("hidden");
 			if(!localflag)
@@ -6862,10 +6906,19 @@ Current version: 124
 				document.getElementById("customkoboldkey").value = localsettings.saved_kai_key;
 			}
 		}
-		else if(epchoice==1 || epchoice==5)
+		else if(epchoice==2 || epchoice==3)
 		{
 			document.getElementById("oaicustom").classList.remove("hidden");
-			if(epchoice==5)
+			if(epchoice==2)
+			{
+				document.getElementById("oaidesc").classList.remove("hidden");
+				document.getElementById("custom_oai_model").classList.remove("hidden");
+				document.getElementById("openrouterdesc").classList.add("hidden");
+				document.getElementById("custom_oai_endpoint").classList.remove("hidden");
+				document.getElementById("custom_oai_key").value = localsettings.saved_oai_key;
+				document.getElementById("custom_oai_endpoint").value = (localsettings.saved_oai_addr?localsettings.saved_oai_addr:default_oai_base);
+			}
+			else
 			{
 				document.getElementById("oaidesc").classList.add("hidden");
 				document.getElementById("openrouterdesc").classList.remove("hidden");
@@ -6883,24 +6936,10 @@ Current version: 124
 					}
 				}
 			}
-			else
-			{
-				document.getElementById("oaidesc").classList.remove("hidden");
-				document.getElementById("custom_oai_model").classList.remove("hidden");
-				document.getElementById("openrouterdesc").classList.add("hidden");
-				document.getElementById("custom_oai_endpoint").classList.remove("hidden");
-				document.getElementById("custom_oai_key").value = localsettings.saved_oai_key;
-				document.getElementById("custom_oai_endpoint").value = (localsettings.saved_oai_addr?localsettings.saved_oai_addr:default_oai_base);
-
-			}
 			oai_model_change();
 			toggleoaichatcompl();
 		}
-		else if(epchoice==2)
-		{
-			document.getElementById("scalecustom").classList.remove("hidden");
-		}
-		else if(epchoice==3)
+		else if(epchoice==4)
 		{
 			toggleclaudemodel();
 			document.getElementById("claudecustom").classList.remove("hidden");
@@ -6909,10 +6948,18 @@ Current version: 124
 			document.getElementById("claudesystemprompt").value = localsettings.saved_claude_jailbreak;
 			document.getElementById("claudejailbreakprompt").value = localsettings.saved_claude_jailbreak2;
 		}
-		else if(epchoice==4)
+		else if(epchoice==5)
 		{
 			document.getElementById("palmcustom").classList.remove("hidden");
 			document.getElementById("custom_palm_key").value = localsettings.saved_palm_key;
+		}
+		else if(epchoice==6)
+		{
+			document.getElementById("coherecustom").classList.remove("hidden");
+			document.getElementById("custom_cohere_key").value = localsettings.saved_cohere_key;
+			document.getElementById("cohere_preamble").value = localsettings.saved_cohere_preamble;
+
+			togglecoherepreamble();
 		}
 	}
 
@@ -6952,12 +6999,16 @@ Current version: 124
 		custom_kobold_endpoint = "";
 		custom_kobold_key = "";
 		custom_oai_key = "";
-		custom_scale_key = "";
 		custom_claude_key = "";
 		custom_palm_key = "";
+		custom_cohere_key = "";
 
 		let epchoice = document.getElementById("customapidropdown").value;
-		if(epchoice==0) //connect to kobold endpoint
+		if(epchoice==0) //ai horde
+		{
+			confirm_horde_models();
+		}
+		else if(epchoice==1) //connect to kobold endpoint
 		{
 			let desiredkoboldendpoint = document.getElementById("customkoboldendpoint").value;
 			let desiredkoboldkey = document.getElementById("customkoboldkey").value;
@@ -7203,7 +7254,7 @@ Current version: 124
 					});
 			}
 		}
-		else if(epchoice==1 || epchoice==5) //connect to OAI / OpenRouter Endpoint
+		else if(epchoice==2 || epchoice==3) //connect to OAI / OpenRouter Endpoint
 		{
 			let desired_oai_key = document.getElementById("custom_oai_key").value.trim();
 			let desired_oai_ep = document.getElementById("custom_oai_endpoint").value.trim();
@@ -7230,7 +7281,7 @@ Current version: 124
 				//good to go
 				custom_oai_endpoint = desired_oai_ep;
 				custom_oai_key = desired_oai_key;
-				if(epchoice==1)
+				if(epchoice==2)
 				{
 					localsettings.saved_oai_key = custom_oai_key;
 					localsettings.saved_oai_addr = custom_oai_endpoint;
@@ -7246,7 +7297,7 @@ Current version: 124
 				}
 				localsettings.saved_oai_role = document.getElementById("oairoledropdown").value;
 				localsettings.saved_oai_jailbreak2 = document.getElementById("jailbreakprompttext2").value;
-				let isOpenrouter = (document.getElementById("customapidropdown").value==5);
+				let isOpenrouter = (document.getElementById("customapidropdown").value==3);
 				let dropdown = (isOpenrouter?document.getElementById("custom_openrouter_model"):document.getElementById("custom_oai_model"));
 				custom_oai_model = dropdown.value.trim();
 				localsettings.saved_oai_custommodel = custom_oai_model;
@@ -7268,74 +7319,7 @@ Current version: 124
 				render_gametext(true);
 			}
 		}
-		else if(epchoice==2) //connect to Scale Endpoint
-		{
-			let desired_scale_key = document.getElementById("custom_scale_key").value.trim();
-			let desired_scale_ID = document.getElementById("custom_scale_ID").value.trim();
-
-			desired_scale_ID = desired_scale_ID.split("#")[0];
-			desired_scale_ID = desired_scale_ID.split("?")[0];
-			if(desired_scale_ID.includes("dashboard.scale.com/spellbook/api/v2/deploy/") &&
-			desired_scale_key.length == 25 &&!desired_scale_key.includes(" ")&&!desired_scale_key.includes("/"))
-			{
-				desired_scale_ID = desired_scale_ID.split("dashboard.scale.com/spellbook/api/v2/deploy/")[1];
-			}
-			else
-			{
-				desired_scale_ID = "";
-				desired_scale_key = "";
-				msgbox("Invalid inputs, please try again.");
-			}
-
-			if(desired_scale_key!="" && desired_scale_ID!="")
-			{
-				hide_popups();
-				fetch(cors_proxy+"?"+ scale_submit_endpoint+desired_scale_ID, {
-					method: 'GET',
-					headers: {
-						'Authorization': 'Bearer '+desired_scale_key,
-					},
-					referrerPolicy: 'no-referrer',
-				})
-				.then((response) => response.json())
-				.then((data) => {
-					console.log(data);
-					if (data.message && data.message!="")
-					{
-						//good to go
-						custom_scale_key = desired_scale_key;
-						custom_scale_ID = desired_scale_ID;
-						selected_models = [{ "performance": 100.0, "queued": 0.0, "eta": 0, "name": "SpellbookScaleAI", "count": 1 }];
-						selected_workers = [];
-						if (perfdata == null) {
-							//generate some fake perf data if horde is offline and using custom endpoint
-							perfdata = {
-								"queued_requests": 0,
-								"queued_tokens": 0,
-								"past_minute_tokens": 0,
-								"worker_count": 0
-							};
-							document.body.classList.add("connected");
-							document.getElementById("connectstatus").classList.remove("color_orange");
-							document.getElementById("connectstatus").classList.add("color_green");
-						}
-						document.getElementById("connectstatus").innerHTML = "Connected to ScaleAI Endpoint";
-						render_gametext();
-					}
-					else
-					{
-						custom_scale_key = "";
-						msgbox("Cannot connect to Spellbook by ScaleAI");
-					}
-				})
-				.catch(error => {
-				console.log("Error: " + error);
-				custom_scale_key = "";
-				msgbox("Error: " + error);
-				});
-			}
-		}
-		else if(epchoice==3) //claude endpoint
+		else if(epchoice==4) //claude endpoint
 		{
 			let desired_claude_key = document.getElementById("custom_claude_key").value.trim();
 			let desired_claude_ep = document.getElementById("custom_claude_endpoint").value.trim();
@@ -7387,7 +7371,7 @@ Current version: 124
 
 			}
 		}
-		else if(epchoice==4) //palm endpoint
+		else if(epchoice==5) //palm endpoint
 		{
 			let desired_palm_key = document.getElementById("custom_palm_key").value.trim();
 			let mdlname = document.getElementById("custom_palm_model").value;
@@ -7418,15 +7402,46 @@ Current version: 124
 				render_gametext();
 			}
 		}
+		else if(epchoice==6) //cohere endpoint
+		{
+			let desired_cohere_key = document.getElementById("custom_cohere_key").value.trim();
+			custom_cohere_model = document.getElementById("custom_cohere_model").value.trim();
 
+			if(desired_cohere_key!="")
+			{
+				hide_popups();
+
+				//good to go
+				custom_cohere_key = desired_cohere_key;
+				localsettings.saved_cohere_key = custom_cohere_key;
+				localsettings.saved_cohere_preamble = document.getElementById("cohere_preamble").value;
+
+				selected_models = [{ "performance": 100.0, "queued": 0.0, "eta": 0, "name": custom_cohere_model, "count": 1 }];
+				selected_workers = [];
+				if (perfdata == null) {
+					//generate some fake perf data if horde is offline and using custom endpoint
+					perfdata = {
+						"queued_requests": 0,
+						"queued_tokens": 0,
+						"past_minute_tokens": 0,
+						"worker_count": 0
+					};
+					document.body.classList.add("connected");
+					document.getElementById("connectstatus").classList.remove("color_orange");
+					document.getElementById("connectstatus").classList.add("color_green");
+				}
+				document.getElementById("connectstatus").innerHTML = "Connected to Cohere Endpoint";
+				render_gametext();
+			}
+		}
 	}
 
-	function display_custom_endpoint()
+	function display_endpoint_container()
 	{
 		document.getElementById("customendpointcontainer").classList.remove("hidden");
 		customapi_dropdown();
 	}
-	function dismiss_custom_endpoint()
+	function dismiss_endpoint_container()
 	{
 		document.getElementById("customendpointcontainer").classList.add("hidden");
 	}
@@ -7548,6 +7563,8 @@ Current version: 124
 		});
 	}
 
+	var cached_model_list = null;
+	var stale_cached_model_time = performance.now();
 	function fetch_models(onDoneCallback)
 	{
 		if(localflag)
@@ -7555,6 +7572,14 @@ Current version: 124
 			onDoneCallback(selected_models);
 			return;
 		}
+
+		if(cached_model_list!=null && cached_model_list.length>1 && performance.now() < stale_cached_model_time)
+		{
+			console.log("Reuse cached model list");
+			onDoneCallback(cached_model_list);
+			return;
+		}
+
 		//fetch the model list
 		multifetch(models_endpoints,(resArr,errArr)=>{
 			if(resArr && resArr.length>0)
@@ -7573,6 +7598,8 @@ Current version: 124
 					}
 				}
 
+				cached_model_list = mdls;
+				stale_cached_model_time = performance.now() + 30000; //cache model list for 1m
 				onDoneCallback(mdls);
 			}
 			else
@@ -7584,9 +7611,8 @@ Current version: 124
 	}
 
 	//function to allow selection of models
-	function display_models() {
+	function display_horde_models() {
 		document.getElementById("pickedmodel").innerHTML = "";
-		document.getElementById("loadmodelcontainer").classList.remove("hidden");
 		document.getElementById("apikey").value = localsettings.my_api_key;
 		document.getElementById("modelquicksearch").value = "";
 		let manualworker = (document.getElementById("manualworker").checked ? true : false);
@@ -7643,7 +7669,6 @@ Current version: 124
 						}
 						model_choices += "<option value=\"" + i + "\" " + alrselected + ">" + clustertag + escapeHtml(curr.name) + " (ETA: "+ curr.eta +"s, Queue: " + curr.queued + ", Speed: " + mperf + ", Qty: " + curr.count + ")</option>";
 					}
-					model_choices += "<option style=\"color:#dd7723;font-weight:bold;\" value=\"9999\">📡 [ Remote Play / Custom API Endpoint ]</option>";
 					document.getElementById("pickedmodel").innerHTML = model_choices;
 				}
 			}
@@ -7689,92 +7714,80 @@ Current version: 124
         }
 	}
 
-	function confirm_models() {
+	function confirm_horde_models() {
 		let selected_idx_arr = Array.from(document.getElementById("pickedmodel").selectedOptions).map(({ value }) => value);
 
-		if (selected_idx_arr.length == 1 && selected_idx_arr[0] == 9999) //custom endpoint
-		{
-			hide_popups();
-			display_custom_endpoint();
-		} else {
-			custom_kobold_endpoint = "";
-			custom_oai_key = "";
-			custom_scale_key = "";
-			custom_claude_key = "";
-			custom_palm_key = "";
-			//remove the Custom Endpoint if it's multi selected together with others.
-			const findex = selected_idx_arr.indexOf("9999");
-			if (findex > -1) {
-				selected_idx_arr.splice(findex, 1);
-			}
+		custom_kobold_endpoint = "";
+		custom_oai_key = "";
+		custom_claude_key = "";
+		custom_palm_key = "";
+		custom_cohere_key = "";
 
-			if (selected_idx_arr.length > 0) {
-				let prep_sel_models = [];
-				let prep_sel_workers = []; //if selected, pick a specific worker ids to use
+		if (selected_idx_arr.length > 0) {
+			let prep_sel_models = [];
+			let prep_sel_workers = []; //if selected, pick a specific worker ids to use
 
-				let manualworker = (document.getElementById("manualworker").checked ? true : false);
+			let manualworker = (document.getElementById("manualworker").checked ? true : false);
 
-				for (var i = 0; i < selected_idx_arr.length; ++i) {
-					if (manualworker) //we are looping through selected workers
-					{
-						let addedworker = worker_data[selected_idx_arr[i]];
-						prep_sel_workers.push(addedworker);
-						let modnames = addedworker.models;
-						for (var j = 0; j < modnames.length; ++j) {
-							let addedmodel = models_data.find(element => (element.name == modnames[j] && element.cluster==addedworker.cluster));
-							if (!prep_sel_models.includes(addedmodel)) {
-								prep_sel_models.push(addedmodel);
-							}
+			for (var i = 0; i < selected_idx_arr.length; ++i) {
+				if (manualworker) //we are looping through selected workers
+				{
+					let addedworker = worker_data[selected_idx_arr[i]];
+					prep_sel_workers.push(addedworker);
+					let modnames = addedworker.models;
+					for (var j = 0; j < modnames.length; ++j) {
+						let addedmodel = models_data.find(element => (element.name == modnames[j] && element.cluster==addedworker.cluster));
+						if (!prep_sel_models.includes(addedmodel)) {
+							prep_sel_models.push(addedmodel);
 						}
 					}
-					else //we are looping through selected models
-					{
-						let addedmodel = models_data[selected_idx_arr[i]];
-						prep_sel_models.push(addedmodel);
-					}
 				}
-
-				//remove undefined and nulls
-				prep_sel_models = prep_sel_models.filter(x=>x);
-				prep_sel_workers = prep_sel_workers.filter(x=>x);
-
-				const allMatched1 = prep_sel_models.every(item => item.cluster === prep_sel_models[0].cluster);
-				const allMatched2 = prep_sel_workers.every(item => item.cluster === prep_sel_workers[0].cluster);
-
-				if(!allMatched1 || !allMatched2)
+				else //we are looping through selected models
 				{
-					if (prep_sel_workers.length > 0) {
-						let pickedcluster = get_most_common_cluster(prep_sel_workers);
-						prep_sel_workers = prep_sel_workers.filter(item => item.cluster === pickedcluster);
-						prep_sel_models = prep_sel_models.filter(item => item.cluster === pickedcluster);
-					} else {
-						let pickedcluster = get_most_common_cluster(prep_sel_models);
-						prep_sel_models = prep_sel_models.filter(item => item.cluster === pickedcluster);
-					}
+					let addedmodel = models_data[selected_idx_arr[i]];
+					prep_sel_models.push(addedmodel);
 				}
+			}
 
-				selected_models = prep_sel_models;
-				selected_workers = prep_sel_workers;
-				localsettings.my_api_key = document.getElementById("apikey").value;
-				if(localsettings.my_api_key==null || localsettings.my_api_key=="")
-				{
-					localsettings.my_api_key = defaultsettings.my_api_key;
+			//remove undefined and nulls
+			prep_sel_models = prep_sel_models.filter(x=>x);
+			prep_sel_workers = prep_sel_workers.filter(x=>x);
+
+			const allMatched1 = prep_sel_models.every(item => item.cluster === prep_sel_models[0].cluster);
+			const allMatched2 = prep_sel_workers.every(item => item.cluster === prep_sel_workers[0].cluster);
+
+			if(!allMatched1 || !allMatched2)
+			{
+				if (prep_sel_workers.length > 0) {
+					let pickedcluster = get_most_common_cluster(prep_sel_workers);
+					prep_sel_workers = prep_sel_workers.filter(item => item.cluster === pickedcluster);
+					prep_sel_models = prep_sel_models.filter(item => item.cluster === pickedcluster);
+				} else {
+					let pickedcluster = get_most_common_cluster(prep_sel_models);
+					prep_sel_models = prep_sel_models.filter(item => item.cluster === pickedcluster);
 				}
-				if (desired_new_home_cluster != null) {
-					localsettings.home_cluster = desired_new_home_cluster;
-					desired_new_home_cluster = null;
-				}
+			}
 
-				document.getElementById("connectstatus").innerHTML = "Connected to KoboldAI Horde";
+			selected_models = prep_sel_models;
+			selected_workers = prep_sel_workers;
+			localsettings.my_api_key = document.getElementById("apikey").value;
+			if(localsettings.my_api_key==null || localsettings.my_api_key=="")
+			{
+				localsettings.my_api_key = defaultsettings.my_api_key;
+			}
+			if (desired_new_home_cluster != null) {
+				localsettings.home_cluster = desired_new_home_cluster;
+				desired_new_home_cluster = null;
+			}
 
-				render_gametext();
-				hide_popups();
+			document.getElementById("connectstatus").innerHTML = "Connected to AI Horde";
 
-				if(!allMatched1 || !allMatched2)
-				{
-					msgbox("You've selected multiple workers from different clusters. Only one cluster will be used.","Caution");
-				}
+			render_gametext();
+			hide_popups();
 
+			if(!allMatched1 || !allMatched2)
+			{
+				msgbox("You've selected multiple workers from different clusters. Only one cluster will be used.","Caution");
 			}
 		}
 	}
@@ -7902,7 +7915,7 @@ Current version: 124
 							if(uname.toLowerCase()=="anonymous#0")
 							{
 								document.getElementById("kudos_bal").innerHTML = clustertag + uname + "<br>"+
-								"<a class='color_blueurl' href='https://horde.koboldai.net/register'>(Register New User)</a>";
+								"<a class='color_blueurl' href='https://aihorde.net/register'>(Register New User)</a>";
 							}else{
 								document.getElementById("showownworkerslink").classList.remove("hidden");
 							}
@@ -7913,12 +7926,12 @@ Current version: 124
 
 					}
 					else {
-						document.getElementById("kudos_bal").innerHTML = "API Key Error<br><a class='color_blueurl' href='https://horde.koboldai.net/register'>(Register New User)</a>";
+						document.getElementById("kudos_bal").innerHTML = "API Key Error<br><a class='color_blueurl' href='https://aihorde.net/register'>(Register New User)</a>";
 					}
 				}
 				else {
 					console.log("Error: " + errArr);
-					document.getElementById("kudos_bal").innerHTML = "API Key Error<br><a class='color_blueurl' href='https://horde.koboldai.net/register'>(Register New User)</a>";
+					document.getElementById("kudos_bal").innerHTML = "API Key Error<br><a class='color_blueurl' href='https://aihorde.net/register'>(Register New User)</a>";
 				}
 			});
 		}
@@ -7942,6 +7955,14 @@ Current version: 124
 		if (x && x.type === "password") {
 			x.type = "text";
 		}
+		x = document.getElementById("custom_cohere_key");
+		if (x && x.type === "password") {
+			x.type = "text";
+		}
+		x = document.getElementById("custom_palm_key");
+		if (x && x.type === "password") {
+			x.type = "text";
+		}
 	}
 	function blur_api_keys() {
 		var x = document.getElementById("apikey");
@@ -7957,6 +7978,14 @@ Current version: 124
 			x.type = "password";
 		}
 		x = document.getElementById("customkoboldkey");
+		if (x && x.type === "text") {
+			x.type = "password";
+		}
+		x = document.getElementById("custom_cohere_key");
+		if (x && x.type === "text") {
+			x.type = "password";
+		}
+		x = document.getElementById("custom_palm_key");
 		if (x && x.type === "text") {
 			x.type = "password";
 		}
@@ -8091,6 +8120,8 @@ Current version: 124
 		document.getElementById("presets").value = localsettings.last_selected_preset;
 
 		var ttshtml = "<option value=\"0\">Disabled</option>";
+		ttshtml += "<option value=\"1000\">XTTS API Server</option>";
+		ttshtml += "<option value=\"1001\">AllTalk API Server</option>";
 		if ('speechSynthesis' in window) {
 			let voices = window.speechSynthesis.getVoices();
 			console.log("speech synth available: " + voices.length);
@@ -8100,8 +8131,6 @@ Current version: 124
 		} else {
 			console.log("No speech synth available");
 		}
-		ttshtml += "<option value=\"1000\">XTTS API Server</option>";
-		ttshtml += "<option value=\"1001\">AllTalk API Server</option>";
 		document.getElementById("ttsselect").innerHTML = ttshtml;
 		document.getElementById("ttsselect").value = localsettings.speech_synth;
 		toggle_tts_mode();
@@ -8120,6 +8149,7 @@ Current version: 124
 		document.getElementById("save_images").checked = localsettings.save_images;
 		document.getElementById("save_remote_images").checked = localsettings.save_remote_images;
 		document.getElementById("img_cfgscale").value = localsettings.img_cfgscale;
+		document.getElementById("img_img2imgstr").value = localsettings.img_img2imgstr;
 		document.getElementById("img_aspect").value = localsettings.img_aspect;
 		document.getElementById("img_sampler").value = localsettings.img_sampler;
 		document.getElementById("img_steps").value = localsettings.img_steps;
@@ -8342,6 +8372,7 @@ Current version: 124
 		update_genimg_button_visiblility();
 
 		localsettings.img_cfgscale = parseFloat(document.getElementById("img_cfgscale").value);
+		localsettings.img_img2imgstr = parseFloat(document.getElementById("img_img2imgstr").value);
 		localsettings.img_aspect = parseInt(document.getElementById("img_aspect").value);
 		localsettings.img_sampler = document.getElementById("img_sampler").value;
 		localsettings.img_steps = parseInt(document.getElementById("img_steps").value);
@@ -8353,6 +8384,11 @@ Current version: 124
 		{
 			localsettings.img_cfgscale = defaultsettings.img_cfgscale;
 		}
+		if(isNaN(localsettings.img_img2imgstr))
+		{
+			localsettings.img_img2imgstr = defaultsettings.img_img2imgstr;
+		}
+		localsettings.img_img2imgstr = cleannum(localsettings.img_img2imgstr, 0.0, 1.0);
 		if(isNaN(localsettings.img_aspect))
 		{
 			localsettings.img_aspect = defaultsettings.img_aspect;
@@ -9057,9 +9093,9 @@ Current version: 124
 		show_abort_button(false);
 	}
 
-	function do_manual_gen_image(sentence)
+	function do_manual_gen_image(sentence, base64img="") //b64 for img2img
 	{
-		generate_new_image(sentence);
+		generate_new_image(sentence, base64img);
 		document.getElementById("btn_genimg").disabled = true;
 		document.getElementById("btn_genimg2").disabled = true;
 		//disable it for 8 sec to prevent spam
@@ -9131,6 +9167,10 @@ Current version: 124
 		}, true, false, imgres,0.35,true);
 	}
 
+	function clear_paste_window()
+	{
+		document.getElementById("pasteimgwin").value = "";
+	}
 	function img_paste_event(event)
 	{
 		var items = (event.clipboardData || event.originalEvent.clipboardData).items;
@@ -10155,46 +10195,10 @@ Current version: 124
 						msgbox("Error while submitting prompt: " + error);
 					});
 			}
-			else if (custom_scale_key != "")//handle for Scale
-			{
-				let targetep = cors_proxy + "?" + scale_submit_endpoint + custom_scale_ID;
-				let scale_payload = { "input": { "input": submit_payload.prompt } };
-
-				last_request_str = JSON.stringify(scale_payload);
-				fetch(targetep, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						'Authorization': 'Basic ' + custom_scale_key,
-					},
-					body: JSON.stringify(scale_payload),
-					referrerPolicy: 'no-referrer',
-				})
-					.then((response) => response.json())
-					.then((data) => {
-						console.log("sync finished response: " + JSON.stringify(data));
-						if (custom_scale_key != "" && data.output != null && data.output != "") {
-							synchro_polled_response = data.output;
-						}
-						else {
-							//error occurred, maybe captcha failed
-							console.error("error occurred in Scale generation");
-							clear_poll_flags();
-							render_gametext();
-							msgbox("Error occurred during text generation: " + formatError(data));
-						}
-					})
-					.catch((error) => {
-						console.error('Error:', error);
-						clear_poll_flags();
-						render_gametext();
-						msgbox("Error while submitting prompt: " + error);
-					});
-			}
 			else if (custom_claude_key != "")//handle for Claude
 			{
 				let claudev3mode = custom_claude_model.toLowerCase().includes("claude-3");
-				let targetep = cors_proxy + "?" + (custom_claude_endpoint + (claudev3mode?claude_submit_endpoint_v3:claude_submit_endpoint));
+				let targetep = apply_proxy_url((custom_claude_endpoint + (claudev3mode?claude_submit_endpoint_v3:claude_submit_endpoint)),true);
 				let claude_payload = null;
 				if(claudev3mode)
 				{
@@ -10312,7 +10316,9 @@ Current version: 124
 				"topK": (submit_payload.params.top_k<1?300:submit_payload.params.top_k),
 				"candidateCount":1};
 
-				if(document.getElementById("custom_palm_model").value=="text-bison-001")
+				let mdlname = document.getElementById("custom_palm_model").value;
+
+				if(mdlname=="text-bison-001")
 				{
 					payload.safetySettings = [
 						{
@@ -10337,7 +10343,7 @@ Current version: 124
 						}
 					];
 				}
-				else if(document.getElementById("custom_palm_model").value=="gemini-pro")
+				else if(mdlname=="gemini-pro" || mdlname=="gemini-1.5-pro-latest" || mdlname=="gemini-ultra")
 				{
 					if(localsettings.opmode==1)
 					{
@@ -10345,7 +10351,7 @@ Current version: 124
 						submit_payload.params.max_length += 100; //add length
 					}
 
-					urlbase = default_gemini_base;
+					urlbase = default_gemini_base + mdlname + default_gemini_suffix;
 					payload = {
 					"contents": [
 						{
@@ -10407,6 +10413,74 @@ Current version: 124
 						else {
 							//error occurred, maybe captcha failed
 							console.error("error occurred in PaLM generation");
+							clear_poll_flags();
+							render_gametext();
+							msgbox("Error occurred during text generation: " + formatError(data));
+						}
+					})
+					.catch((error) => {
+						console.error('Error:', error);
+						clear_poll_flags();
+						render_gametext();
+						msgbox("Error while submitting prompt: " + error);
+					});
+			}
+			else if (custom_cohere_key != "")//handle for Cohere
+			{
+				let targetep = default_cohere_base;
+
+				let scaled_rep_pen = 0;
+				if(submit_payload.params.presence_penalty > 0)
+				{
+					scaled_rep_pen = submit_payload.params.presence_penalty;
+				}else{
+					//original range between 1 and 3, scale to 0 and 2
+					scaled_rep_pen = (submit_payload.params.rep_pen - 1.0);
+				}
+
+				let cohere_payload =
+				{
+					"max_tokens": submit_payload.params.max_length,
+					"model": custom_cohere_model,
+					"presence_penalty": scaled_rep_pen,
+					"temperature": submit_payload.params.temperature,
+					"p": submit_payload.params.top_p,
+					"message": submit_payload.prompt
+				}
+
+				if (document.getElementById("useocoherepreamble").checked) {
+					cohere_payload.preamble = document.getElementById("cohere_preamble").value
+				}
+
+				last_request_str = JSON.stringify(cohere_payload);
+				let cohere_headers = {
+					'Content-Type': 'application/json',
+					'Authorization': 'Bearer ' + custom_cohere_key
+				};
+
+				fetch(targetep, {
+					method: 'POST',
+					headers: cohere_headers,
+					body: JSON.stringify(cohere_payload),
+					referrerPolicy: 'no-referrer',
+				})
+					.then((response) => response.json())
+					.then((data) => {
+						console.log("sync finished response: " + JSON.stringify(data));
+						if (custom_cohere_key != "" && data && data.text) {
+							if (data.text) {
+								synchro_polled_response = data.text
+							}
+							else {
+								console.error("Error, unknown Cohere response");
+								clear_poll_flags();
+								render_gametext();
+								msgbox("Error, unknown Cohere response");
+							}
+						}
+						else {
+							//error occurred, maybe captcha failed
+							console.error("error occurred in Cohere generation");
 							clear_poll_flags();
 							render_gametext();
 							msgbox("Error occurred during text generation: " + formatError(data));
@@ -10545,7 +10619,16 @@ Current version: 124
 		return inputtext;
 	}
 
-	function generate_new_image(sentence) {
+	function generate_new_image(sentence, base64img="") {
+
+		if(base64img!="")
+		{
+			let parts = base64img.split(',');
+			if (parts.length === 2 && parts[0].startsWith('data:image')) {
+				base64img = parts[1];
+			}
+		}
+
 
 		if(localsettings.image_styles && localsettings.image_styles!="")
 		{
@@ -10628,9 +10711,15 @@ Current version: 124
 			"replacement_filter": true,
 			"r2": false
 		}
+		if(base64img!=null && base64img!="")
+		{
+			genimg_payload["source_image"] = base64img;
+			genimg_payload["params"]["denoising_strength"] = localsettings.img_img2imgstr;
+		}
 
 		if(localsettings.generate_images_mode==1) //horde
 		{
+
 			fetch(stablehorde_submit_endpoint, {
 				method: 'POST', // or 'PUT'
 				headers: {
@@ -10872,6 +10961,7 @@ Current version: 124
 			AI Vision: `+visionstatus+` <span class="helpicon">?<span class="helptext">This allows the AI to visually recognize this image and react to it. On KoboldCpp, LLaVA models can be used. Otherwise, uses Horde or Local A1111 for image interrogation if enabled.</span></span>
 			`+togglebtn+`
 			<br><button type="button" class="btn btn-primary" style="width: 140px; padding: 2px; margin: 3px; font-size:12px;" onclick="show_orig_prompt()">View Original Prompt</button>
+			<button type="button" class="btn btn-primary" style="width: 110px; padding: 2px; margin: 3px; font-size:12px;" onclick="add_img2img()">Create Img2Img</button>
 			`;
 			document.getElementById("aivisionmode").value = savedmeta.visionmode;
 		}
@@ -10885,6 +10975,19 @@ Current version: 124
 	function show_orig_prompt()
 	{
 		msgbox(latest_orig_prompt,"Original Prompt");
+	}
+	function add_img2img()
+	{
+		inputBox("Enter prompt to create a new image, based on this source image.","Create Img2Img","","Enter Img2Img Prompt",()=>{
+			let userinput = getInputBoxValue();
+			if(userinput.trim()!="")
+			{
+				var sentence = userinput.trim().substring(0, 380);
+				let b64 = document.getElementById("zoomedimg").src;
+				do_manual_gen_image(sentence, b64);
+				document.getElementById("zoomedimgcontainer").classList.add("hidden");
+			}
+		},false);
 	}
 	function click_image(target,imghash)
 	{
@@ -11107,6 +11210,14 @@ Current version: 124
 		{
 			let st = get_instruct_starttag(true);
 			let et = get_instruct_endtag(true);
+
+			//sometimes the OAI type endpoints get confused and repeat the instruct tag, so trim it
+			let earlymatch = gentxt.indexOf(et);
+			if(earlymatch==0)
+			{
+				gentxt = gentxt.substring(et.length);
+			}
+
 			let found = gentxt.indexOf(st);
 			let splitresponse = [];
 			if (found != -1) //if found, truncate to it
@@ -11470,7 +11581,7 @@ Current version: 124
 		show_abort_button(false);
 		if (pending_response_id && pending_response_id != "-1" && pending_response_id != "")
 		{
-			if (poll_ticks_passed > (3/(poll_interval_base_text*0.001))) //4sec passed
+			if (poll_ticks_passed > (1/(poll_interval_base_text*0.001))) //1sec passed
 			{
 				show_abort_button(true);
 			}
@@ -12041,10 +12152,6 @@ Current version: 124
 				{
 					whorun = "<br>You're using the OpenAI API";
 				}
-				else if(custom_scale_key!="")
-				{
-					whorun = "<br>You're using the Spellbook by Scale AI API";
-				}
 				else if(custom_claude_key!="")
 				{
 					whorun = "<br>You're using the Claude API";
@@ -12052,6 +12159,10 @@ Current version: 124
 				else if(custom_palm_key!="")
 				{
 					whorun = "<br>You're using the PaLM API";
+				}
+				else if(custom_cohere_key!="")
+				{
+					whorun = "<br>You're using the Cohere API";
 				}
 				else {
 					whorun = "<br>There are <span class=\"color_orange\">" + selected_models.reduce((s, a) => s + a.count, 0) + "</span> <a class=\"color_green\" href=\"#\" onclick=\"get_and_show_workers()\">volunteer(s)</a> running selected models with a total queue length of <span class=\"color_orange\">"+ selected_models.reduce((s, a) => s + a.queued, 0) + "</span> tokens";
@@ -12281,8 +12392,8 @@ Current version: 124
 			document.getElementById("fvico").href = favivon_normal;
 		}
 		else if (selected_models.length == 0 && selected_workers.length == 0) {
-			let perfinfo = "There are <span class=\"color_orange\">" + perfdata.worker_count + "</span> total <a class=\"color_green\" href=\"#\" onclick=\"get_and_show_workers()\">volunteer(s)</a> in the KoboldAI Horde, and <span class=\"color_orange\">" + perfdata.queued_requests + "</span> request(s) in queues.<br>A total of <span class=\"color_orange\">" + perfdata.past_minute_tokens + "</span> tokens were generated in the last minute.<br><br>";
-			document.getElementById("gametext").innerHTML = "Welcome to <span class=\"color_cyan\">KoboldAI Lite</span>!<br><br>" + perfinfo + "<a href=\"#\" class=\"color_blueurl\" onclick=\"display_models()\">Please select an AI model to use!</a><br>";
+			let perfinfo = "There are <span class=\"color_orange\">" + perfdata.worker_count + "</span> total <a class=\"color_green\" href=\"#\" onclick=\"get_and_show_workers()\">volunteer(s)</a> in the AI Horde, and <span class=\"color_orange\">" + perfdata.queued_requests + "</span> request(s) in queues.<br>A total of <span class=\"color_orange\">" + perfdata.past_minute_tokens + "</span> tokens were generated in the last minute.<br><br>";
+			document.getElementById("gametext").innerHTML = "Welcome to <span class=\"color_cyan\">KoboldAI Lite</span>!<br><br>" + perfinfo + "<a href=\"#\" class=\"color_blueurl\" onclick=\"display_endpoint_container()\">Please select an AI service to use!</a><br>";
 			document.getElementById("fvico").href = favivon_normal;
 		}
 		else if (pending_response_id == "") {
@@ -12596,12 +12707,8 @@ Current version: 124
 			localsettings.prev_custom_endpoint_type = 2;
 			if(custom_oai_endpoint.toLowerCase().includes("openrouter.ai"))
 			{
-				localsettings.prev_custom_endpoint_type = 6;
+				localsettings.prev_custom_endpoint_type = 3;
 			}
-		}
-		else if(custom_scale_key!="")
-		{
-			localsettings.prev_custom_endpoint_type = 3;
 		}
 		else if(custom_claude_key!="")
 		{
@@ -12610,6 +12717,10 @@ Current version: 124
 		else if(custom_palm_key!="")
 		{
 			localsettings.prev_custom_endpoint_type = 5;
+		}
+		else if(custom_cohere_key!="")
+		{
+			localsettings.prev_custom_endpoint_type = 6;
 		}
 
 	}
@@ -13553,11 +13664,11 @@ Current version: 124
 								</li>
 
 								<li class="nav-item hidden" id="topbtn_customendpt">
-									<a class="nav-link" href="#" onclick="display_custom_endpoint()">Custom Endpoint</a>
+									<a class="nav-link" href="#" onclick="display_endpoint_container()">Custom Endpoint</a>
 								</li>
 
 								<li class="nav-item hidden" id="topbtn_ai">
-									<a class="nav-link" href="#" onclick="display_models()">AI</a>
+									<a class="nav-link" href="#" onclick="display_endpoint_container()">AI</a>
 								</li>
 
 								<li class="nav-item hidden" id="topbtn_newgame">
@@ -13648,7 +13759,7 @@ Current version: 124
 				</div>
 			</div>
 		</div>
-		<div class="lastreq" id="lastreq" style="color:#999999"><span class="color_gray">Avoid sending privacy sensitive information. <a href="#" onclick="explain_horde()">Click here for more info</a>.</span></div>
+		<div class="lastreq" id="lastreq" style="color:#999999"><span class="color_gray">KoboldAI Lite - A frontend for self hosted and third party API services</span></div>
 		</div>
 
 		<div id="enhancedchatinterface" class="chat_mesgs hidden">
@@ -13683,7 +13794,7 @@ Current version: 124
 				</div>
 			</div>
 
-			<div class="lastreq" id="lastreq2" style="padding-top: 2px; color:#999999"><span class="color_gray">Avoid sending privacy sensitive information. <a href="#" onclick="explain_horde()">Click here for more info</a>.</span></div>
+			<div class="lastreq" id="lastreq2" style="padding-top: 2px; color:#999999"><span class="color_gray">KoboldAI Lite - A frontend for self hosted and third party API services.</span></div>
 		  </div>
 	</div>
 
@@ -13754,29 +13865,41 @@ Current version: 124
 		</div>
 	</div>
 
-	<div class="popupcontainer flex hidden" id="loadmodelcontainer">
+
+
+	<div class="popupcontainer flex hidden" id="customendpointcontainer">
 		<div class="popupbg flex"></div>
-		<div class="loadpopup">
+		<div class="nspopup flexsize evenhigher">
 			<div class="popuptitlebar">
-				<div class="popuptitletext">Select A Model To Load</div>
+				<div class="popuptitletext">Select your AI provider</div>
+			</div>
+			<div style="padding: 4px;">
+			<select style="padding:4px;" class="form-control" id="customapidropdown" onchange="customapi_dropdown()">
+				<option value="0">AI Horde</option>
+				<option value="1">KoboldAI Remote API</option>
+				<option value="2">OpenAI API</option>
+				<option value="3">OpenRouter API</option>
+				<option value="4">Claude By Anthropic API</option>
+				<option value="5">PaLM/Gemini By Google API</option>
+				<option value="6">Cohere API</option>
+			</select>
 			</div>
 
-			<div id="loadmodellistcontent" style="overflow: auto;">
+			<div class="aidgpopuplistheader anotelabel" id="hordeloadmodelcontainer">
+				The AI Horde is a service that generates text using crowdsourced GPUs run by independent volunteer workers. Avoid sending privacy sensitive information. <a href="#" class="color_blueurl" onclick="explain_horde()">Click here for more info</a>
 				<div class="justifyleft anotelabel">
 					<span style="float:left; text-align: left;">
 					Your AI Horde API Key <span class="helpicon">?
-						<span class="helptext">You need an API key to use KoboldAI Horde to generate text. Get one at
-							https://horde.koboldai.net/register or use the anonymous key 0000000000.</span>
+						<span class="helptext">You need an API key to use AI Horde to generate text. Get one at
+							https://aihorde.net/register or use the anonymous key 0000000000.</span>
 					</span>
 					<br><a href="#" id="showownworkerslink" class="color_blueurl hidden" onclick="show_my_own_workers()">[Manage My Workers]</a></span>
 					<span class="color_green" style="float:right; text-align: right;" id="kudos_bal">
-						Need a Key?<br><a class='color_blueurl' href='https://horde.koboldai.net/register'>(Register New User)</a>
+						Need a Key?<br><a class='color_blueurl' href='https://aihorde.net/register'>(Register New User)</a>
 					</span>
 				</div>
-
 				<input class="form-control" type="password" placeholder="Enter API Key (or use 0000000000)" value=""
 					id="apikey" onfocus="focus_api_keys()" onblur="fetch_kudo_balance();blur_api_keys()">
-
 
 				<div class="justifyleft anotelabel">
 					Select AI Horde Model <span class="helpicon">?
@@ -13792,44 +13915,15 @@ Current version: 124
 					Select By Worker <span class="helpicon">?
 						<span class="helptext">This option explicitly assigns worker IDs, fixed based on the current workers available at model selection time.</span>
 					</span>
-					<input type="checkbox" id="manualworker" onclick="display_models()">
+					<input type="checkbox" id="manualworker" onclick="display_endpoint_container()">
 
 					<span style="float:right;">
 						<input class="settinglabel miniinput" style="margin: 3px; width: 90px;" type="text" placeholder="Quick Search" value="" id="modelquicksearch" oninput="model_quick_search()">
 					</span>
-					<span style="float:right;">
-						<button type="button" style="padding:2px 3px;margin:2px;font-size:11px;" class="bg_orange btn btn-primary" id="btn_cust_endpoint" onclick="display_custom_endpoint()">Use Custom Endpoint</button>
-					</span>
 				</div>
 
-
-				<div class="popupfooter">
-					<button type="button" class="btn btn-primary" id="btn_loadmodelaccept"
-						onclick="confirm_models()">Ok</button>
-					<button type="button" class="btn btn-primary" id="btn_loadmodelclose"
-						onclick="hide_popups()">Cancel</button>
-
-				</div>
 			</div>
-		</div>
-	</div>
 
-	<div class="popupcontainer flex hidden" id="customendpointcontainer">
-		<div class="popupbg flex"></div>
-		<div class="nspopup flexsize higher">
-			<div class="popuptitlebar">
-				<div class="popuptitletext">Custom Remote Play Endpoint</div>
-			</div>
-			<div style="padding: 4px;">
-			<select style="padding:4px;" class="form-control" id="customapidropdown" onchange="customapi_dropdown()">
-				<option value="0">KoboldAI Remote Play</option>
-				<option value="1">OpenAI API</option>
-				<option value="2">Spellbook By Scale API</option>
-				<option value="3">Claude By Anthropic API</option>
-				<option value="4">PaLM/Gemini By Google API</option>
-				<option value="5">OpenRouter API</option>
-			</select>
-			</div>
 			<div id="koboldcustom" class="aidgpopuplistheader anotelabel">
 				You can use this to connect to a KoboldAI instance running via a remote tunnel such as <span class="color_orange" style="font-weight: bold;">trycloudflare, localtunnel, ngrok</span>.<br><br>
 				Localhost IPs require host mode enabled. You can use the remote address displayed in the <span class="color_orange" style="font-weight: bold;">remote-play.bat</span> window or <span class="color_orange" style="font-weight: bold;">colab window</span>, note that the model must be loaded first.<br><br>
@@ -13840,7 +13934,6 @@ Current version: 124
 					<input type="checkbox" id="remoteconsolelog">
 					<div class="box-label" title="Will display outputs to the remote endpoint's console logs, useful for debugging.">Show Console Logging</div>
 				</div>
-
 			</div>
 			<div id="oaicustom" class="aidgpopuplistheader anotelabel hidden">
 				<span id="oaidesc">
@@ -13903,15 +13996,6 @@ Current version: 124
 				</span>
 
 			</div>
-			<div id="scalecustom" class="aidgpopuplistheader anotelabel hidden">
-				Uses Spellbook by Scale. This is an experimental endpoint. It may break at any time.<br><br>
-				This endpoint does not support custom settings - please configure all properties at the scale webpage. Note that KoboldAI Lite takes no responsibility for your usage or consequences of this feature.<br><span class="color_red">Due to CORS limitations, your connection will be proxied.</span><br><br>
-				<span class="color_green" style="font-weight: bold;">Please input Spellbook by Scale API Key.</span><br><br>
-				<input class="form-control" type="text" id="custom_scale_key" placeholder="Spellbook API Key" value=""><br>
-
-				<span class="color_green" style="font-weight: bold;">Please input the Deployment URL provided from the website.</span><br><br>
-				<input class="form-control" type="text" id="custom_scale_ID" placeholder="https://dashboard.scale.com/spellbook/api/v2/deploy/a12345b" value="" ><br>
-			</div>
 			<div id="claudecustom" class="aidgpopuplistheader anotelabel hidden">
 				Entering your Claude API key will allow you to use KoboldAI Lite with their API.<br><br>
 				Note that KoboldAI Lite takes no responsibility for your usage or consequences of this feature.<br>Only Temperature, Top-P and Top-K samplers are used.<br><br>
@@ -13930,6 +14014,7 @@ Current version: 124
 					<option value="claude-2.0">claude-2.0</option>
 					<option value="claude-3-opus-20240229">claude-3-opus</option>
 					<option value="claude-3-sonnet-20240229">claude-3-sonnet</option>
+					<option value="claude-3-haiku-20240307">claude-3-haiku</option>
 				</select>
 				<input type="checkbox" id="claudeaddversion" onchange="" checked>
 				<div class="box-label" title="Add endpoint version">Add Endpoint Version</div>
@@ -13950,13 +14035,33 @@ Current version: 124
 				<select style="padding:4px;" class="form-control" id="custom_palm_model">
 					<option value="text-bison-001" selected="selected">text-bison-001</option>
 					<option value="gemini-pro">gemini-pro</option>
+					<option value="gemini-1.5-pro-latest">gemini-1.5-pro-latest</option>
+					<option value="gemini-ultra">gemini-ultra</option>
 				</select>
 				<span class="color_green" style="font-weight: bold;">Please input Gemini or PaLM API Key.</span><br><br>
-				<input class="form-control" type="text" id="custom_palm_key" placeholder="PaLM/Gemini API Key" value=""><br>
+				<input class="form-control" type="password" id="custom_palm_key" placeholder="PaLM/Gemini API Key" value="" onfocus="focus_api_keys()" onblur="blur_api_keys()"><br>
+			</div>
+			<div id="coherecustom" class="aidgpopuplistheader anotelabel hidden">
+				Uses Cohere's models through their own API.<br><br>
+				Note that KoboldAI Lite takes no responsibility for your usage or consequences of this feature.<br><br>
+				<select style="padding:4px;" class="form-control" id="custom_cohere_model">
+					<option value="command" selected="selected">command</option>
+					<option value="command-r">command-r</option>
+					<option value="command-r-plus">command-r-plus</option>
+				</select>
+				<span class="color_green" style="font-weight: bold;">Please input Cohere API Key.</span><br><br>
+				<input class="form-control" type="password" id="custom_cohere_key" placeholder="Cohere API Key" value="" onfocus="focus_api_keys()" onblur="blur_api_keys()"><br>
+				<input type="checkbox" id="useocoherepreamble" onchange="togglecoherepreamble()">
+				<div class="box-label" id="useocoherepreamblelabel" title="">Use Preamble</div>
+
+				<span id="useocoherepreamblebox" class="hidden" onload="togglecoherepreamble();">
+					<input class="form-control" type="text" id="cohere_preamble" placeholder="(Enter Preamble)"
+					value="">
+				</span>
 			</div>
 			<div class="popupfooter">
 				<button type="button" class="btn btn-primary" onclick="connect_custom_endpoint()">Ok</button>
-				<button type="button" class="btn btn-primary" onclick="dismiss_custom_endpoint()">Cancel</button>
+				<button type="button" class="btn btn-primary" onclick="dismiss_endpoint_container()">Cancel</button>
 			</div>
 		</div>
 	</div>
@@ -14615,7 +14720,7 @@ Current version: 124
 
 	<div class="popupcontainer flex hidden" id="memorycontainer">
 		<div class="popupbg flex"></div>
-		<div class="nspopup flexsize evenhigher">
+		<div class="nspopup flexsizebig evenhigher">
 			<div class="popuptitlebar">
 				<div class="popuptitletext">Memory</div>
 			</div>
@@ -14834,7 +14939,7 @@ Current version: 124
 
 	<div class="popupcontainer flex hidden" id="imagestylecontainer">
 		<div class="popupbg flex"></div>
-		<div class="nspopup fixsize moderate">
+		<div class="nspopup flexsizesmall higher">
 			<div class="popuptitlebar">
 				<div class="popuptitletext">Image Generation Settings</div>
 			</div>
@@ -14863,7 +14968,7 @@ Current version: 124
 				</select>
 			</div>
 			<div class="inlinelabel">
-				<div class="justifyleft" style="padding:4px">Aspect Ratio<span class="helpicon">?
+				<div class="justifyleft" style="padding:4px">Aspect Ratio <span class="helpicon">?
 					<span class="helptext">Square is recommended. Changing aspect ratio will affect the resolution used to generate. This may impact quality or memory usage.</span>
 				</span>: </div>
 				<select style="padding:1px; height:23px; width: 100px;" class="form-control" id="img_aspect">
@@ -14871,6 +14976,12 @@ Current version: 124
 					<option value="1">Portrait</option>
 					<option value="2">Landscape</option>
 				</select>
+			</div>
+			<div class="inlinelabel">
+				<div class="justifyleft" style="padding:4px">Img2Img Strength <span class="helpicon">?
+					<span class="helptext">Higher values lead to a more different image.</span>
+				</span>: </div>
+				<input type="text" inputmode="decimal" id="img_img2imgstr" style="width:60px">
 			</div>
 			<div class="inlinelabel">
 				<div class="justifyleft" style="padding:4px">Save Higher-Res <span class="helpicon">?
@@ -14921,7 +15032,7 @@ Current version: 124
 			<div class="popuptitlebar">
 				<div class="popuptitletext">Paste Image From Clipboard</div>
 			</div>
-			<input type="text" style="width:100%; height:100px; text-align: center;" readonly="true" onpaste="return img_paste_event(event)" value="" placeholder="[Paste Image Here]">
+			<input type="text" id="pasteimgwin" style="width:100%; height:100px; text-align: center;" oninput="clear_paste_window()" onpaste="return img_paste_event(event)" value="" placeholder="[Paste Image Here]">
 			<br>
 			<div class="popupfooter">
 				<button type="button" class="btn btn-primary" onclick="hide_popups()">Cancel</button>

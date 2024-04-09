@@ -7,7 +7,6 @@
 #include <vector>
 #include <random>
 #include <thread>
-#include "common.h"
 #include "ggml_v3.h"
 
 //
