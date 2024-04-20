@@ -622,7 +622,7 @@ maxhordelen = 256
 modelbusy = threading.Lock()
 requestsinqueue = 0
 defaultport = 5001
-KcppVersion = "1.62.1"
+KcppVersion = "1.63"
 showdebug = True
 showsamplerwarning = True
 showmaxctxwarning = True
@@ -744,6 +744,9 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                         genparams["images"] = images_added
                     if len(genparams.get('stop_sequence', []))==0: #only set stop seq if it wont overwrite existing
                         genparams["stop_sequence"] = [user_message_start.strip(),assistant_message_start.strip()]
+                    else:
+                        genparams["stop_sequence"].append(user_message_start.strip())
+                        genparams["stop_sequence"].append(assistant_message_start.strip())
                     genparams["trim_stop"] = True
 
             elif api_format==5:
@@ -1152,8 +1155,12 @@ Enter Prompt:<br>
 
     def do_POST(self):
         global modelbusy, requestsinqueue, currentusergenkey, totalgens, pendingabortkey
-        content_length = int(self.headers['content-length'])
-        body = self.rfile.read(content_length)
+        contlenstr = self.headers['content-length']
+        content_length = 0
+        body = None
+        if contlenstr:
+            content_length = int(contlenstr)
+            body = self.rfile.read(content_length)
         self.path = self.path.rstrip('/')
         response_body = None
         response_code = 200
@@ -1290,7 +1297,13 @@ Enter Prompt:<br>
                     genparams = json.loads(body)
                 except Exception as e:
                     utfprint("Body Err: " + str(body))
-                    return self.send_response(503)
+                    self.send_response(500)
+                    self.end_headers(content_type='application/json')
+                    self.wfile.write(json.dumps({"detail": {
+                    "msg": "Error parsing input.",
+                    "type": "bad_input",
+                    }}).encode())
+                    return
 
                 is_quiet = args.quiet
                 if (args.debugmode != -1 and not is_quiet) or args.debugmode >= 1:
@@ -1361,9 +1374,18 @@ Enter Prompt:<br>
             self.send_header('content-type', content_type)
         return super(ServerRequestHandler, self).end_headers()
 
+def is_port_in_use(portNum):
+    try:
+        import socket
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            return s.connect_ex(('localhost', portNum)) == 0
+    except Exception as ex:
+        return True
 
 def RunServerMultiThreaded(addr, port, embedded_kailite = None, embedded_kcpp_docs = None):
     global exitcounter, sslvalid
+    if is_port_in_use(port):
+        print(f"Warning: Port {port} already appears to be in use by another program.")
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     if args.ssl and sslvalid:
@@ -2226,6 +2248,8 @@ def show_new_gui():
                 runopts_var.set(openblas_option)
         if "gpulayers" in dict and dict["gpulayers"]:
             gpulayers_var.set(dict["gpulayers"])
+        else:
+            gpulayers_var.set("0")
         if "tensor_split" in dict and dict["tensor_split"]:
             tssep = ','.join(map(str, dict["tensor_split"]))
             tensor_split_str_vars.set(tssep)
@@ -2741,7 +2765,11 @@ def delete_old_pyinstaller():
             if absdirpath!=selfdirpath and (time.time() - os.path.getctime(absdirpath)) > 14400: # remove if older than 4 hours
                 kobold_itemcheck1 = os.path.join(absdirpath, 'koboldcpp_default.dll')
                 kobold_itemcheck2 = os.path.join(absdirpath, 'koboldcpp_default.so')
-                if os.path.exists(kobold_itemcheck1) or os.path.exists(kobold_itemcheck2):
+                kobold_itemcheck3 = os.path.join(absdirpath, 'klite.embd')
+                kobold_itemcheck4 = os.path.join(absdirpath, 'cublasLt64_11.dll')
+                kobold_itemcheck5 = os.path.join(absdirpath, 'cublas64_11.dll')
+                kobold_itemcheck6 = os.path.join(absdirpath, 'clblast.dll')
+                if os.path.exists(kobold_itemcheck1) or os.path.exists(kobold_itemcheck2) or os.path.exists(kobold_itemcheck3) or (os.path.exists(kobold_itemcheck4) and os.path.exists(kobold_itemcheck5) and os.path.exists(kobold_itemcheck6)):
                     try:
                         shutil.rmtree(absdirpath)
                         print(f"Deleted orphaned pyinstaller dir: {absdirpath}")

@@ -316,10 +316,11 @@ static results_perplexity perplexity_v2(llama_context * ctx, const gpt_params & 
     // BOS tokens will be added for each chunk before eval
 
     const bool add_bos = llama_should_add_bos_token(llama_get_model(ctx));
+    GGML_ASSERT(llama_add_eos_token(llama_get_model(ctx)) != 1);
 
     fprintf(stderr, "%s: tokenizing the input ..\n", __func__);
 
-    std::vector<llama_token> tokens = ::llama_tokenize(ctx, params.prompt, add_bos);
+    std::vector<llama_token> tokens = ::llama_tokenize(ctx, params.prompt, true);
 
     const int n_ctx = llama_n_ctx(ctx);
 
@@ -455,6 +456,7 @@ static results_perplexity perplexity(llama_context * ctx, const gpt_params & par
     // BOS tokens will be added for each chunk before eval
 
     const bool add_bos = llama_should_add_bos_token(llama_get_model(ctx));
+    GGML_ASSERT(llama_add_eos_token(llama_get_model(ctx)) != 1);
 
     std::ofstream logits_stream;
     if (!params.logits_file.empty()) {
@@ -471,7 +473,7 @@ static results_perplexity perplexity(llama_context * ctx, const gpt_params & par
     auto tim1 = std::chrono::high_resolution_clock::now();
     fprintf(stderr, "%s: tokenizing the input ..\n", __func__);
 
-    std::vector<llama_token> tokens = ::llama_tokenize(ctx, params.prompt, add_bos);
+    std::vector<llama_token> tokens = ::llama_tokenize(ctx, params.prompt, true);
 
     auto tim2 = std::chrono::high_resolution_clock::now();
     fprintf(stderr, "%s: tokenization took %g ms\n",__func__,1e-3*std::chrono::duration_cast<std::chrono::microseconds>(tim2-tim1).count());
@@ -772,9 +774,6 @@ static void hellaswag_score(llama_context * ctx, const gpt_params & params) {
     const bool is_spm = llama_vocab_type(llama_get_model(ctx)) == LLAMA_VOCAB_TYPE_SPM;
     fprintf(stderr, "================================= is_spm = %d\n", is_spm);
 
-    // This is needed as usual for LLaMA models
-    const bool add_bos = llama_should_add_bos_token(llama_get_model(ctx));
-
     // The tasks should be randomized so the score stabilizes quickly.
     bool randomize_tasks = true;
 
@@ -819,7 +818,7 @@ static void hellaswag_score(llama_context * ctx, const gpt_params & params) {
         hs_cur.gold_ending_idx = std::stoi( prompt_lines[idx*6+1] );
         for (size_t j = 0; j < 4; j++) {
             hs_cur.ending[j] = prompt_lines[idx*6+2+j];
-            hs_cur.seq_tokens[j] = ::llama_tokenize(ctx, hs_cur.context + " " + hs_cur.ending[j], add_bos);
+            hs_cur.seq_tokens[j] = ::llama_tokenize(ctx, hs_cur.context + " " + hs_cur.ending[j], true);
         }
 
         // determine the common prefix of the endings
@@ -838,7 +837,7 @@ static void hellaswag_score(llama_context * ctx, const gpt_params & params) {
             hs_cur.seq_tokens[2].size() - hs_cur.common_prefix +
             hs_cur.seq_tokens[3].size() - hs_cur.common_prefix;
 
-        //GGML_ASSERT(hs_cur.common_prefix >= ::llama_tokenize(ctx, hs_cur.context, add_bos).size());
+        //GGML_ASSERT(hs_cur.common_prefix >= ::llama_tokenize(ctx, hs_cur.context, true).size());
 
         // Delete the selected random example from the prompt
         if (randomize_tasks) {
@@ -1111,12 +1110,9 @@ static void winogrande_score(llama_context * ctx, const gpt_params & params) {
 
     fprintf(stderr, "%s : tokenizing selected tasks\n", __func__);
 
-    // This is needed as usual for LLaMA models
-    const bool add_bos = llama_should_add_bos_token(llama_get_model(ctx));
-
     for (auto & task : data) {
-        task.seq_tokens[0] = ::llama_tokenize(ctx, task.first + task.choices[0] + task.second, add_bos);
-        task.seq_tokens[1] = ::llama_tokenize(ctx, task.first + task.choices[1] + task.second, add_bos);
+        task.seq_tokens[0] = ::llama_tokenize(ctx, task.first + task.choices[0] + task.second, true);
+        task.seq_tokens[1] = ::llama_tokenize(ctx, task.first + task.choices[1] + task.second, true);
 
         task.common_prefix = 0;
         for (size_t k = 0; k < task.seq_tokens[0].size(); k++) {
@@ -1131,8 +1127,8 @@ static void winogrande_score(llama_context * ctx, const gpt_params & params) {
             task.seq_tokens[0].size() - task.common_prefix +
             task.seq_tokens[1].size() - task.common_prefix;
 
-        task.n_base1 = ::llama_tokenize(ctx, task.first + task.choices[0], add_bos).size();
-        task.n_base2 = ::llama_tokenize(ctx, task.first + task.choices[1], add_bos).size();
+        task.n_base1 = ::llama_tokenize(ctx, task.first + task.choices[0], true).size();
+        task.n_base2 = ::llama_tokenize(ctx, task.first + task.choices[1], true).size();
     }
 
     fprintf(stderr, "%s : calculating winogrande score over selected tasks.\n", __func__);
@@ -1323,7 +1319,7 @@ struct multiple_choice_task {
     std::vector<float> log_probs;
 };
 
-static bool multiple_choice_prepare_one_task(llama_context * ctx, bool add_bos, multiple_choice_task& task, bool log_error) {
+static bool multiple_choice_prepare_one_task(llama_context * ctx, multiple_choice_task& task, bool log_error) {
     if (task.question.empty() || task.mc1.answers.empty()) {
         if (log_error) {
             printf("%s: found bad task with empty question and/or answers\n", __func__);
@@ -1338,7 +1334,7 @@ static bool multiple_choice_prepare_one_task(llama_context * ctx, bool add_bos, 
             }
             return false;
         }
-        task.seq_tokens.emplace_back(::llama_tokenize(ctx, task.question + " " + answer, add_bos));
+        task.seq_tokens.emplace_back(::llama_tokenize(ctx, task.question + " " + answer, true));
     }
     auto min_len = task.seq_tokens.front().size();
     for (auto& seq : task.seq_tokens) {
@@ -1437,9 +1433,6 @@ static void multiple_choice_score(llama_context * ctx, const gpt_params & params
         n_task = params.multiple_choice_tasks;
     }
 
-    // This is needed as usual for LLaMA models
-    const bool add_bos = llama_should_add_bos_token(llama_get_model(ctx));
-
     printf("%s: preparing task data", __func__);
     fflush(stdout);
     if (n_task > 500) {
@@ -1447,7 +1440,7 @@ static void multiple_choice_score(llama_context * ctx, const gpt_params & params
         fflush(stdout);
         std::atomic<int> counter(0);
         std::atomic<int> n_bad(0);
-        auto prepare = [&counter, &n_bad, &tasks, ctx, add_bos] () {
+        auto prepare = [&counter, &n_bad, &tasks, ctx] () {
             int num_tasks = tasks.size();
             int n_bad_local = 0;
             while (true) {
@@ -1458,7 +1451,7 @@ static void multiple_choice_score(llama_context * ctx, const gpt_params & params
                 }
                 int last = std::min(first + K_TOKEN_CHUNK, num_tasks);
                 for (int i = first; i < last; ++i) {
-                    if (!multiple_choice_prepare_one_task(ctx, add_bos, tasks[i], false)) ++n_bad_local;
+                    if (!multiple_choice_prepare_one_task(ctx, tasks[i], false)) ++n_bad_local;
                 }
             }
         };
@@ -1480,7 +1473,7 @@ static void multiple_choice_score(llama_context * ctx, const gpt_params & params
         int i_task = 0;
         for (auto& task : tasks) {
             ++i_task;
-            if (!multiple_choice_prepare_one_task(ctx, add_bos, task, true)) {
+            if (!multiple_choice_prepare_one_task(ctx, task, true)) {
                 return;
             }
             if (i_task%n_dot == 0) {
@@ -1716,6 +1709,7 @@ static void kl_divergence(llama_context * ctx, const gpt_params & params) {
     const int num_batches = (n_ctx + n_batch - 1)/n_batch;
     const int nv = 2*((n_vocab + 1)/2) + 4;
     const bool add_bos = llama_should_add_bos_token(llama_get_model(ctx));
+    GGML_ASSERT(llama_add_eos_token(llama_get_model(ctx)) != 1);
 
     std::vector<uint16_t> log_probs_uint16(size_t(n_ctx - 1 - n_ctx/2) * nv);
     std::vector<float> kld_values(size_t(n_ctx - 1 - n_ctx/2)*n_chunk);
@@ -1859,12 +1853,20 @@ int main(int argc, char ** argv) {
 
     const int32_t n_ctx = params.n_ctx;
 
+    if (n_ctx <= 0) {
+        fprintf(stderr, "%s: perplexity tool requires '--ctx-size' > 0\n", __func__);
+        return 1;
+    }
+
     const bool ppl = !params.hellaswag && !params.winogrande && !params.multiple_choice && !params.kl_divergence;
+
     if (ppl) {
-        int n_seq = std::max(1, params.n_batch / n_ctx);
-        int32_t n_kv = n_seq * n_ctx;
+        const int32_t n_seq = std::max(1, params.n_batch / n_ctx);
+        const int32_t n_kv = n_seq * n_ctx;
+
         params.n_parallel = n_seq;
-        params.n_ctx = n_kv;
+        params.n_ctx      = n_kv;
+
         params.n_batch = std::min(params.n_batch, n_kv);
     } else {
         params.n_batch = std::min(params.n_batch, params.n_ctx);

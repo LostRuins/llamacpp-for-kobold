@@ -7,7 +7,7 @@ Just copy this single static HTML file anywhere and open it in a browser, or fro
 Please go to https://github.com/LostRuins/lite.koboldai.net for updates on Kobold Lite.
 If you are submitting a pull request for Lite, PLEASE use the above repo, not the KoboldCpp one.
 Kobold Lite is under the AGPL v3.0 License unless otherwise exempted. Please do not remove this line.
-Current version: 129
+Current version: 134
 -Concedo
 -->
 
@@ -198,9 +198,9 @@ Current version: 129
 		}
 
 		#actionmenuitems button,#actionmenuitems2 button {
-			width: 76px;
+			width: 78px;
 		}
-		@media (max-width: 720px) {
+		@media (max-width: 624px) {
 			#actionmenuitems button,#actionmenuitems2 button {
 				width: 60px;
 				padding: 4px 4px;
@@ -382,13 +382,13 @@ Current version: 129
 
 		.workerpopup {
 			background-color: #262626;
-			margin-top: 170px;
+			margin-top: 100px;
 		}
 		@media (max-width: 768px) {
 			.workerpopup {
 				width: 100%;
 				background-color: #262626;
-				margin-top: 170px;
+				margin-top: 100px;
 			}
 		}
 
@@ -424,6 +424,14 @@ Current version: 129
 		}
 		@media (max-width: 520px) {
 			.nspopup.flexsizesmall {
+			width: 100%;
+			}
+		}
+		.nspopup.flexsizevsmall {
+			width: 330px;
+		}
+		@media (max-width: 340px) {
+			.nspopup.flexsizevsmall {
 			width: 100%;
 			}
 		}
@@ -1043,6 +1051,11 @@ Current version: 129
 			background-color: #b1b1b1;
 		}
 
+		.memtabcontainer
+		{
+			padding:3px;
+		}
+
 		.navbar-button-bar {
 			display: block;
 			height: 2px;
@@ -1207,7 +1220,7 @@ Current version: 129
 		}
 
 		.workerTableDiv,.shareStory{
-			max-height: 320px;
+			max-height: 420px;
 			overflow-y: auto;
 			overflow-x: hidden;
 		}
@@ -1228,7 +1241,7 @@ Current version: 129
 		.saveloadpopup {
 			width: 660px;
 			background-color: #262626;
-			margin-top: 90px;
+			margin-top: 80px;
 		}
 		@media (max-width: 768px) {
 			.saveloadpopup {
@@ -1242,10 +1255,16 @@ Current version: 129
 			height: auto;
     		overflow-y: auto;
 			margin-top: 4px;
-			padding: 6px;
+			padding: 4px;
 			display: grid;
-			gap: 6px;
+			gap: 4px;
+			font-size: 12px;
 			/* grid-auto-rows: 56px; */
+		}
+		@media (max-width: 340px) {
+			.saveloadgrid {
+				font-size: 8px;
+			}
 		}
 
 
@@ -1380,13 +1399,21 @@ Current version: 129
 		margin: 2px;
 		font-weight: bolder;
 		}
+		.wiinputkeycol
+		{
+			min-width: 70px;
+    		width: 15%;
+		}
 		.wiinputkey
 		{
 		font-size: 14px;
 		height: 24px;
 		padding: 2px;
 		margin: 0px;
-		width: 20vw;
+		}
+		.wiinputvalcol
+		{
+			width: 85%;
 		}
 		.wiinputval
 		{
@@ -1394,7 +1421,6 @@ Current version: 129
 		height: 24px;
 		padding: 2px;
 		margin: 0px;
-		width: 60vw;
 		resize: vertical;
 		}
 		.wilist
@@ -1686,9 +1712,11 @@ Current version: 129
 	}
 
 	.chat_mesgs{
-		padding: 12px 20px 12px 20px;
 		width:100%;
 		background: #0b141a;
+	}
+	.chat_mesgs_inner{
+		padding: 12px 20px 12px 20px;
 	}
 
 	.gamescreenbgnormal
@@ -1702,7 +1730,7 @@ Current version: 129
 	}
 	.transparentbg
 	{
-		background-color: #00000000;
+		background-color: #00000000 !important;
 	}
 
 	.chat_sent_msg p {
@@ -3307,14 +3335,85 @@ Current version: 129
 		return words.length;
 	}
 
-
-	function convertMarkdownTableToHtml(t){let hsep = /^[\s]*\|(?:[\s]*[-:]+[-:|\s]*)+\|[\s]*$/gm;let l=/^[\s]*\|(.*)\|[\s]*$/gm,r=t.split(/\r?\n|\r/),e="<table class='tablelines'>";for(let o of r){let hs=o.match(hsep);if(hs){continue;}let d=o.match(l);if(d){let i=d[0].split("|").map(t=>t.trim());e+=`<tr class='tablelines'><td class='tablelines'>${i.join("</td><td class='tablelines'>")}</td></tr>`}}return e+"</table>"}
-	//casualwriter casual-markdown, under MIT license
-	function simpleMarkdown(e){var r=function(e){return e.replace(/</g,"<").replace(/\>/g,">")},l=function(e,r){return"<pre><code>"+(r=(r=(r=(r=(r=r.replace(/</g,"&lt;").replace(/\>/g,"&gt;")).replace(/\t/g,"   ").replace(/\^\^\^(.+?)\^\^\^/g,"<mark>$1</mark>")).replace(/^\/\/(.*)/gm,"<rem>//$1</rem>").replace(/\s\/\/(.*)/gm," <rem>//$1</rem>")).replace(/(\s?)(function|procedure|return|exit|if|then|else|end|loop|while|or|and|case|when)(\s)/gim,"$1<b>$2</b>$3")).replace(/(\s?)(var|let|const|=>|for|next|do|while|loop|continue|break|switch|try|catch|finally)(\s)/gim,"$1<b>$2</b>$3"))+"</code></pre>"},c=function(e){return(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=(e=e.replace(/^###### (.*?)\s*#*$/gm,"<h6>$1</h6>").replace(/^##### (.*?)\s*#*$/gm,"<h5>$1</h5>").replace(/^#### (.*?)\s*#*$/gm,"<h4>$1</h4>").replace(/^### (.*?)\s*#*$/gm,"<h3>$1</h3>").replace(/^## (.*?)\s*#*$/gm,"<h2>$1</h2>").replace(/^# (.*?)\s*#*$/gm,"<h1>$1</h1>")
-	.replace(/^<h(\d)\>(.*?)\s*{(.*)}\s*<\/h\d\>$/gm,'<h$1 id="$3">$2</h$1>')).replace(/^-{3,}|^\_{3,}|^\*{3,}$/gm,"<hr/>")).replace(/``(.*?)``/gm,function(e,l){return"<code>"+r(l).replace(/`/g,"`")+"</code>"})).replace(/`(.*?)`/gm,"<code>$1</code>")).replace(/^\>\> (.*$)/gm,"<blockquote><blockquote>$1</blockquote></blockquote>")).replace(/^\> (.*$)/gm,"<blockquote>$1</blockquote>")).replace(/<\/blockquote\>\n<blockquote\>/g,"\n")).replace(/<\/blockquote\>\n<blockquote\>/g,"\n<br>")).replace(/!\[(.*?)\]\((.*?) "(.*?)"\)/gm,'<img alt="$1" src="$2" $3 />')).replace(/!\[(.*?)\]\((.*?)\)/gm,'<img alt="$1" src="$2" />')).replace(/\[(.*?)\]\((.*?) "new"\)/gm,'<a href="$2" target=_new>$1</a>')).replace(/\[(.*?)\]\((.*?) "(.*?)"\)/gm,'<a href="$2" title="$3">$1</a>')).replace(/<http(.*?)\>/gm,'<a href="http$1">http$1</a>')).replace(/\[(.*?)\]\(\)/gm,'<a href="$1">$1</a>')).replace(/\[(.*?)\]\((.*?)\)/gm,'<a href="$2">$1</a>'))
-	.replace(/^[\*+-][ .](.*)/gm,"<ul><li>$1</li></ul>")).replace(/\%SpcEtg\%(\d\d?)[ .](.*)([\n]?)/gm,"\%SpcEtg\%\n$1.$2\n").replace(/^\d\d?[ .] (.*)([\n]??)/gm,"<ol><li>$1</li></ol>").replace(/<\/li><\/ol><ol><li>/gm,"</li><li>")).replace(/^<[ou]l><li>(.*\%SpcStg\%.*\%SpcEtg\%.*)<\/li><\/[ou]l\>/gm,"$1").replace(/^\s{2,6}[\*+-][ .](.*)/gm,"<ul><ul><li>$1</li></ul></ul>")).replace(/^\s{2,6}\d[ .](.*)/gm,"<ul><ol><li>$1</li></ol></ul>")).replace(/<\/[ou]l\>\n\n<[ou]l\>/gm,"\n").replace(/<\/[ou]l\>\n<[ou]l\>/g,"")).replace(/<\/[ou]l\>\n<[ou]l\>/g,"\n").replace(/<\/li><\/ul><ul><li>/gm,"</li><li>")).replace(/\*\*\*(\w.*?[^\\])\*\*\*/gm,"<b><em>$1</em></b>")).replace(/\*\*(\w.*?[^\\])\*\*/gm,"<b>$1</b>")).replace(/\*(\w.*?[^\\])\*/gm,"<em>$1</em>")).replace(/___(\w.*?[^\\])___/gm,"<b><em>$1</em></b>")).replace(/__(\w.*?[^\\])__/gm,"<u>$1</u>")).replace(/~~(\w.*?)~~/gm,"<del>$1</del>")).replace(/\^\^(\w.*?)\^\^/gm,"<ins>$1</ins>")).replace(/\{\{(\w.*?)\}\}/gm,"<mark>$1</mark>")).replace(/^((?:\|[^|\r\n]*[^|\r\n\s]\s*)+\|(?:\r?\n|\r|))+/gm,function (matchedTable){return convertMarkdownTableToHtml(matchedTable);})).replace(/  \n/g,"\n<br/>")
-	//.replace(/\n\s*\n/g,"\n<p>\n")
-	).replace(/^ {4,10}(.*)/gm,function(e,l){return"<pre><code>"+r(l)+"</code></pre>"})).replace(/^\t(.*)/gm,function(e,l){return"<pre><code>"+r(l)+"</code></pre>"})).replace(/<\/code\><\/pre\>\n<pre\><code\>/g,"\n")).replace(/\\([`_~\*\+\-\.\^\\\<\>\(\)\[\]])/gm,"$1")},a=0,n=0,p="";for(e=(e=e.replace(/\r\n/g,"\n").replace(/\n~~~/g,"\n```")).replace(/```([^`]+)```/g,l);(a=e.indexOf("<code>"))>=0;)n=e.indexOf("</code>",a),p+=c(e.substr(0,a))+e.substr(a+6,n>0?n-a-6:mdtext.length),e=e.substr(n+7);return p+c(e)}
+	function simpleMarkdown(text) {
+		const escapeHTML = (str) => str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+		const highlightCode = (code) => {
+			code = escapeHTML(code);
+			code = code.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+			code = code.replace(/\t/g, "   ");
+			code = code.replace(/\^\^\^(.+?)\^\^\^/g, "<mark>$1</mark>");
+			code = code.replace(/^\/\/(.*)/gm, "<rem>//$1</rem>");
+			code = code.replace(/\s\/\/(.*)/gm, " <rem>//$1</rem>");
+			code = code.replace(/(\s?)(function|procedure|return|exit|if|then|else|end|loop|while|or|and|case|when)(\s)/gim, "$1<b>$2</b>$3");
+			code = code.replace(/(\s?)(var|let|const|=>|for|next|do|while|loop|continue|break|switch|try|catch|finally)(\s)/gim, "$1<b>$2</b>$3");
+			return `<pre><code>${code}</code></pre>`;
+		};
+		const convertMarkdownTableToHtml = (t) => {
+			let hsep = /^[\s]*\|(?:[\s]*[-:]+[-:|\s]*)+\|[\s]*$/gm;let l=/^[\s]*\|(.*)\|[\s]*$/gm,r=t.split(/\r?\n|\r/),e="<table class='tablelines'>";for(let o of r){let hs=o.match(hsep);if(hs){continue;}let d=o.match(l);if(d){let i=d[0].split("|").map(t=>t.trim());e+=`<tr class='tablelines'><td class='tablelines'>${i.join("</td><td class='tablelines'>")}</td></tr>`}}return e+"</table>"
+		};
+		const formatMarkdown = (md) => {
+			md = md.replace(/^###### (.*?)\s*#*$/gm, "<h6>$1</h6>")
+			.replace(/^##### (.*?)\s*#*$/gm, "<h5>$1</h5>")
+			.replace(/^#### (.*?)\s*#*$/gm, "<h4>$1</h4>")
+			.replace(/^### (.*?)\s*#*$/gm, "<h3>$1</h3>")
+			.replace(/^## (.*?)\s*#*$/gm, "<h2>$1</h2>")
+			.replace(/^# (.*?)\s*#*$/gm, "<h1>$1</h1>")
+			.replace(/^<h(\d)\>(.*?)\s*{(.*)}\s*<\/h\d\>$/gm,'<h$1 id="$3">$2</h$1>')
+			.replace(/^-{3,}|^\_{3,}|^\*{3,}$/gm, "<hr/>")
+			.replace(/``(.*?)``/gm, (match, code) => {
+				return `<code>${escapeHTML(code).replace(/`/g, "`")}</code>`;})
+			.replace(/`(.*?)`/gm, "<code>$1</code>")
+			.replace(/^\>\> (.*$)/gm, "<blockquote><blockquote>$1</blockquote></blockquote>")
+			.replace(/^\> (.*$)/gm, "<blockquote>$1</blockquote>")
+			.replace(/<\/blockquote\>\n<blockquote\>/g, "\n")
+			.replace(/<\/blockquote\>\n<blockquote\>/g, "\n<br>")
+			.replace(/!\[(.*?)\]\((.*?) "(.*?)"\)/gm,'<img alt="$1" src="$2" $3 />')
+			.replace(/!\[(.*?)\]\((.*?)\)/gm, '<img alt="$1" src="$2" />')
+			.replace(/\[(.*?)\]\((.*?) "new"\)/gm, '<a href="$2" target=_new>$1</a>')
+			.replace(/\[(.*?)\]\((.*?) "(.*?)"\)/gm, '<a href="$2" title="$3">$1</a>')
+			.replace(/<http(.*?)\>/gm, '<a href="http$1">http$1</a>')
+			.replace(/\[(.*?)\]\(\)/gm, '<a href="$1">$1</a>')
+			.replace(/\[(.*?)\]\((.*?)\)/gm, '<a href="$2">$1</a>')
+			.replace(/^[\*+-][ .](.*)/gm, "<ul><li>$1</li></ul>")
+			.replace(/\%SpcEtg\%(\d\d?)[ .](.*)([\n]?)/gm, "\%SpcEtg\%\n$1.$2\n")
+			.replace(/^\d\d?[ .] (.*)([\n]??)/gm, "<ol><li>$1</li></ol>")
+			.replace(/<\/li><\/ol><ol><li>/gm, "</li><li>")
+			.replace(/<\/[ou]l><li>(.*\%SpcStg\%.*\%SpcEtg\%.*)<\/li><\/[ou]l\>/gm,"$1")
+			.replace(/^\s{2,6}[\*+-][ .](.*)/gm, "<ul><ul><li>$1</li></ul></ul>")
+			.replace(/^\s{2,6}\d[ .](.*)/gm, "<ul><ol><li>$1</li></ol></ul>")
+			.replace(/<\/[ou]l\>\n\n<[ou]l\>/gm, "\n")
+			.replace(/<\/[ou]l\>\n<[ou]l\>/g, "")
+			.replace(/<\/li><\/ul><ul><li>/gm, "</li><li>")
+			.replace(/\*\*\*(\w.*?[^\\])\*\*\*/gm, "<b><em>$1</em></b>")
+			.replace(/\*\*(\w.*?[^\\])\*\*/gm, "<b>$1</b>")
+			.replace(/\*(\w.*?[^\\])\*/gm, "<em>$1</em>")
+			.replace(/___(\w.*?[^\\])___/gm, "<b><em>$1</em></b>")
+			.replace(/__(\w.*?[^\\])__/gm, "<u>$1</u>")
+			.replace(/~~(\w.*?)~~/gm, "<del>$1</del>")
+			.replace(/\^\^(\w.*?)\^\^/gm, "<ins>$1</ins>")
+			.replace(/\{\{(\w.*?)\}\}/gm, "<mark>$1</mark>")
+			.replace(/^((?:\|[^|\r\n]*[^|\r\n\s]\s*)+\|(?:\r?\n|\r|))+/gm,
+				(matchedTable) => convertMarkdownTableToHtml(matchedTable))
+			.replace(/  \n/g, "\n<br/>")
+			.replace(/^ {4,10}(.*)/gm, (match, code) => {
+				return `<pre><code>${escapeHTML(code)}</code></pre>`;})
+			.replace(/^\t(.*)/gm, (match, code) => {
+				return `<pre><code>${escapeHTML(code)}</code></pre>`;})
+			.replace(/<\/code\><\/pre\>\n<pre\><code\>/g, "\n")
+			.replace(/\\([`_~\*\+\-\.\^\\\<\>\(\)\[\]])/gm, "$1");
+			return md;
+		};
+		text = text.replace(/\r\n/g, "\n").replace(/\n~~~/g, "\n```").replace(/```(([^`]|`[^`])+)```/g, "<code>$1</code>");
+		let result = ""; let codeStartIndex = 0; let codeEndIndex = 0;
+		while ((codeStartIndex = text.indexOf("<code>")) >= 0) {
+			codeEndIndex = text.indexOf("</code>", codeStartIndex);
+			result += formatMarkdown(text.substr(0, codeStartIndex));
+			result += highlightCode(text.substr(codeStartIndex + 6, codeEndIndex > 0 ? codeEndIndex - codeStartIndex - 6 : text.length));
+			text = text.substr(codeEndIndex + 7);
+		}
+		result += formatMarkdown(text);
+		return result;
+	}
 
 	//LMZA-JS, under MIT license
 	var lz_c=function(){"use strict";function r(e,r){postMessage({action:Ur,cbn:r,result:e})}function t(e){var r=[];return r[e-1]=void 0,r}function n(e,r){return i(e[0]+r[0],e[1]+r[1])}function s(e,r){return f(~~Math.max(Math.min(e[1]/$r,2147483647),-2147483648)&~~Math.max(Math.min(r[1]/$r,2147483647),-2147483648),c(e)&c(r))}function o(e,r){var t,n;return e[0]==r[0]&&e[1]==r[1]?0:(t=0>e[1],n=0>r[1],t&&!n?-1:!t&&n?1:h(e,r)[1]<0?-1:1)}function i(e,r){var t,n;for(r%=0x10000000000000000,e%=0x10000000000000000,t=r%$r,n=Math.floor(e/$r)*$r,r=r-t+n,e=e-n+t;0>e;)e+=$r,r-=$r;for(;e>4294967295;)e-=$r,r+=$r;for(r%=0x10000000000000000;r>0x7fffffff00000000;)r-=0x10000000000000000;for(;-0x8000000000000000>r;)r+=0x10000000000000000;return[e,r]}function _(e,r){return e[0]==r[0]&&e[1]==r[1]}function a(e){return e>=0?[e,0]:[e+$r,-$r]}function c(e){return e[0]>=2147483648?~~Math.max(Math.min(e[0]-$r,2147483647),-2147483648):~~Math.max(Math.min(e[0],2147483647),-2147483648)}function f(e,r){var t,n;return t=e*$r,n=r,0>r&&(n+=$r),[n,t]}function u(e){return 30>=e?1<<e:u(30)*u(e-30)}function m(e,r){var t,n,s,o;if(r&=63,_(e,rt))return r?tt:e;if(0>e[1])throw Error("Neg");return o=u(r),n=e[1]*o%0x10000000000000000,s=e[0]*o,t=s-s%$r,n+=t,s-=t,n>=0x8000000000000000&&(n-=0x10000000000000000),[s,n]}function p(e,r){var t;return r&=63,t=u(r),i(Math.floor(e[0]/t),e[1]/t)}function d(e,r){var t;return r&=63,t=p(e,r),0>e[1]&&(t=n(t,m([2,0],63-r))),t}function h(e,r){return i(e[0]-r[0],e[1]-r[1])}function P(e,r){return e.dc=r,e.hc=0,e.Db=r.length,e}function l(e,r,t,n){return e.hc>=e.Db?-1:(n=Math.min(n,e.Db-e.hc),b(e.dc,e.hc,r,t,n),e.hc+=n,n)}function v(e){return e.dc=t(32),e.Db=0,e}function B(e){var r=e.dc;return r.length=e.Db,r}function k(e,r){e.dc[e.Db++]=r<<24>>24}function S(e,r,t,n){b(r,t,e.dc,e.Db,n),e.Db+=n}function M(e,r,t,n,s){var o;for(o=r;t>o;++o)n[s++]=e.charCodeAt(o)}function b(e,r,t,n,s){for(var o=0;s>o;++o)t[n+o]=e[r+o]}function E(e,r){fr(r,1<<e.s),r.j=e.f,ur(r,e.m),r.U=0,r.V=3,r.N=2,r.u=3}function g(r,t,n,s,i){var _,a;if(o(s,et)<0)throw Error("invalid length "+s);for(r.gc=s,_=U({}),E(i,_),_.Xb=void 0===lz_c.disableEndMark,mr(_,n),a=0;64>a;a+=8)k(n,255&c(p(s,a)));r.Ub=(_.L=0,_.Kb=t,_.Gb=0,Q(_),_.c.cc=n,or(_),$(_),X(_),_.P.fb=_.j+1-2,br(_.P,1<<_.N),_.f.fb=_.j+1-2,br(_.f,1<<_.N),void(_.x=tt),Z({},_))}function y(e,r,t){return e._b=v({}),g(e,P({},r),e._b,a(r.length),t),e}function R(e,r,n,s){var o;e.Rb=r,e.zb=n,o=r+n+s,(null==e.d||e.nb!=o)&&(e.d=null,e.nb=o,e.d=t(e.nb)),e.B=e.nb-n}function F(e,r){return e.d[e.e+e.v+r]}function L(e,r,t,n){var s,o;for(e.K&&e.v+r+n>e.q&&(n=e.q-(e.v+r)),++t,o=e.e+e.v+r,s=0;n>s&&e.d[o+s]==e.d[o+s-t];++s);return s}function z(e){return e.q-e.v}function C(e){var r,t,n;for(n=e.e+e.v-e.Rb,n>0&&--n,t=e.e+e.q-n,r=0;t>r;++r)e.d[r]=e.d[n+r];e.e-=n}function w(e){var r;++e.v,e.v>e.jb&&(r=e.e+e.v,r>e.B&&C(e),x(e))}function x(e){var r,t,n;if(!e.K)for(;;){if(n=-e.e+e.nb-e.q,!n)return;if(r=l(e.ac,e.d,e.e+e.q,n),-1==r)return e.jb=e.q,t=e.e+e.jb,t>e.B&&(e.jb=e.B-e.e),void(e.K=1);e.q+=r,e.q>=e.v+e.zb&&(e.jb=e.q-e.zb)}}function D(e,r){e.e+=r,e.jb-=r,e.v-=r,e.q-=r}function A(e,r,n,s,o){var i,_,a;1073741567>r&&(e.Vb=16+(s>>1),a=~~((r+n+s+o)/2)+256,R(e,r+n,s+o,a),e.bb=s,i=r+1,e.l!=i&&(e.E=t(2*(e.l=i))),_=65536,e.ab&&(_=r-1,_|=_>>1,_|=_>>2,_|=_>>4,_|=_>>8,_>>=1,_|=65535,_>16777216&&(_>>=1),e.Wb=_,++_,_+=e.F),_!=e.Ib&&(e.$=t(e.Ib=_)))}function I(e,r){var t,n,s,o,i,_,a,c,f,u,m,p,d,h,P,l,v,B,k,S,M;if(e.q>=e.v+e.bb)h=e.bb;else if(h=e.q-e.v,e.ib>h)return H(e),0;for(v=0,P=e.v>e.l?e.v-e.l:0,n=e.e+e.v,l=1,c=0,f=0,e.ab?(M=st[255&e.d[n]]^255&e.d[n+1],c=1023&M,M^=(255&e.d[n+2])<<8,f=65535&M,u=(M^st[255&e.d[n+3]]<<5)&e.Wb):u=255&e.d[n]^(255&e.d[n+1])<<8,s=e.$[e.F+u]||0,e.ab&&(o=e.$[c]||0,i=e.$[1024+f]||0,e.$[c]=e.v,e.$[1024+f]=e.v,o>P&&e.d[e.e+o]==e.d[n]&&(r[v++]=l=2,r[v++]=e.v-o-1),i>P&&e.d[e.e+i]==e.d[n]&&(i==o&&(v-=2),r[v++]=l=3,r[v++]=e.v-i-1,o=i),0!=v&&o==s&&(v-=2,l=1)),e.$[e.F+u]=e.v,k=(e.h<<1)+1,S=e.h<<1,p=d=e.s,0!=e.s&&s>P&&e.d[e.e+s+e.s]!=e.d[n+e.s]&&(r[v++]=l=e.s,r[v++]=e.v-s-1),t=e.Vb;;){if(P>=s||0==t--){e.E[k]=e.E[S]=0;break}if(a=e.v-s,_=(e.h>=a?e.h-a:e.h-a+e.l)<<1,B=e.e+s,m=d>p?p:d,e.d[B+m]==e.d[n+m]){for(;++m!=h&&e.d[B+m]==e.d[n+m];);if(m>l&&(r[v++]=l=m,r[v++]=a-1,m==h)){e.E[S]=e.E[_],e.E[k]=e.E[_+1];break}}(255&e.d[n+m])>(255&e.d[B+m])?(e.E[S]=s,S=_+1,s=e.E[S],d=m):(e.E[k]=s,k=_,s=e.E[k],p=m)}return H(e),v}function O(e){e.e=0,e.v=0,e.q=0,e.K=0,x(e),e.h=0,D(e,-1)}function H(e){var r;++e.h>=e.l&&(e.h=0),w(e),1073741823==e.v&&(r=e.v-e.l,N(e.E,2*e.l,r),N(e.$,e.Ib,r),D(e,r))}function N(e,r,t){var n,s;for(n=0;r>n;++n)s=e[n]||0,t>=s?s=0:s-=t,e[n]=s}function G(e,r){e.ab=r>2,e.ab?(e.s=0,e.ib=4,e.F=66560):(e.s=2,e.ib=3,e.F=0)}function T(e,r){var t,n,s,o,i,_,a,c,f,u,m,p,d,h,P,l,v;do{if(e.q>=e.v+e.bb)p=e.bb;else if(p=e.q-e.v,e.ib>p){H(e);continue}for(d=e.v>e.l?e.v-e.l:0,n=e.e+e.v,e.ab?(v=st[255&e.d[n]]^255&e.d[n+1],_=1023&v,e.$[_]=e.v,v^=(255&e.d[n+2])<<8,a=65535&v,e.$[1024+a]=e.v,c=(v^st[255&e.d[n+3]]<<5)&e.Wb):c=255&e.d[n]^(255&e.d[n+1])<<8,s=e.$[e.F+c],e.$[e.F+c]=e.v,P=(e.h<<1)+1,l=e.h<<1,u=m=e.s,t=e.Vb;;){if(d>=s||0==t--){e.E[P]=e.E[l]=0;break}if(i=e.v-s,o=(e.h>=i?e.h-i:e.h-i+e.l)<<1,h=e.e+s,f=m>u?u:m,e.d[h+f]==e.d[n+f]){for(;++f!=p&&e.d[h+f]==e.d[n+f];);if(f==p){e.E[l]=e.E[o],e.E[P]=e.E[o+1];break}}(255&e.d[n+f])>(255&e.d[h+f])?(e.E[l]=s,l=o+1,s=e.E[l],m=f):(e.E[P]=s,P=o,s=e.E[P],u=f)}H(e)}while(0!=--r)}function W(e){return e-=2,4>e?e:3}function Y(e){return 4>e?0:10>e?e-3:e-6}function Z(e,r){return e._=r,e.ic=null,e.bc=1,e}function V(e){if(!e.bc)throw Error("bad state");if(!e._)throw Error("No decoding");return j(e),e.bc}function j(e){J(e._,e._.tb,e._.Nb,e._.$b),e.Ob=e._.tb[0],e._.$b[0]&&(cr(e._),e.bc=0)}function K(e,r){var t,n,s,o;e.W=r,s=e.a[r].n,n=e.a[r].g;do e.a[r].p&&(Cr(e.a[s]),e.a[s].n=s-1,e.a[r].Sb&&(e.a[s-1].p=0,e.a[s-1].n=e.a[r].n2,e.a[s-1].g=e.a[r].g2)),o=s,t=n,n=e.a[o].g,s=e.a[o].n,e.a[o].g=t,e.a[o].n=r,r=o;while(r>0);return e.Z=e.a[0].g,e.m=e.a[0].n}function q(e){e.i=0,e.C=0;for(var r=0;4>r;++r)e.r[r]=0}function J(e,r,t,s){var i,f,u,m,p,d,P,l,v,B,k,S,M,b,E;if(r[0]=tt,t[0]=tt,s[0]=1,e.Kb&&(e.b.ac=e.Kb,O(e.b),e.L=1,e.Kb=null),!e.Gb){if(e.Gb=1,b=e.x,_(e.x,tt)){if(!z(e.b))return void er(e,c(e.x));_r(e),M=c(e.x)&e.u,Tr(e.c,e.z,(e.i<<4)+M,0),e.i=Y(e.i),u=F(e.b,-e.o),Rr(gr(e.y,c(e.x),e.C),e.c,u),e.C=u,--e.o,e.x=n(e.x,nt)}if(!z(e.b))return void er(e,c(e.x));for(;;){if(P=rr(e,c(e.x)),B=e.Z,M=c(e.x)&e.u,f=(e.i<<4)+M,1==P&&-1==B)Tr(e.c,e.z,f,0),u=F(e.b,-e.o),E=gr(e.y,c(e.x),e.C),7>e.i?Rr(E,e.c,u):(v=F(e.b,-e.r[0]-1-e.o),Fr(E,e.c,v,u)),e.C=u,e.i=Y(e.i);else{if(Tr(e.c,e.z,f,1),4>B){if(Tr(e.c,e.S,e.i,1),B?(Tr(e.c,e.Y,e.i,1),1==B?Tr(e.c,e.ob,e.i,0):(Tr(e.c,e.ob,e.i,1),Tr(e.c,e.Mb,e.i,B-2))):(Tr(e.c,e.Y,e.i,0),1==P?Tr(e.c,e.Q,f,0):Tr(e.c,e.Q,f,1)),1==P?e.i=7>e.i?9:11:(kr(e.f,e.c,P-2,M),e.i=7>e.i?8:11),m=e.r[B],0!=B){for(d=B;d>=1;--d)e.r[d]=e.r[d-1];e.r[0]=m}}else{for(Tr(e.c,e.S,e.i,0),e.i=7>e.i?7:10,kr(e.P,e.c,P-2,M),B-=4,S=dr(B),l=W(P),Dr(e.D[l],e.c,S),S>=4&&(p=(S>>1)-1,i=(2|1&S)<<p,k=B-i,14>S?Hr(e.sb,i-S-1,e.c,p,k):(Wr(e.c,k>>4,p-4),Ir(e.M,e.c,15&k),++e.rb)),m=B,d=3;d>=1;--d)e.r[d]=e.r[d-1];e.r[0]=m,++e.pb}e.C=F(e.b,P-1-e.o)}if(e.o-=P,e.x=n(e.x,a(P)),!e.o){if(e.pb>=128&&$(e),e.rb>=16&&X(e),r[0]=e.x,t[0]=Yr(e.c),!z(e.b))return void er(e,c(e.x));if(o(h(e.x,b),[4096,0])>=0)return e.Gb=0,void(s[0]=0)}}}}function Q(e){var r,t;e.b||(r={},t=4,e.J||(t=2),G(r,t),e.b=r),Er(e.y,e.U,e.V),(e.R!=e.gb||e.kb!=e.j)&&(A(e.b,e.R,4096,e.j,274),e.gb=e.R,e.kb=e.j)}function U(e){var r;for(e.r=t(4),e.a=[],e.c={},e.z=t(192),e.S=t(12),e.Y=t(12),e.ob=t(12),e.Mb=t(12),e.Q=t(192),e.D=[],e.sb=t(114),e.M=xr({},4),e.P=Sr({}),e.f=Sr({}),e.y={},e.k=[],e.H=[],e.X=[],e.Jb=t(16),e.t=t(4),e.G=t(4),e.tb=[tt],e.Nb=[tt],e.$b=[0],e.Eb=t(5),e.Pb=t(128),e.hb=0,e.J=1,e.A=0,e.kb=-1,e.Z=0,r=0;4096>r;++r)e.a[r]={};for(r=0;4>r;++r)e.D[r]=xr({},6);return e}function X(e){for(var r=0;16>r;++r)e.Jb[r]=Or(e.M,r);e.rb=0}function $(e){var r,t,n,s,o,i,_,a;for(s=4;128>s;++s)i=dr(s),n=(i>>1)-1,r=(2|1&i)<<n,e.Pb[s]=Nr(e.sb,r-i-1,n,s-r);for(o=0;4>o;++o){for(t=e.D[o],_=o<<6,i=0;e.yb>i;++i)e.H[_+i]=Ar(t,i);for(i=14;e.yb>i;++i)e.H[_+i]+=(i>>1)-1-4<<6;for(a=128*o,s=0;4>s;++s)e.X[a+s]=e.H[_+s];for(;128>s;++s)e.X[a+s]=e.H[_+dr(s)]+e.Pb[s]}e.pb=0}function er(e,r){ar(e),pr(e,r&e.u);for(var t=0;5>t;++t)Vr(e.c)}function rr(e,r){var t,n,s,o,i,_,a,c,f,u,m,p,d,h,P,l,v,B,k,S,M,b,E,g,y,R,C,w,x,D,A,I,O,H,N,G,T,W,Z,V,j,q,J,Q,U,X,$,er,rr,or;if(e.W!=e.m)return d=e.a[e.m].n-e.m,e.Z=e.a[e.m].g,e.m=e.a[e.m].n,d;if(e.m=e.W=0,e.I?(p=e.hb,e.I=0):p=_r(e),C=e.A,y=z(e.b)+1,2>y)return e.Z=-1,1;for(y>273&&(y=273),V=0,f=0;4>f;++f)e.t[f]=e.r[f],e.G[f]=L(e.b,-1,e.t[f],273),e.G[f]>e.G[V]&&(V=f);if(e.G[V]>=e.j)return e.Z=V,d=e.G[V],ir(e,d-1),d;if(p>=e.j)return e.Z=e.k[C-1]+4,ir(e,p-1),p;if(a=F(e.b,-1),v=F(e.b,-e.r[0]-1-1),2>p&&a!=v&&2>e.G[V])return e.Z=-1,1;if(e.a[0].Yb=e.i,H=r&e.u,e.a[1].w=it[e.z[(e.i<<4)+H]>>>2]+zr(gr(e.y,r,e.C),e.i>=7,v,a),Cr(e.a[1]),B=it[2048-e.z[(e.i<<4)+H]>>>2],Z=B+it[2048-e.S[e.i]>>>2],v==a&&(j=Z+sr(e,e.i,H),e.a[1].w>j&&(e.a[1].w=j,wr(e.a[1]))),m=p>=e.G[V]?p:e.G[V],2>m)return e.Z=e.a[1].g,1;e.a[1].n=0,e.a[0].Ab=e.t[0],e.a[0].xb=e.t[1],e.a[0].wb=e.t[2],e.a[0].Lb=e.t[3],u=m;do e.a[u--].w=268435455;while(u>=2);for(f=0;4>f;++f)if(W=e.G[f],!(2>W)){G=Z+nr(e,f,e.i,H);do o=G+Mr(e.f,W-2,H),A=e.a[W],A.w>o&&(A.w=o,A.n=0,A.g=f,A.p=0);while(--W>=2)}if(g=B+it[e.S[e.i]>>>2],u=e.G[0]>=2?e.G[0]+1:2,p>=u){for(w=0;u>e.k[w];)w+=2;for(;c=e.k[w+1],o=g+tr(e,c,u,H),A=e.a[u],A.w>o&&(A.w=o,A.n=0,A.g=c+4,A.p=0),u!=e.k[w]||(w+=2,w!=C);++u);}for(t=0;;){if(++t,t==m)return K(e,t);if(k=_r(e),C=e.A,k>=e.j)return e.hb=k,e.I=1,K(e,t);if(++r,O=e.a[t].n,e.a[t].p?(--O,e.a[t].Sb?(J=e.a[e.a[t].n2].Yb,J=4>e.a[t].g2?7>J?8:11:7>J?7:10):J=e.a[O].Yb,J=Y(J)):J=e.a[O].Yb,O==t-1?J=e.a[t].g?Y(J):7>J?9:11:(e.a[t].p&&e.a[t].Sb?(O=e.a[t].n2,I=e.a[t].g2,J=7>J?8:11):(I=e.a[t].g,J=4>I?7>J?8:11:7>J?7:10),D=e.a[O],4>I?I?1==I?(e.t[0]=D.xb,e.t[1]=D.Ab,e.t[2]=D.wb,e.t[3]=D.Lb):2==I?(e.t[0]=D.wb,e.t[1]=D.Ab,e.t[2]=D.xb,e.t[3]=D.Lb):(e.t[0]=D.Lb,e.t[1]=D.Ab,e.t[2]=D.xb,e.t[3]=D.wb):(e.t[0]=D.Ab,e.t[1]=D.xb,e.t[2]=D.wb,e.t[3]=D.Lb):(e.t[0]=I-4,e.t[1]=D.Ab,e.t[2]=D.xb,e.t[3]=D.wb)),e.a[t].Yb=J,e.a[t].Ab=e.t[0],e.a[t].xb=e.t[1],e.a[t].wb=e.t[2],e.a[t].Lb=e.t[3],_=e.a[t].w,a=F(e.b,-1),v=F(e.b,-e.t[0]-1-1),H=r&e.u,n=_+it[e.z[(J<<4)+H]>>>2]+zr(gr(e.y,r,F(e.b,-2)),J>=7,v,a),b=e.a[t+1],S=0,b.w>n&&(b.w=n,b.n=t,b.g=-1,b.p=0,S=1),B=_+it[2048-e.z[(J<<4)+H]>>>2],Z=B+it[2048-e.S[J]>>>2],v!=a||t>b.n&&!b.g||(j=Z+(it[e.Y[J]>>>2]+it[e.Q[(J<<4)+H]>>>2]),b.w>=j&&(b.w=j,b.n=t,b.g=0,b.p=0,S=1)),R=z(e.b)+1,R=R>4095-t?4095-t:R,y=R,!(2>y)){if(y>e.j&&(y=e.j),!S&&v!=a&&(U=Math.min(R-1,e.j),P=L(e.b,0,e.t[0],U),P>=2)){for(Q=Y(J),N=r+1&e.u,E=n+it[2048-e.z[(Q<<4)+N]>>>2]+it[2048-e.S[Q]>>>2],x=t+1+P;x>m;)e.a[++m].w=268435455;o=E+(X=Mr(e.f,P-2,N),X+nr(e,0,Q,N)),A=e.a[x],A.w>o&&(A.w=o,A.n=t+1,A.g=0,A.p=1,A.Sb=0)}for(q=2,T=0;4>T;++T)if(h=L(e.b,-1,e.t[T],y),!(2>h)){l=h;do{for(;t+h>m;)e.a[++m].w=268435455;o=Z+($=Mr(e.f,h-2,H),$+nr(e,T,J,H)),A=e.a[t+h],A.w>o&&(A.w=o,A.n=t,A.g=T,A.p=0)}while(--h>=2);if(h=l,T||(q=h+1),R>h&&(U=Math.min(R-1-h,e.j),P=L(e.b,h,e.t[T],U),P>=2)){for(Q=7>J?8:11,N=r+h&e.u,s=Z+(er=Mr(e.f,h-2,H),er+nr(e,T,J,H))+it[e.z[(Q<<4)+N]>>>2]+zr(gr(e.y,r+h,F(e.b,h-1-1)),1,F(e.b,h-1-(e.t[T]+1)),F(e.b,h-1)),Q=Y(Q),N=r+h+1&e.u,M=s+it[2048-e.z[(Q<<4)+N]>>>2],E=M+it[2048-e.S[Q]>>>2],x=h+1+P;t+x>m;)e.a[++m].w=268435455;o=E+(rr=Mr(e.f,P-2,N),rr+nr(e,0,Q,N)),A=e.a[t+x],A.w>o&&(A.w=o,A.n=t+h+1,A.g=0,A.p=1,A.Sb=1,A.n2=t,A.g2=T)}}if(k>y){for(k=y,C=0;k>e.k[C];C+=2);e.k[C]=k,C+=2}if(k>=q){for(g=B+it[e.S[J]>>>2];t+k>m;)e.a[++m].w=268435455;for(w=0;q>e.k[w];)w+=2;for(h=q;;++h)if(i=e.k[w+1],o=g+tr(e,i,h,H),A=e.a[t+h],A.w>o&&(A.w=o,A.n=t,A.g=i+4,A.p=0),h==e.k[w]){if(R>h&&(U=Math.min(R-1-h,e.j),P=L(e.b,h,i,U),P>=2)){for(Q=7>J?7:10,N=r+h&e.u,s=o+it[e.z[(Q<<4)+N]>>>2]+zr(gr(e.y,r+h,F(e.b,h-1-1)),1,F(e.b,h-(i+1)-1),F(e.b,h-1)),Q=Y(Q),N=r+h+1&e.u,M=s+it[2048-e.z[(Q<<4)+N]>>>2],E=M+it[2048-e.S[Q]>>>2],x=h+1+P;t+x>m;)e.a[++m].w=268435455;o=E+(or=Mr(e.f,P-2,N),or+nr(e,0,Q,N)),A=e.a[t+x],A.w>o&&(A.w=o,A.n=t+h+1,A.g=0,A.p=1,A.Sb=1,A.n2=t,A.g2=i+4)}if(w+=2,w==C)break}}}}}function tr(e,r,t,n){var s,o=W(t);return s=128>r?e.X[128*o+r]:e.H[(o<<6)+hr(r)]+e.Jb[15&r],s+Mr(e.P,t-2,n)}function nr(e,r,t,n){var s;return r?(s=it[2048-e.Y[t]>>>2],1==r?s+=it[e.ob[t]>>>2]:(s+=it[2048-e.ob[t]>>>2],s+=jr(e.Mb[t],r-2))):(s=it[e.Y[t]>>>2],s+=it[2048-e.Q[(t<<4)+n]>>>2]),s}function sr(e,r,t){return it[e.Y[r]>>>2]+it[e.Q[(r<<4)+t]>>>2]}function or(e){q(e),Zr(e.c),Gr(e.z),Gr(e.Q),Gr(e.S),Gr(e.Y),Gr(e.ob),Gr(e.Mb),Gr(e.sb),yr(e.y);for(var r=0;4>r;++r)Gr(e.D[r].db);vr(e.P,1<<e.N),vr(e.f,1<<e.N),Gr(e.M.db),e.I=0,e.W=0,e.m=0,e.o=0}function ir(e,r){r>0&&(T(e.b,r),e.o+=r)}function _r(e){var r=0;return e.A=I(e.b,e.k),e.A>0&&(r=e.k[e.A-2],r==e.j&&(r+=L(e.b,r-1,e.k[e.A-1],273-r))),++e.o,r}function ar(e){e.b&&e.L&&(e.b.ac=null,e.L=0)}function cr(e){ar(e),e.c.cc=null}function fr(e,r){e.R=r;for(var t=0;r>1<<t;++t);e.yb=2*t}function ur(e,r){var t=e.J;e.J=r,e.b&&t!=e.J&&(e.gb=-1,e.b=null)}function mr(e,r){e.Eb[0]=9*(5*e.N+e.U)+e.V<<24>>24;for(var t=0;4>t;++t)e.Eb[1+t]=e.R>>8*t<<24>>24;S(r,e.Eb,0,5)}function pr(e,r){if(e.Xb){Tr(e.c,e.z,(e.i<<4)+r,1),Tr(e.c,e.S,e.i,0),e.i=7>e.i?7:10,kr(e.P,e.c,0,r);var t=W(2);Dr(e.D[t],e.c,63),Wr(e.c,67108863,26),Ir(e.M,e.c,15)}}function dr(e){return 2048>e?ot[e]:2097152>e?ot[e>>10]+20:ot[e>>20]+40}function hr(e){return 131072>e?ot[e>>6]+12:134217728>e?ot[e>>16]+32:ot[e>>26]+52}function Pr(e,r,t,n){8>t?(Tr(r,e.T,0,0),Dr(e.ub[n],r,t)):(t-=8,Tr(r,e.T,0,1),8>t?(Tr(r,e.T,1,0),Dr(e.vb[n],r,t)):(Tr(r,e.T,1,1),Dr(e.Bb,r,t-8)))}function lr(e){e.T=t(2),e.ub=t(16),e.vb=t(16),e.Bb=xr({},8);for(var r=0;16>r;++r)e.ub[r]=xr({},3),e.vb[r]=xr({},3);return e}function vr(e,r){Gr(e.T);for(var t=0;r>t;++t)Gr(e.ub[t].db),Gr(e.vb[t].db);Gr(e.Bb.db)}function Br(e,r,t,n,s){var o,i,_,a,c;for(o=it[e.T[0]>>>2],i=it[2048-e.T[0]>>>2],_=i+it[e.T[1]>>>2],a=i+it[2048-e.T[1]>>>2],c=0,c=0;8>c;++c){if(c>=t)return;n[s+c]=o+Ar(e.ub[r],c)}for(;16>c;++c){if(c>=t)return;n[s+c]=_+Ar(e.vb[r],c-8)}for(;t>c;++c)n[s+c]=a+Ar(e.Bb,c-8-8)}function kr(e,r,t,n){Pr(e,r,t,n),0==--e.Hb[n]&&(Br(e,n,e.fb,e.Tb,272*n),e.Hb[n]=e.fb)}function Sr(e){return lr(e),e.Tb=[],e.Hb=[],e}function Mr(e,r,t){return e.Tb[272*t+r]}function br(e,r){for(var t=0;r>t;++t)Br(e,t,e.fb,e.Tb,272*t),e.Hb[t]=e.fb}function Er(e,r,n){var s,o;if(null==e.Cb||e.O!=n||e.qb!=r)for(e.qb=r,e.ec=(1<<r)-1,e.O=n,o=1<<e.O+e.qb,e.Cb=t(o),s=0;o>s;++s)e.Cb[s]=Lr({})}function gr(e,r,t){return e.Cb[((r&e.ec)<<e.O)+((255&t)>>>8-e.O)]}function yr(e){var r,t=1<<e.O+e.qb;for(r=0;t>r;++r)Gr(e.Cb[r].eb)}function Rr(e,r,t){var n,s,o=1;for(s=7;s>=0;--s)n=t>>s&1,Tr(r,e.eb,o,n),o=o<<1|n}function Fr(e,r,t,n){var s,o,i,_,a=1,c=1;for(o=7;o>=0;--o)s=n>>o&1,_=c,a&&(i=t>>o&1,_+=1+i<<8,a=i==s),Tr(r,e.eb,_,s),c=c<<1|s}function Lr(e){return e.eb=t(768),e}function zr(e,r,t,n){var s,o,i=1,_=7,a=0;if(r)for(;_>=0;--_)if(o=t>>_&1,s=n>>_&1,a+=jr(e.eb[(1+o<<8)+i],s),i=i<<1|s,o!=s){--_;break}for(;_>=0;--_)s=n>>_&1,a+=jr(e.eb[i],s),i=i<<1|s;return a}function Cr(e){e.g=-1,e.p=0}function wr(e){e.g=0,e.p=0}function xr(e,r){return e.cb=r,e.db=t(1<<r),e}function Dr(e,r,t){var n,s,o=1;for(s=e.cb;0!=s;)--s,n=t>>>s&1,Tr(r,e.db,o,n),o=o<<1|n}function Ar(e,r){var t,n,s=1,o=0;for(n=e.cb;0!=n;)--n,t=r>>>n&1,o+=jr(e.db[s],t),s=(s<<1)+t;return o}function Ir(e,r,t){var n,s,o=1;for(s=0;e.cb>s;++s)n=1&t,Tr(r,e.db,o,n),o=o<<1|n,t>>=1}function Or(e,r){var t,n,s=1,o=0;for(n=e.cb;0!=n;--n)t=1&r,r>>>=1,o+=jr(e.db[s],t),s=s<<1|t;return o}function Hr(e,r,t,n,s){var o,i,_=1;for(i=0;n>i;++i)o=1&s,Tr(t,e,r+_,o),_=_<<1|o,s>>=1}function Nr(e,r,t,n){var s,o,i=1,_=0;for(o=t;0!=o;--o)s=1&n,n>>>=1,_+=it[(2047&(e[r+i]-s^-s))>>>2],i=i<<1|s;return _}function Gr(e){for(var r=e.length-1;r>=0;--r)e[r]=1024}function Tr(e,r,t,o){var i,_=r[t];i=(e.lb>>>11)*_,o?(e.Qb=n(e.Qb,s(a(i),[4294967295,0])),e.lb-=i,r[t]=_-(_>>>5)<<16>>16):(e.lb=i,r[t]=_+(2048-_>>>5)<<16>>16),-16777216&e.lb||(e.lb<<=8,Vr(e))}function Wr(e,r,t){for(var s=t-1;s>=0;--s)e.lb>>>=1,1==(r>>>s&1)&&(e.Qb=n(e.Qb,a(e.lb))),-16777216&e.lb||(e.lb<<=8,Vr(e))}function Yr(e){return n(n(a(e.mb),e.Fb),[4,0])}function Zr(e){e.Fb=tt,e.Qb=tt,e.lb=-1,e.mb=1,e.fc=0}function Vr(e){var r,t=c(d(e.Qb,32));if(0!=t||o(e.Qb,[4278190080,0])<0){e.Fb=n(e.Fb,a(e.mb)),r=e.fc;do k(e.cc,r+t),r=255;while(0!=--e.mb);e.fc=c(e.Qb)>>>24}++e.mb,e.Qb=m(s(e.Qb,[16777215,0]),8)}function jr(e,r){return it[(2047&(e-r^-r))>>>2]}function Kr(e){var r,t,n,s=[],o=0,i=e.length;if("object"==typeof e)return e;for(M(e,0,i,s,0),n=0;i>n;++n)r=s[n],r>=1&&127>=r?++o:o+=!r||r>=128&&2047>=r?2:3;for(t=[],o=0,n=0;i>n;++n)r=s[n],r>=1&&127>=r?t[o++]=r<<24>>24:!r||r>=128&&2047>=r?(t[o++]=(192|r>>6&31)<<24>>24,t[o++]=(128|63&r)<<24>>24):(t[o++]=(224|r>>12&15)<<24>>24,t[o++]=(128|r>>6&63)<<24>>24,t[o++]=(128|63&r)<<24>>24);return t}function qr(e){return e[1]+e[0]}function Jr(e,t,n,s){function o(){try{for(var e,r=(new Date).getTime();V(a.c.Ub);)if(i=qr(a.c.Ub.Ob)/qr(a.c.gc),(new Date).getTime()-r>200)return s(i),Xr(o,0),0;s(1),e=B(a.c._b),Xr(n.bind(null,e),0)}catch(t){n(null,t)}}var i,_,a={},c=void 0===n&&void 0===s;if("function"!=typeof n&&(_=n,n=s=0),s=s||function(e){return void 0!==_?r(e,_):void 0},n=n||function(e,r){return void 0!==_?postMessage({action:Qr,cbn:_,result:e,error:r}):void 0},c){for(a.c=y({},Kr(e),_t(t));V(a.c.Ub););return B(a.c._b)}try{a.c=y({},Kr(e),_t(t)),s(0)}catch(f){return n(null,f)}Xr(o,0)}var Qr=1,Ur=3,Xr="function"==typeof setImmediate?setImmediate:setTimeout,$r=4294967296,et=[4294967295,-$r],rt=[0,-0x8000000000000000],tt=[0,0],nt=[1,0],st=function(){var e,r,t,n=[];for(e=0;256>e;++e){for(t=e,r=0;8>r;++r)0!=(1&t)?t=t>>>1^-306674912:t>>>=1;n[e]=t}return n}(),ot=function(){var e,r,t,n=2,s=[0,1];for(t=2;22>t;++t)for(r=1<<(t>>1)-1,e=0;r>e;++e,++n)s[n]=t<<24>>24;return s}(),it=function(){var e,r,t,n,s=[];for(r=8;r>=0;--r)for(n=1<<9-r-1,e=1<<9-r,t=n;e>t;++t)s[t]=(r<<6)+(e-t<<6>>>9-r-1);return s}(),_t=function(){var e=[{s:16,f:64,m:0},{s:20,f:64,m:0},{s:19,f:64,m:1},{s:20,f:64,m:1},{s:21,f:128,m:1},{s:22,f:128,m:1},{s:23,f:128,m:1},{s:24,f:255,m:1},{s:25,f:255,m:1}];return function(r){return e[r-1]||e[6]}}();return"undefined"==typeof onmessage||"undefined"!=typeof window&&void 0!==window.document||!function(){onmessage=function(r){r&&r.Zb&&r.Zb.action==Qr&&lz_c.compress(r.Zb.Zb,r.Zb.jc,r.Zb.cbn)}}(),{compress:Jr}}();this.LZMA=this.LZMA_WORKER=lz_c;
@@ -3531,6 +3630,8 @@ Current version: 129
 	var welcome = "";
 	var personal_notes = "";
 	var logitbiasdict = {};
+	var regexreplace_pattern = [];
+	var regexreplace_replacement = [];
 
 	var localsettings = {
 		my_api_key: "0000000000", //put here so it can be saved and loaded in persistent mode
@@ -3551,6 +3652,7 @@ Current version: 129
 		saved_claude_jailbreak: "", //claude system prompt
 		saved_claude_jailbreak2: "", //claude assistant postfix
 		saved_cohere_preamble: "", //cohere preamble
+		saved_palm_jailbreak:"", //gemini system prompt
 		saved_oai_custommodel: "", //customized oai custom model
 		saved_oai_role: 0, //0=user,1=assistant,2=system
 		saved_a1111_url: default_a1111_base,
@@ -3851,6 +3953,7 @@ Current version: 129
 					document.body.style.backgroundImage = selectedImg;
 					document.getElementById("gamescreen").classList.add("translucentbg");
 					document.getElementById("enhancedchatinterface").classList.add("transparentbg");
+					document.getElementById("enhancedchatinterface_inner").classList.add("transparentbg");
 				}
 				loadok = true;
 			} else {
@@ -4099,7 +4202,7 @@ Current version: 129
 
 				}
 				else {
-					msgbox("Failed to connect to AI Service!\nPlease check your network connection.");
+					msgbox("Failed to connect to AI Horde Service!\nPlease check your network connection.<br><br>You may still be able to connect to an alternative service, <a href='#' class='color_blueurl' onclick='display_endpoint_container()'>click here to view options</a>.","Error Encountered",true);
 					document.body.classList.remove("connected");
 					document.getElementById("connectstatus").innerHTML = "Offline Mode";
 					document.getElementById("connectstatus").classList.add("color_orange");
@@ -4691,6 +4794,45 @@ Current version: 129
 		return story;
 	}
 
+	function pick_default_horde_models()
+	{
+		fetch_models((mdls) => {
+			//can we find the model that's used? if yes load it, otherwise load the first one
+			if (mdls.length == 0 && !localflag) {
+				msgbox("No models available. Unable to load.");
+			}
+			else
+			{
+				if (!localflag) {
+					selected_models = [];
+
+					for (var i = 0; i < mdls.length; ++i) {
+						for (var j = 0; j < defaultmodels.length; ++j) {
+							if (mdls[i].name.trim().toLowerCase().includes(defaultmodels[j].trim().toLowerCase()) ||
+								defaultmodels[j].trim().toLowerCase().includes(mdls[i].name.trim().toLowerCase())) {
+								selected_models.push(mdls[i]);
+							}
+						}
+					}
+
+					if (selected_models.length == 0) //no matching models, just assign one
+					{
+						selected_models.push(mdls[0]);
+					}
+
+					const allMatched1 = selected_models.every(item => item.cluster === selected_models[0].cluster);
+
+					if (!allMatched1) {
+						//if conflicted, get the most numerous cluster (mode)
+						let pickedcluster = get_most_common_cluster(selected_models);
+						selected_models = selected_models.filter(item => item.cluster === pickedcluster);
+					}
+					render_gametext();
+				}
+			}
+		});
+	}
+
 	//attempts to load story from compressed json, in KAI format
 	function import_compressed_story(cstoryjson,force_load_settngs) {
 		console.log("Importing shared story...");
@@ -4793,6 +4935,7 @@ Current version: 129
 				document.body.style.backgroundImage = selectedImg;
 				document.getElementById("gamescreen").classList.add("translucentbg");
 				document.getElementById("enhancedchatinterface").classList.add("transparentbg");
+				document.getElementById("enhancedchatinterface_inner").classList.add("transparentbg");
 				localStorage.setItem(STORAGE_PREFIX + "bgimg", compressedImageURI);
 			}, true, false, 1024, 0.5);
 		}
@@ -4802,6 +4945,7 @@ Current version: 129
 		document.body.style.backgroundImage = "none";
 		document.getElementById("gamescreen").classList.remove("translucentbg");
 		document.getElementById("enhancedchatinterface").classList.remove("transparentbg");
+		document.getElementById("enhancedchatinterface_inner").classList.remove("transparentbg");
 		localStorage.setItem(STORAGE_PREFIX + "bgimg", "");
 	}
 
@@ -4937,6 +5081,8 @@ Current version: 129
 		new_save_storyobj.wiinsertlocation = wi_insertlocation;
 		new_save_storyobj.personal_notes = personal_notes;
 		new_save_storyobj.logitbiasdict = JSON.parse(JSON.stringify(logitbiasdict));
+		new_save_storyobj.regexreplace_pattern = JSON.parse(JSON.stringify(regexreplace_pattern));
+		new_save_storyobj.regexreplace_replacement = JSON.parse(JSON.stringify(regexreplace_replacement));
 
 		if (export_settings) {
 			new_save_storyobj.savedsettings = JSON.parse(JSON.stringify(localsettings));
@@ -5108,6 +5254,8 @@ Current version: 129
 			let old_current_wi = current_wi;
 			let old_extrastopseq = extrastopseq;
 			let old_notes = personal_notes;
+			let old_regexreplace_pattern = regexreplace_pattern;
+			let old_regexreplace_replacement = regexreplace_replacement;
 
 			//determine if oldui file or newui file format
 			restart_new_game(false);
@@ -5178,6 +5326,12 @@ Current version: 129
 				if (storyobj.personal_notes) {
 					personal_notes = storyobj.personal_notes;
 				}
+				if (storyobj.regexreplace_pattern) {
+					regexreplace_pattern = storyobj.regexreplace_pattern;
+				}
+				if (storyobj.regexreplace_replacement) {
+					regexreplace_replacement = storyobj.regexreplace_replacement;
+				}
 			} else {
 				//v2 load
 				if(storyobj.prompt!="")
@@ -5208,7 +5362,8 @@ Current version: 129
 								"comment": itm.comment,
 								"folder": null,
 								"selective": itm.selective,
-								"constant": itm.constant
+								"constant": itm.constant,
+								"probability":100
 							};
 							current_wi.push(nwi);
 						}
@@ -5236,6 +5391,8 @@ Current version: 129
 				if(!loadstopseq)
 				{
 					extrastopseq = old_extrastopseq;
+					regexreplace_pattern = old_regexreplace_pattern;
+					regexreplace_replacement = old_regexreplace_replacement;
 				}
 
 				if (storyobj.savedsettings && storyobj.savedsettings != "")
@@ -5345,7 +5502,8 @@ Current version: 129
 				"comment": "",
 				"folder": null,
 				"selective": false,
-				"constant": false
+				"constant": false,
+				"probability":100
 			};
 			loadedwi.push(nwi);
 		}
@@ -5374,7 +5532,8 @@ Current version: 129
 				"comment": itm.comment,
 				"folder": null,
 				"selective": itm.selective,
-				"constant": itm.constant
+				"constant": itm.constant,
+				"probability":100
 			};
 			loadedwi.push(nwi);
 		}
@@ -5510,7 +5669,8 @@ Current version: 129
 				"comment": "",
 				"folder": null,
 				"selective": false,
-				"constant": false
+				"constant": false,
+				"probability":100
 			};
 			loadedwi.push(nwi);
 		}
@@ -5568,7 +5728,8 @@ Current version: 129
 									"comment": "",
 									"folder": null,
 									"selective": false,
-									"constant": false
+									"constant": false,
+									"probability":100
 								};
 								temp_scenario.worldinfo.push(nwi);
 							}
@@ -5963,9 +6124,6 @@ Current version: 129
 
 		localsettings.opmode = temp_scenario.opmode;
 
-		if(temp_scenario.opmode == 1)
-		{
-		}
 		if(temp_scenario.opmode == 2)
 		{
 
@@ -6294,7 +6452,7 @@ Current version: 129
 			else
 			{
 				console.log("Error: " + errArr);
-				msgbox("Failed to connect to Worker Endpoint!\nPlease check your network connection.");
+				msgbox("Failed to retrieve AI Horde Worker list!\nPlease check your network connection.");
 			}
 		});
 
@@ -6371,7 +6529,7 @@ Current version: 129
 			let clustertag = ((parentcluster&&parentcluster.tag!="")?" "+parentcluster.tag+"":"");
 			let style = (elem.trusted ? "style=\"color:#dd77ff;\"" : "");
 			let brokenstyle = (elem.maintenance_mode ? "style=\"color:#ee4444;\"" : "");
-			let workerNameHtml = escapeHtml(elem.name.substring(0, 32));
+			let workerNameHtml = escapeHtml(elem.name.substring(0, 40));
 			if(elem.info && elem.info!="")
 			{
 				workerNameHtml = "<a class=\"color_blueurl\" href=\"#\" onclick=\"msgbox(\'"+escapeHtml(replaceAll(elem.info,"\'","\\\'"))+"\','Worker Info',false,false,hide_msgbox)\">"+workerNameHtml+"</a>";
@@ -6379,7 +6537,7 @@ Current version: 129
 			let allmdls = "";
 			for (let n = 0; n < elem.models.length; ++n) {
 				if (n > 0) { allmdls += "<br>"; }
-				allmdls += escapeHtml(elem.models[n].substring(0, 32));
+				allmdls += escapeHtml(elem.models[n].substring(0, 40));
 			}
 			let kudos_per_hr = "";
 			if(first_seen_workers.hasOwnProperty(elem.id))
@@ -6392,7 +6550,7 @@ Current version: 129
 					kudos_per_hr = "(" + (kudosdiff/hrspassed).toFixed(0) + "/hr)";
 				}
 			}
-			str += "<tr id='workertablerow_"+i+"'><td>" + workerNameHtml + "</td><td>" + allmdls + "</td><td>" + elem.max_length + " / " + elem.max_context_length + "<br>(" + tokenspersec + " T/s)</td><td "+brokenstyle+">" + format_uptime(elem.uptime) + "<br>(" + elem.requests_fulfilled + " jobs)</td><td "+style+">" + elem.kudos_rewards.toFixed(0) + "<br><span style='color:gray'>"+kudos_per_hr+"</span></td><td>"+clustertag+"</td></tr>";
+			str += "<tr id='workertablerow_"+i+"'><td>" + workerNameHtml + "</td><td>" + allmdls + "</td><td>" + elem.max_length + " / " + elem.max_context_length + "<br>(" + tokenspersec + " T/s)</td><td "+brokenstyle+">" + format_uptime(elem.uptime) + "<br>(" + elem.requests_fulfilled + " jobs)</td><td "+style+">" + elem.kudos_rewards.toFixed(0) + "<br><span style='color:gray'>"+kudos_per_hr+"</span></td></tr>";
 		}
 		document.getElementById("workertable").innerHTML = str;
 		document.getElementById("worktitlecount").innerText = "Worker List - Total " + worker_data_showonly.length;
@@ -6463,7 +6621,6 @@ Current version: 129
 			document.getElementById("workercontainer").classList.contains("hidden") &&
 			document.getElementById("myownworkercontainer").classList.contains("hidden") &&
 			document.getElementById("sharecontainer").classList.contains("hidden") &&
-			document.getElementById("wicontainer").classList.contains("hidden") &&
 			document.getElementById("customendpointcontainer").classList.contains("hidden") &&
 			document.getElementById("quickstartcontainer").classList.contains("hidden") &&
 			document.getElementById("zoomedimgcontainer").classList.contains("hidden") &&
@@ -6485,7 +6642,6 @@ Current version: 129
 		document.getElementById("workercontainer").classList.add("hidden");
 		document.getElementById("myownworkercontainer").classList.add("hidden");
 		document.getElementById("sharecontainer").classList.add("hidden");
-		document.getElementById("wicontainer").classList.add("hidden");
 		document.getElementById("customendpointcontainer").classList.add("hidden");
 		document.getElementById("quickstartcontainer").classList.add("hidden");
 		document.getElementById("zoomedimgcontainer").classList.add("hidden");
@@ -6588,6 +6744,23 @@ Current version: 129
 		},true,true);
 	}
 
+	function add_stop_seq()
+	{
+		inputBox("Enter a new stopping sequence to be added.","Add Stop Sequence","","Enter a Stop Sequence",()=>{
+			let userinput = getInputBoxValue();
+			if(userinput.trim()!="")
+			{
+				let ov = document.getElementById("extrastopseq").value;
+				if(ov!="")
+				{
+					ov += "||$||";
+				}
+				ov += userinput.trim();
+				document.getElementById("extrastopseq").value = ov;
+			}
+		},false);
+	}
+
 	var msgboxOnDone = hide_msgbox;
 	function hide_msgbox() {
 		//hide msgbox ONLY
@@ -6651,6 +6824,7 @@ Current version: 129
 	}
 
 	var onInputboxOk = null;
+	var onInputboxCancel = null;
 	function inputBox(text,title,inputVal,inputPlaceholder,onDone,isHtml=false,isTextArea=false)
 	{
 		if (!text) { text = ""; }
@@ -6679,6 +6853,14 @@ Current version: 129
 		}
 
 		onInputboxOk = function(){document.getElementById("inputboxcontainer").classList.add("hidden");onDone();};
+		onInputboxCancel = null;
+		document.getElementById("inputboxcancel").classList.add("hidden");
+	}
+	function inputBoxOkCancel(text,title,inputVal,inputPlaceholder,onDone,onCancel,isHtml=false,isTextArea=false)
+	{
+		inputBox(text,title,inputVal,inputPlaceholder,onDone,isHtml,isTextArea);
+		document.getElementById("inputboxcancel").classList.remove("hidden");
+		onInputboxCancel = function(){document.getElementById("inputboxcontainer").classList.add("hidden");onCancel();};
 	}
 	function getInputBoxValue()
 	{
@@ -6757,6 +6939,23 @@ Current version: 129
 			document.getElementById("useocoherepreamblebox").classList.remove("hidden");
 		}else{
 			document.getElementById("useocoherepreamblebox").classList.add("hidden");
+		}
+	}
+
+	function togglepalmmodel()
+	{
+		let mdlname = document.getElementById("custom_palm_model").value;
+		if(mdlname=="gemini-1.5-pro-latest")
+		{
+			document.getElementById("gemini_system_instruction").classList.remove("hidden");
+			if(localsettings.saved_palm_jailbreak=="")
+			{
+				document.getElementById("gemini_system_instruction").value = "";
+			} else {
+				document.getElementById("gemini_system_instruction").value = localsettings.saved_palm_jailbreak;
+			}
+		}else{
+			document.getElementById("gemini_system_instruction").classList.add("hidden");
 		}
 	}
 
@@ -6952,13 +7151,14 @@ Current version: 129
 		{
 			document.getElementById("palmcustom").classList.remove("hidden");
 			document.getElementById("custom_palm_key").value = localsettings.saved_palm_key;
+			document.getElementById("gemini_system_instruction").value = localsettings.saved_palm_jailbreak;
+			togglepalmmodel();
 		}
 		else if(epchoice==6)
 		{
 			document.getElementById("coherecustom").classList.remove("hidden");
 			document.getElementById("custom_cohere_key").value = localsettings.saved_cohere_key;
 			document.getElementById("cohere_preamble").value = localsettings.saved_cohere_preamble;
-
 			togglecoherepreamble();
 		}
 	}
@@ -7383,6 +7583,7 @@ Current version: 129
 				//good to go
 				custom_palm_key = desired_palm_key;
 				localsettings.saved_palm_key = custom_palm_key;
+				localsettings.saved_palm_jailbreak = document.getElementById("gemini_system_instruction").value;
 
 				selected_models = [{ "performance": 100.0, "queued": 0.0, "eta": 0, "name": mdlname, "count": 1 }];
 				selected_workers = [];
@@ -7453,29 +7654,29 @@ Current version: 129
 		let filetable = ``;
 
 		let entry = `<div style="display:flex">
-				<button type="button" style="font-size:13px;margin:2px;width:33%" name="localsave" class="btn btn-primary" onclick="hide_popups();save_file_button()">`+"💾<br>Download File"+`</button>
-				<button type="button" style="font-size:13px;margin:2px;width:33%" name="localload" class="btn btn-primary" onclick="hide_popups();load_file_button()">`+"📁<br>Open File"+`</button>
-				<button type="button" style="font-size:13px;margin:2px;width:34%" name="shareurl" class="btn btn-primary" onclick="hide_popups();share_story_button()">`+"🌐<br>Share"+`</button>
+				<button type="button" style="font-size:12px; margin:2px;width:33%" name="localsave" class="btn btn-primary" onclick="hide_popups();save_file_button()">`+"💾<br>Download File"+`</button>
+				<button type="button" style="font-size:12px; margin:2px;width:33%" name="localload" class="btn btn-primary" onclick="hide_popups();load_file_button()">`+"📁<br>Open File"+`</button>
+				<button type="button" style="font-size:12px; margin:2px;width:34%" name="shareurl" class="btn btn-primary" onclick="hide_popups();share_story_button()">`+"🌐<br>Share"+`</button>
 				</div>
-				<div style="font-size:12px; margin-top:3px; text-align: center; align-self: center; width: calc(100% - 184px);">
+				<div style="margin-top:3px; text-align: center; align-self: center; width: calc(100% - 184px);">
 				<span style="font-weight:bold;text-decoration: underline;">Temporary Browser Storage</span>
 				</div>`;
 		filetable += entry;
 
 		try
 		{
-			for(let i=0;i<4;++i)
+			for(let i=0;i<6;++i)
 			{
 				let testslot = localStorage.getItem(STORAGE_PREFIX + "slot_"+i+"_meta");
-				entry = `<div style="display:flex; height:46px;">
-					<div style="font-size:12px; margin:3px; text-align: center; align-self: center; width: calc(100% - 184px);">
+				entry = `<div style="display:flex; height:42px;">
+					<div style="margin:3px; text-align: center; align-self: center; width: calc(100% - 184px);">
 					`+(testslot?`[ Slot `+(i+1)+` - `+testslot+` ]`:`[ Slot `+(i+1)+` - Empty ]`)+`
 					</div>
 					<div style="text-align: right; align-self: center; width: 184px;">
-					<button type="button" style="font-size:12px;" name="slc`+i+`" class="btn btn-primary" onclick="save_to_slot(`+i+`)"><img class="btnicon-save"/></button>
-					<button type="button" style="font-size:12px;" name="slc`+i+`" class="btn btn-primary" onclick="load_from_slot(`+i+`)" `+(testslot?"":"disabled")+`><img class="btnicon-load"/></button>
-					<button type="button" style="font-size:12px;" name="slc`+i+`" class="btn btn-primary bg_green" onclick="download_from_slot(`+i+`)" `+(testslot?"":"disabled")+`><img class="btnicon-download"/></button>
-					<button type="button" style="font-size:12px;" name="slc`+i+`" class="btn btn-primary bg_red" onclick="delete_from_slot(`+i+`)" `+(testslot?"":"disabled")+`><img class="btnicon-delete"/></button>
+					<button type="button" name="slc`+i+`" class="btn btn-primary" onclick="save_to_slot(`+i+`)"><img class="btnicon-save"/></button>
+					<button type="button" name="slc`+i+`" class="btn btn-primary" onclick="load_from_slot(`+i+`)" `+(testslot?"":"disabled")+`><img class="btnicon-load"/></button>
+					<button type="button" name="slc`+i+`" class="btn btn-primary bg_green" onclick="download_from_slot(`+i+`)" `+(testslot?"":"disabled")+`><img class="btnicon-download"/></button>
+					<button type="button" name="slc`+i+`" class="btn btn-primary bg_red" onclick="delete_from_slot(`+i+`)" `+(testslot?"":"disabled")+`><img class="btnicon-delete"/></button>
 					</div></div>`;
 				filetable += entry;
 			}
@@ -8192,6 +8393,17 @@ Current version: 129
 		}
 	}
 
+	function validate_regex(pattern)
+	{
+		var isValid = true;
+		try {
+			new RegExp(pattern);
+		} catch(e) {
+			isValid = false;
+		}
+		return isValid;
+	}
+
 	function validate_sd_model() {
 		var inputmodel = document.getElementById("generate_images_model").value;
 		let matched = false;
@@ -8473,6 +8685,14 @@ Current version: 129
 				document.getElementById('instruct_starttag').value = "\\n{{[INPUT]}}\\n";
 				document.getElementById('instruct_endtag').value = "\\n{{[OUTPUT]}}\\n";
 				break;
+			case "8": //CommandR
+				document.getElementById('instruct_starttag').value = "<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|USER_TOKEN|>";
+				document.getElementById('instruct_endtag').value = "<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>";
+				break;
+			case "9": //llama 3 chat
+				document.getElementById('instruct_starttag').value = "<|eot_id|><|start_header_id|>user<|end_header_id|>\\n\\n";
+				document.getElementById('instruct_endtag').value = "<|eot_id|><|start_header_id|>assistant<|end_header_id|>\\n\\n";
+				break;
 			default:
 				break;
 		}
@@ -8645,8 +8865,34 @@ Current version: 129
 		extrastopseq = document.getElementById("extrastopseq").value;
 		newlineaftermemory = (document.getElementById("newlineaftermemory").checked?true:false);
 		logitbiasdict = pendinglogitbias;
-		hide_popups();
-		render_gametext();
+		regexreplace_pattern = [];
+		regexreplace_replacement = [];
+		for(let i=0;i<20;++i)
+		{
+			let v1 = "";
+			let v2 = "";
+			let box1 = document.getElementById("regexreplace_pattern"+i);
+			let box2 = document.getElementById("regexreplace_replacement"+i);
+			if(!box1 || !box2)
+			{
+				break;
+			}
+			if(validate_regex(box1.value))
+			{
+				v1 = box1.value;
+			}
+			if(validate_regex(box2.value))
+			{
+				v2 = box2.value;
+			}
+
+			if(v1)
+			{
+				regexreplace_pattern.push(v1);
+				regexreplace_replacement.push(v2);
+			}
+		}
+
 	}
 
 	function set_personal_notes()
@@ -8779,13 +9025,18 @@ Current version: 129
 	}
 	function apply_user_mod()
 	{
-		inputBox("Here, you can apply third-party mod scripts shared by other users.<br><br><span class='color_red'>Caution: This mod will have full access to your story and API keys, so only run third-party mods that you trust! For security, mods must always be manually applied every time.</span><br><br>Want to start modding? <a href='#' class='color_blueurl' onclick='simplemodexample()'>Click here</a> to load a simple example mod.","Apply Third-Party Mod","","Paste Mod Script Here",()=>{
+		let currmod = localStorage.getItem(STORAGE_PREFIX + "savedusermod", "");
+		inputBoxOkCancel("Here, you can apply third-party mod scripts shared by other users.<br><br><span class='color_red'>Caution: This mod will have full access to your story and API keys, so only run third-party mods that you trust! For security, mods must always be manually applied every time.</span><br><br>Want to start modding? <a href='#' class='color_blueurl' onclick='simplemodexample()'>Click here</a> to load a simple example mod.","Apply Third-Party Mod",currmod,"Paste Mod Script Here",()=>{
 			let userinput = getInputBoxValue().trim();
+			localStorage.setItem(STORAGE_PREFIX + "savedusermod", userinput);
 			if(userinput!="" && userinput.trim()!="")
 			{
 				var userModScript = new Function(userinput);
 				userModScript();
 			}
+		},
+		()=>{
+			//do nothing on cancel
 		},true,true);
 	}
 
@@ -8840,6 +9091,8 @@ Current version: 129
 			wi_searchdepth = 0;
 			wi_insertlocation = 0;
 			current_anotetemplate = "[Author's note: <|>]";
+			regexreplace_pattern = [];
+			regexreplace_replacement = [];
 		}
 		render_gametext(save); //necessary to trigger an autosave to wipe out current story in case they exit browser after newgame.
 	}
@@ -8856,6 +9109,8 @@ Current version: 129
 			confirm_settings();
 			document.getElementById("keep_memory").checked = false;
 			clear_bg_img();
+			pick_default_horde_models();
+			localStorage.setItem(STORAGE_PREFIX + "savedusermod", "");
 		},null);
 
 	}
@@ -9767,42 +10022,63 @@ Current version: 129
 				for (var x = 0; x < current_wi.length; ++x) {
 					let wi = current_wi[x];
 
+					let shoulduse = false;
+
 					//see if this is a valid wi entry
-					if (wi.key == null || wi.key == "") {
+					if (wi.content == null || wi.content == "") {
 						continue;
 					}
 
-					//selective, but bad secondary key. treat as only 1 key
-					let invalidseckey = (wi.selective && (wi.keysecondary == "" || wi.keysecondary == null));
-
-					let wiks = wi.key.split(",");
-
-					let shoulduse = false;
 					if (wi.constant) {
 						shoulduse = true;
 					}
-					else if (!wi.selective || invalidseckey) {
-						if (localsettings.case_sensitive_wi) {
-							shoulduse = wiks.some(k => wimatch_context.includes(k.trim()));
-						} else {
-							shoulduse = wiks.some(k => wimatch_context.includes(k.trim().toLowerCase()));
-						}
-					} else {
-						let wiks2 = wi.keysecondary.split(",");
-						if (localsettings.case_sensitive_wi) {
-							let t1 = wiks.some(k => wimatch_context.includes(k.trim()));
-							let t2 = wiks2.some(k => wimatch_context.includes(k.trim()));
-							shoulduse = (t1 && t2);
-						} else {
-							let t1 = wiks.some(k => wimatch_context.includes(k.trim().toLowerCase()));
-							let t2 = wiks2.some(k => wimatch_context.includes(k.trim().toLowerCase()));
-							shoulduse = (t1 && t2);
+					else
+					{
+						//see if this is a valid wi entry
+						if (wi.key == null || wi.key == "") {
+							continue;
 						}
 
+						//selective, but bad secondary key. treat as only 1 key
+						let invalidseckey = (wi.selective && (wi.keysecondary == "" || wi.keysecondary == null));
+
+						let wiks = wi.key.split(",");
+
+						if (!wi.selective || invalidseckey) {
+							if (localsettings.case_sensitive_wi) {
+								shoulduse = wiks.some(k => wimatch_context.includes(k.trim()));
+							} else {
+								shoulduse = wiks.some(k => wimatch_context.includes(k.trim().toLowerCase()));
+							}
+						} else {
+							let wiks2 = wi.keysecondary.split(",");
+							if (localsettings.case_sensitive_wi) {
+								let t1 = wiks.some(k => wimatch_context.includes(k.trim()));
+								let t2 = wiks2.some(k => wimatch_context.includes(k.trim()));
+								shoulduse = (t1 && t2);
+							} else {
+								let t1 = wiks.some(k => wimatch_context.includes(k.trim().toLowerCase()));
+								let t2 = wiks2.some(k => wimatch_context.includes(k.trim().toLowerCase()));
+								shoulduse = (t1 && t2);
+							}
+						}
 					}
 
 					if (shoulduse) {
-						wistr += wi.content + "\n";
+						//check if randomness less than 100%
+						if(wi.probability && wi.probability<100)
+						{
+							let roll = Math.floor(Math.random() * 100) + 1;
+							if(roll>=wi.probability)
+							{
+								wistr += wi.content + "\n";
+							}
+						}
+						else
+						{
+							//always insert
+							wistr += wi.content + "\n";
+						}
 					}
 				}
 			}
@@ -10343,7 +10619,7 @@ Current version: 129
 						}
 					];
 				}
-				else if(mdlname=="gemini-pro" || mdlname=="gemini-1.5-pro-latest" || mdlname=="gemini-ultra")
+				else //assume gemini
 				{
 					if(localsettings.opmode==1)
 					{
@@ -10389,6 +10665,19 @@ Current version: 129
 						"stopSequences": []
 					}
 					};
+
+					let sysinst = document.getElementById("gemini_system_instruction").value;
+					if(sysinst!="" && mdlname=="gemini-1.5-pro-latest")
+					{
+						payload["systemInstruction"] = {
+							"role": "system",
+							"parts": [
+							{
+								"text": sysinst
+							}
+							]
+						};
+					}
 				}
 
 				let targetep = urlbase + custom_palm_key;
@@ -10450,6 +10739,11 @@ Current version: 129
 
 				if (document.getElementById("useocoherepreamble").checked) {
 					cohere_payload.preamble = document.getElementById("cohere_preamble").value
+				}
+
+				if (document.getElementById("usecohereweb").checked) {
+					cohere_payload.connectors = [{"id": "web-search"}];
+					cohere_payload.max_tokens += 256;
 				}
 
 				last_request_str = JSON.stringify(cohere_payload);
@@ -11097,6 +11391,19 @@ Current version: 129
 		//do a second pass, this time removing the actual stop token
 		gentxt = trim_extra_stop_seqs(gentxt,false);
 
+		//apply regex transform
+		if(regexreplace_pattern && regexreplace_pattern.length>0)
+		{
+			for(let i=0;i<regexreplace_pattern.length;++i)
+			{
+				if(regexreplace_pattern[i]!="")
+				{
+					let pat = new RegExp(regexreplace_pattern[i], "gm");
+					gentxt = gentxt.replace(pat, regexreplace_replacement[i]);
+				}
+			}
+		}
+
 		//trim trailing whitespace, and multiple newlines
 		if (localsettings.trimwhitespace) {
 			gentxt = gentxt.replace(/[\t\r\n ]+$/, '');
@@ -11524,7 +11831,7 @@ Current version: 129
 	//runs every second
 	var idle_timer = 0; //used in chat mode to send multi replies
 	var idle_triggered_counter = 0;
-	var idle_backoff_array = [15000,60000,300000,1200000];
+	var idle_backoff_array = [15000,60000,300000,1200000,14400000];
 	function poll_background_tasks()
 	{
 		let idle_timer_max = 0;
@@ -11581,22 +11888,22 @@ Current version: 129
 		show_abort_button(false);
 		if (pending_response_id && pending_response_id != "-1" && pending_response_id != "")
 		{
-			if (poll_ticks_passed > (1/(poll_interval_base_text*0.001))) //1sec passed
+			if (poll_ticks_passed > (1/(poll_interval_base_text*0.001))) //show abort btn after 1 sec passed
 			{
 				show_abort_button(true);
 			}
 			if (poll_in_progress) {
 				console.log("Polling still in progress for id: " + pending_response_id);
 			}
-			else {
-
-				if (is_using_custom_ep()) {
-					//v1 api only needs to check if data was received and stored into local object
+			else
+			{
+				if (is_using_custom_ep())
+				{
 					poll_in_progress = true;
 					if (synchro_polled_response == null)
 					{
 						//still waiting, do nothing until next poll
-						console.log("v1 still awaiting reply");
+						console.log("sync request: still awaiting reply");
 						let polledstreaming = (determine_streaming_type()==2);
 						//only check once every 2 ticks if remote
 						if (polledstreaming && (localflag?true:(poll_ticks_passed%2==0)))
@@ -11638,7 +11945,7 @@ Current version: 129
 					}
 					if (synchro_polled_response != null)
 					{
-						console.log("v1 handle recv reply");
+						console.log("sync request: handle recv reply");
 						pending_response_id = "";
 						poll_in_progress = false;
 						let resp = synchro_polled_response;
@@ -11664,101 +11971,102 @@ Current version: 129
 					}
 				}
 				else {
-					//v2 api needs to constantly poll to see if response is done
-					console.log("v2 Polling started for pending id: " + pending_response_id);
+					//horde api needs to constantly poll to see if response is done
+					console.log("async request: started for pending id " + pending_response_id);
 					poll_in_progress = true;
 					fetch(pending_response_horde.polling_endpoint + "/" + pending_response_id)
-						.then(x => x.json())
-						.then(data => {
-							if (data.message != null || data.faulted == true || data.is_possible == false) {
-								//id not found, or other fault. give up.
-								console.log("Gave up on failed attempt");
-								clear_poll_flags();
-								render_gametext();
-								show_abort_button(false);
-								let errmsg = "Error encountered during text generation!\n";
-								if (data.message != null) {
-									errmsg += data.message;
-								}
-								if (data.faulted == true) {
-									errmsg += "Fault encountered during text generation.";
-								}
-								if (data.is_possible == false) {
-									errmsg += "No workers were able to generate text with your request.";
-								}
-								msgbox(errmsg);
-							}
-							else {
-								if (data.done == true) {
-
-									//complete, fetch final results. we wait 0.5s more as kudos may take time to calculate
-									setTimeout(() => {
-										console.log("fetching completed generation for " + pending_response_id);
-										fetch(pending_response_horde.output_endpoint + "/" + pending_response_id)
-											.then(x => x.json())
-											.then(data => {
-												console.log("Finished " + pending_response_id + ": " + JSON.stringify(data));
-												pending_response_id = "";
-												poll_in_progress = false;
-												horde_poll_nearly_completed = false;
-												if (data.generations != null && data.generations.length > 0) {
-													let gentxt = data.generations[0].text;
-													let genworker = data.generations[0].worker_name;
-													let genmdl = data.generations[0].model;
-													let genkudos = data.kudos;
-													if (waiting_for_autosummary) {
-														handle_incoming_autosummary(gentxt);
-													}
-													else {
-														last_reply_was_empty = (gentxt=="" || gentxt.trim()=="");
-														handle_incoming_text(gentxt, genworker, genmdl, genkudos);
-													}
-												}
-												render_gametext();
-												show_abort_button(false);
-											}).catch((error) => {
-												console.error('Error:', error);
-												clear_poll_flags();
-												render_gametext();
-												show_abort_button(false);
-												msgbox("Error encountered during text generation!");
-											});
-									}, 500);
-								}
-								else {
-									//still waiting, do nothing until next poll
-									poll_in_progress = false;
-									horde_poll_nearly_completed = false;
-									//depending on the queue_position, set loader color
-									let mtl = document.getElementById("maintxtloader");
-									if (mtl) {
-										mtl.classList.remove("greenloader");
-										mtl.classList.remove("redloader");
-										if (data.queue_position > 0) {
-											mtl.classList.add("redloader");
-										} else if (data.processing == 1 && data.queue_position == 0) {
-											mtl.classList.add("greenloader");
-											if(data.wait_time<5)
-											{
-												horde_poll_nearly_completed = true;
-											}
-										}
-										let oln = document.getElementById("outerloadernum");
-										if(oln)
-										{
-											oln.innerText = data.queue_position==0?"":data.queue_position;
-										}
-									}
-									console.log("Still awaiting " + pending_response_id + ": " + JSON.stringify(data));
-								}
-							}
-						}).catch((error) => {
-							console.error('Error:', error);
+					.then(x => x.json())
+					.then(data => {
+						if (data.message != null || data.faulted == true || data.is_possible == false) {
+							//id not found, or other fault. give up.
+							console.log("async request: gave up on failed attempt");
 							clear_poll_flags();
 							render_gametext();
 							show_abort_button(false);
-							msgbox("Error encountered during text generation!");
-						});
+							let errmsg = "Error encountered during text generation!\n";
+							if (data.message != null) {
+								errmsg += data.message;
+							}
+							if (data.faulted == true) {
+								errmsg += "Fault encountered during text generation.";
+							}
+							if (data.is_possible == false) {
+								errmsg += "No workers were able to generate text with your request.";
+							}
+							msgbox(errmsg);
+						}
+						else
+						{
+							if (data.done == true) {
+								//complete, fetch final results. we wait 0.5s more as kudos may take time to calculate
+								setTimeout(() => {
+									console.log("fetching completed generation for " + pending_response_id);
+									fetch(pending_response_horde.output_endpoint + "/" + pending_response_id)
+										.then(x => x.json())
+										.then(data => {
+											console.log("Finished " + pending_response_id + ": " + JSON.stringify(data));
+											pending_response_id = "";
+											poll_in_progress = false;
+											horde_poll_nearly_completed = false;
+											if (data.generations != null && data.generations.length > 0) {
+												let gentxt = data.generations[0].text;
+												let genworker = data.generations[0].worker_name;
+												let genmdl = data.generations[0].model;
+												let genkudos = data.kudos;
+												if (waiting_for_autosummary) {
+													handle_incoming_autosummary(gentxt);
+												}
+												else {
+													last_reply_was_empty = (gentxt=="" || gentxt.trim()=="");
+													handle_incoming_text(gentxt, genworker, genmdl, genkudos);
+												}
+											}
+											render_gametext();
+											show_abort_button(false);
+										}).catch((error) => {
+											console.error('Error:', error);
+											clear_poll_flags();
+											render_gametext();
+											show_abort_button(false);
+											msgbox("Error encountered during text generation!");
+										});
+								}, 500);
+							}
+							else
+							{
+								//still waiting, do nothing until next poll
+								poll_in_progress = false;
+								horde_poll_nearly_completed = false;
+								//depending on the queue_position, set loader color
+								let mtl = document.getElementById("maintxtloader");
+								if (mtl) {
+									mtl.classList.remove("greenloader");
+									mtl.classList.remove("redloader");
+									if (data.queue_position > 0) {
+										mtl.classList.add("redloader");
+									} else if (data.processing == 1 && data.queue_position == 0) {
+										mtl.classList.add("greenloader");
+										if(data.wait_time<5)
+										{
+											horde_poll_nearly_completed = true;
+										}
+									}
+									let oln = document.getElementById("outerloadernum");
+									if(oln)
+									{
+										oln.innerText = data.queue_position==0?"":data.queue_position;
+									}
+								}
+								console.log("Still awaiting " + pending_response_id + ": " + JSON.stringify(data));
+							}
+						}
+					}).catch((error) => {
+						console.error('Error:', error);
+						clear_poll_flags();
+						render_gametext();
+						show_abort_button(false);
+						msgbox("Error encountered during text generation!");
+					});
 				}
 			}
 		}
@@ -12371,18 +12679,15 @@ Current version: 129
 		if (selected_models.length == 0) //if no model, disable all first
 		{
 			document.getElementById("btn_actmem").disabled = true;
-			document.getElementById("btn_actwi").disabled = true;
 			document.getElementById("btn_actundo").disabled = true;
 			document.getElementById("btn_actredo").disabled = true;
 			document.getElementById("btn_actretry").disabled = true;
 			if(perfdata==null) //allow these 2 in offline mode
 			{
 				document.getElementById("btn_actmem").disabled = false;
-				document.getElementById("btn_actwi").disabled = false;
 			}
 		} else {
 			document.getElementById("btn_actmem").disabled = false;
-			document.getElementById("btn_actwi").disabled = false;
 			document.getElementById("btn_actundo").disabled = false;
 			document.getElementById("btn_actredo").disabled = false;
 			document.getElementById("btn_actretry").disabled = false;
@@ -12745,8 +13050,39 @@ Current version: 129
 		render_gametext();
 	}
 
+	var memory_tab = 0;
+	function display_memory_tab(newtab)
+	{
+		memory_tab = newtab;
+		document.getElementById("memory_tab").classList.remove("active");
+		document.getElementById("wi_tab").classList.remove("active");
+		document.getElementById("token_tab").classList.remove("active");
+		document.getElementById("memory_tab_container").classList.add("hidden");
+		document.getElementById("wi_tab_container").classList.add("hidden");
+		document.getElementById("token_tab_container").classList.add("hidden");
+		switch (newtab) {
+			case 0:
+				document.getElementById("memory_tab").classList.add("active");
+				document.getElementById("memory_tab_container").classList.remove("hidden");
+				break;
+			case 1:
+				document.getElementById("wi_tab").classList.add("active");
+				document.getElementById("wi_tab_container").classList.remove("hidden");
+				break;
+			case 2:
+				document.getElementById("token_tab").classList.add("active");
+				document.getElementById("token_tab_container").classList.remove("hidden");
+				break;
+			default:
+				break;
+		}
+	}
+
 	function btn_memory() {
 		document.getElementById("memorycontainer").classList.remove("hidden");
+		display_memory_tab(memory_tab);
+
+		//setup memory tab
 		document.getElementById("memorytext").value = current_memory;
 		document.getElementById("anotetext").value = current_anote;
 		document.getElementById("anotetemplate").value = current_anotetemplate;
@@ -12762,6 +13098,31 @@ Current version: 129
 		{
 			document.getElementById("noextrastopseq").classList.remove("hidden");
 		}
+
+		//setup wi tab
+		backup_wi();
+		update_wi();
+
+		for(let i=0;i<20;++i)
+		{
+			let a1 = document.getElementById("regexreplace_pattern"+i);
+			let a2 = document.getElementById("regexreplace_replacement"+i);
+			if(a1 && a2)
+			{
+				if(i<regexreplace_pattern.length)
+				{
+					a1.value = regexreplace_pattern[i];
+					a2.value = regexreplace_replacement[i];
+				}
+				else
+				{
+					a1.value = a2.value = "";
+				}
+			}
+		}
+
+		document.getElementById("btnlogitbias").disabled = !is_using_custom_ep();
+
 	}
 
 	function toggle_wi_sk(idx) {
@@ -12797,7 +13158,7 @@ Current version: 129
 		save_wi();
 		var ce = current_wi[idx];
 		current_wi.splice(idx, 1);
-		btn_wi();
+		update_wi();
 	}
 
 	function add_wi() {
@@ -12809,10 +13170,11 @@ Current version: 129
 			"comment": "",
 			"folder": null,
 			"selective": false,
-			"constant": false
+			"constant": false,
+			"probability":100
 		};
 		current_wi.push(ne);
-		btn_wi();
+		update_wi();
 	}
 
 	function save_wi() {
@@ -12820,6 +13182,8 @@ Current version: 129
 			current_wi[i].key = document.getElementById("wikey" + i).value;
 			current_wi[i].keysecondary = document.getElementById("wikeysec" + i).value;
 			current_wi[i].content = document.getElementById("wival" + i).value;
+			let prb = document.getElementById("wirng" + i).value;
+			current_wi[i].probability = (prb?prb:100);
 		}
 		localsettings.case_sensitive_wi = (document.getElementById("case_sensitive_wi").checked?true:false);
 		wi_searchdepth = document.getElementById("wi_searchdepth").value;
@@ -12839,21 +13203,21 @@ Current version: 129
 	function wi_quick_search()
 	{
 		save_wi();
-		btn_wi();
+		update_wi();
 	}
 
-	function btn_wi() {
+	function update_wi() {
 		document.getElementById("case_sensitive_wi").checked = (localsettings.case_sensitive_wi?true:false);
-		document.getElementById("wicontainer").classList.remove("hidden");
 
 		let wilist = document.getElementById("wilist");
 		let qsval = document.getElementById("wiquicksearch").value;
-		selectionhtml = `<table style="border-collapse: separate; border-spacing: 1.5pt;">`;
+		let selectionhtml = `<table style="border-collapse: separate; border-spacing: 1.5pt;">`;
 		for (var i = 0; i < current_wi.length; ++i) {
 			var curr = current_wi[i];
 			var winame = escapeHtml(curr.key);
 			var witxt = escapeHtml(curr.content);
 			var wisec = curr.keysecondary;
+			var wirngval = (curr.probability?curr.probability:100);
 
 			var ishidden = false;
 			if(qsval!="" && !winame.toLowerCase().includes(qsval.toLowerCase()) && !witxt.toLowerCase().includes(qsval.toLowerCase()))
@@ -12861,24 +13225,34 @@ Current version: 129
 				ishidden = true;
 			}
 
+			let probarr = [100,90,75,50,25,10,5,1];
+
 			selectionhtml += `<tr class='`+ (ishidden?"hidden":"") +`' id="wirow` + i + `"><td class="col-8" style="font-size: 10px;">` +
-				`<button type="button" class="btn btn-danger widelbtn" id="widel` + i + `" onclick="return del_wi(` + i + `)">X</button></td>` +
-				`<td class="col-6">
-		<input class="form-control wiinputkey" id="wikey`+ i + `" placeholder="Key(s)" value="` + winame + `">
-		<input class="form-control wiinputkey `+ (curr.selective ? `` : `hidden`) + `" id="wikeysec` + i + `" placeholder="Sec. Key(s)" value="` + wisec + `">` + `</td>
-		<td class="col-10">
-		<textarea class="form-control wiinputval" style="line-height:1.1" id="wival`+ i + `" placeholder="What To Remember" rows="3">` + witxt + `</textarea>
-		</td>`+
-				`
-		<td>
+			`<button type="button" class="btn btn-danger widelbtn" id="widel` + i + `" onclick="return del_wi(` + i + `)">X</button></td>` +
+			`<td class="col-6 wiinputkeycol">
+			<input class="form-control wiinputkey" id="wikey`+ i + `" placeholder="Key(s)" value="` + winame + `">
+			<input class="form-control wiinputkey `+ (curr.selective ? `` : `hidden`) + `" id="wikeysec` + i + `" placeholder="Sec. Key(s)" value="` + wisec + `">` + `</td>
+			<td class="col-10 wiinputvalcol">
+			<textarea class="form-control wiinputval" style="line-height:1.1" id="wival`+ i + `" placeholder="What To Remember" rows="3">` + witxt + `</textarea>
+			</td>
+			<td>
 			<a id="wiskt`+ i + `" href="#" class=` + (curr.selective ? "witoggleron" : "witoggleroff") + ` title="Toggle Selective Key mode (if enabled, this world info entry will be included in memory only if at least one PRIMARY KEY and at least one SECONDARY KEY are both present in the story)" onclick="return toggle_wi_sk(` + i + `)">📑</a>
 			<a id="wickt`+ i + `" href="#" class=` + (curr.constant ? "witoggleron" : "witoggleroff") + ` title="Toggle Constant Key mode (if enabled, this world info entry will always be included in memory)" onclick="return toggle_wi_ck(` + i + `)">📌</a>
+			<select id="wirng`+i+`" style="padding:1px; height:auto; width: 30px; appearance: none; font-size: 7pt;" class="form-control" title="Chance to trigger if allowed">`;
+
+			let opts = "";
+			for(let n=0;n<probarr.length;++n)
+			{
+				opts += `<option value="`+probarr[n]+`" `+(probarr[n]==wirngval?"selected":"")+`>`+probarr[n]+`%</option>`;
+			}
+			selectionhtml += opts +`
+			</select>
 			</td>
 		</tr>
 		`;
 		}
 		if (current_wi.length == 0) {
-			selectionhtml = "<div class=\"aidgpopuplistheader anotelabel\">No world info.<br>Click [+] to add a new entry.</div>"
+			selectionhtml = "<div class=\"aidgpopuplistheader anotelabel\">No world info.<br>Click [+Add] to add a new entry.</div>"
 		}
 
 		selectionhtml += "</table>"
@@ -13080,6 +13454,12 @@ Current version: 129
 				if(userinput!="")
 				{
 					let txt = "";
+
+					if(localsettings.inject_timestamps_instruct)
+					{
+						userinput = "["+(new Date().toLocaleTimeString([], {year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'}))+"] " + userinput;
+					}
+
 					//append instruction for instruct mode
 					if (!localsettings.placeholder_tags) {
 						txt =  get_instruct_endtag(false) + userinput;
@@ -13166,6 +13546,7 @@ Current version: 129
 
 			this.show_chat_names = true;
 			this.rounded_bubbles = true;
+			this.match_background = false;
 
 			this.you_portrait = null;
 			this.AI_portrait = "default";
@@ -13351,6 +13732,7 @@ Current version: 129
 		aestheticInstructUISettings.code_block_background = document.getElementById('code-block-background-colorselector').style.color;
 		aestheticInstructUISettings.code_block_foreground = document.getElementById('code-block-foreground-colorselector').style.color;
 
+		aestheticInstructUISettings.match_background = document.getElementById('aui_match_background').checked;
 		aestheticInstructUISettings.rounded_bubbles = document.getElementById('aui_rounded_bubbles').checked;
 		aestheticInstructUISettings.show_chat_names = document.getElementById('aui_show_chat_names').checked;
 		aestheticInstructUISettings.use_markdown = document.getElementById('instructModeMarkdown').checked;
@@ -13393,6 +13775,7 @@ Current version: 129
 		setElementColor('code-block-foreground-colorselector', aestheticInstructUISettings.code_block_foreground, false);
 
 		// Apply the settings from the json file to the UI.
+		document.getElementById('aui_match_background').checked = aestheticInstructUISettings.match_background;
 		document.getElementById('aui_rounded_bubbles').checked = aestheticInstructUISettings.rounded_bubbles;
 		document.getElementById('aui_show_chat_names').checked = aestheticInstructUISettings.show_chat_names;
 		document.getElementById('instructModeMarkdown').checked = aestheticInstructUISettings.use_markdown;
@@ -13448,6 +13831,16 @@ Current version: 129
 
 	function render_enhanced_chat_instruct(input, isPreview) //class suffix string used to prevent defined styles from leaking into global scope
 	{
+		if(!isPreview)
+		{
+			if(aestheticInstructUISettings.match_background)
+			{
+				document.getElementById('enhancedchatinterface_inner').style.backgroundColor = aestheticInstructUISettings.bubbleColor_sys;
+			}else
+			{
+				document.getElementById('enhancedchatinterface_inner').style.backgroundColor = null;
+			}
+		}
 		let classSuffixStr = isPreview ? "prv" : "";
 		const contextDict = { sysOpen: '<sys_context_koboldlite_internal>', youOpen: '<user_context_koboldlite_internal>', AIOpen: '<AI_context_koboldlite_internal>', closeTag: '<end_of_context_koboldlite_internal>' }
 		let you = "$UnusedTagMatch$"; let bot = "$UnusedTagMatch$"; // Instruct tags will be used to wrap text in styled bubbles.
@@ -13722,8 +14115,7 @@ Current version: 129
 
 		<div class="flex" id="actionmenu">
 			<div id="actionmenuitems">
-				<button type="button" class="btn btn-primary" id="btn_actmem" onclick="btn_memory()">Memory</button>
-				<button type="button" class="btn btn-primary" id="btn_actwi" onclick="backup_wi();btn_wi()">W Info</button>
+				<button type="button" class="btn btn-primary" id="btn_actmem" onclick="btn_memory()">Context</button>
 				<button type="button" class="btn btn-primary" id="btn_actundo" onpointerdown="btn_back_longpress_start()" onpointerleave="btn_back_longpress_end()" onpointerup="btn_back_longpress_end()" onclick="btn_back()">Back</button>
 				<button type="button" class="btn btn-primary" id="btn_actredo" onpointerdown="btn_redo_longpress_start()" onpointerleave="btn_redo_longpress_end()" onpointerup="btn_redo_longpress_end()" onclick="btn_redo()">Redo</button>
 				<button type="button" class="btn btn-primary" id="btn_actretry" onclick="btn_retry()">Retry</button>
@@ -13763,39 +14155,40 @@ Current version: 129
 		</div>
 
 		<div id="enhancedchatinterface" class="chat_mesgs hidden">
-			<div id="chat_msg_body" class="chat_msg_history aesthetic_viewport_height"></div>
-			<div class="hidden" id="chatistyping" style="text-align:right;font-size:13px;color:#999999; padding-bottom: 3px;"><div style="padding-bottom: 2px;" id="chataityping">The AI is typing...</div><div style="padding-top:2px;text-align:right;" class="dot-flashing flex flex-push-right"></div></div>
+			<div id="enhancedchatinterface_inner" class="chat_mesgs_inner">
+				<div id="chat_msg_body" class="chat_msg_history aesthetic_viewport_height"></div>
+				<div class="hidden" id="chatistyping" style="text-align:right;font-size:13px;color:#999999; padding-bottom: 3px;"><div style="padding-bottom: 2px;" id="chataityping">The AI is typing...</div><div style="padding-top:2px;text-align:right;" class="dot-flashing flex flex-push-right"></div></div>
 
-			<!-- A greatly simplified action menu for this mode -->
-			<div class="flex hidden" id="actionmenu2">
-				<div id="actionmenuitems2" class="box flex-push-right" style="margin-bottom: 2px;">
-					<button type="button" class="btn btn-primary" id="btn_actmem2" onclick="btn_memory()">Memory</button>
-					<button type="button" class="btn btn-primary" id="btn_actwi2" onclick="backup_wi();btn_wi()">W Info</button>
-					<button type="button" class="btn btn-primary" id="btn_actundo2" onpointerdown="btn_back_longpress_start()" onpointerleave="btn_back_longpress_end()" onpointerup="btn_back_longpress_end()" onclick="btn_back()">Back</button>
-					<button type="button" class="btn btn-primary" id="btn_actredo2" onpointerdown="btn_redo_longpress_start()" onpointerleave="btn_redo_longpress_end()" onpointerup="btn_redo_longpress_end()" onclick="btn_redo()">Redo</button>
-					<button type="button" class="btn btn-primary" id="btn_actretry2" onclick="btn_retry()">Retry</button>
-					<button type="button" class="btn btn-primary bg_green" id="btn_genimg2" onclick="add_img_btn_menu()">Add Img</button>
-					<button type="button" class="btn btn-primary" id="btn_editmode" onclick="btn_editmode()">Edit</button>
+				<!-- A greatly simplified action menu for this mode -->
+				<div class="flex hidden" id="actionmenu2">
+					<div id="actionmenuitems2" class="box flex-push-right" style="margin-bottom: 2px;">
+						<button type="button" class="btn btn-primary" id="btn_actmem2" onclick="btn_memory()">Context</button>
+						<button type="button" class="btn btn-primary" id="btn_actundo2" onpointerdown="btn_back_longpress_start()" onpointerleave="btn_back_longpress_end()" onpointerup="btn_back_longpress_end()" onclick="btn_back()">Back</button>
+						<button type="button" class="btn btn-primary" id="btn_actredo2" onpointerdown="btn_redo_longpress_start()" onpointerleave="btn_redo_longpress_end()" onpointerup="btn_redo_longpress_end()" onclick="btn_redo()">Redo</button>
+						<button type="button" class="btn btn-primary" id="btn_actretry2" onclick="btn_retry()">Retry</button>
+						<button type="button" class="btn btn-primary bg_green" id="btn_genimg2" onclick="add_img_btn_menu()">Add Img</button>
+						<button type="button" class="btn btn-primary" id="btn_editmode" onclick="btn_editmode()">Edit</button>
 
+					</div>
 				</div>
+
+				<div class="cht_inp_hold_outer">
+					<div class="cht_inp_hold">
+					<button onclick="show_groupchat_select()" id="chat_btnmode_chat" class="chat_btnmode_chat hidden" type="button"></button>
+					<button onclick="btn_adventure_mode()" id="chat_btnmode_adventure" class="chat_btnmode_adventure actionmode hidden" type="button"></button>
+					<div id="cht_inp_bg" class="cht_inp_bg">
+					<div class="cht_inp_bg_inner" id="cht_inp_lengthtester" style="white-space: nowrap; visibility: hidden; height: 0px; position:absolute; width: auto;"></div>
+					<textarea class="cht_inp_bg_inner" id="cht_inp" type="text" name="chtchtinp"  role="presentation" autocomplete="noppynop" spellcheck="true" rows="1" wrap="on" placeholder="Type a message" value="" oninput="update_submit_button();chat_resize_input();" onkeypress="return chat_handle_typing(event)"/></textarea>
+					</div>
+					<button onclick="chat_submit_generation()" id="chat_msg_send_btn" class="chat_msg_send_btn" type="button"></button>
+					<button onclick="abort_generation()" id="chat_msg_send_btn_abort" class="hidden chat_msg_send_btn_abort" type="button"></button>
+					<button type="button" class="chat_msg_cust_btn" id="btn_chat_cust" onclick="chat_toggle_actionmenu()"></button>
+					</div>
+				</div>
+
+				<div class="lastreq" id="lastreq2" style="padding-top: 2px; color:#999999"><span class="color_gray">KoboldAI Lite - A frontend for self hosted and third party API services.</span></div>
 			</div>
-
-			<div class="cht_inp_hold_outer">
-			  <div class="cht_inp_hold">
-				<button onclick="show_groupchat_select()" id="chat_btnmode_chat" class="chat_btnmode_chat hidden" type="button"></button>
-				<button onclick="btn_adventure_mode()" id="chat_btnmode_adventure" class="chat_btnmode_adventure actionmode hidden" type="button"></button>
-				<div id="cht_inp_bg" class="cht_inp_bg">
-				<div class="cht_inp_bg_inner" id="cht_inp_lengthtester" style="white-space: nowrap; visibility: hidden; height: 0px; position:absolute; width: auto;"></div>
-				<textarea class="cht_inp_bg_inner" id="cht_inp" type="text" name="chtchtinp"  role="presentation" autocomplete="noppynop" spellcheck="true" rows="1" wrap="on" placeholder="Type a message" value="" oninput="update_submit_button();chat_resize_input();" onkeypress="return chat_handle_typing(event)"/></textarea>
-				</div>
-				<button onclick="chat_submit_generation()" id="chat_msg_send_btn" class="chat_msg_send_btn" type="button"></button>
-				<button onclick="abort_generation()" id="chat_msg_send_btn_abort" class="hidden chat_msg_send_btn_abort" type="button"></button>
-				<button type="button" class="chat_msg_cust_btn" id="btn_chat_cust" onclick="chat_toggle_actionmenu()"></button>
-				</div>
-			</div>
-
-			<div class="lastreq" id="lastreq2" style="padding-top: 2px; color:#999999"><span class="color_gray">KoboldAI Lite - A frontend for self hosted and third party API services.</span></div>
-		  </div>
+		</div>
 	</div>
 
 	<div class="popupcontainer flex hidden" id="quickstartcontainer">
@@ -14032,14 +14425,14 @@ Current version: 129
 			<div id="palmcustom" class="aidgpopuplistheader anotelabel hidden">
 				Uses Gemini or PaLM Text Bison by Google.<br><br>
 				Note that KoboldAI Lite takes no responsibility for your usage or consequences of this feature.<br><br>
-				<select style="padding:4px;" class="form-control" id="custom_palm_model">
+				<select style="padding:4px;" class="form-control" id="custom_palm_model" onchange="togglepalmmodel()">
 					<option value="text-bison-001" selected="selected">text-bison-001</option>
 					<option value="gemini-pro">gemini-pro</option>
 					<option value="gemini-1.5-pro-latest">gemini-1.5-pro-latest</option>
-					<option value="gemini-ultra">gemini-ultra</option>
 				</select>
 				<span class="color_green" style="font-weight: bold;">Please input Gemini or PaLM API Key.</span><br><br>
 				<input class="form-control" type="password" id="custom_palm_key" placeholder="PaLM/Gemini API Key" value="" onfocus="focus_api_keys()" onblur="blur_api_keys()"><br>
+				<input class="form-control" type="text" id="gemini_system_instruction" placeholder="(Enter System Instruction)"	value=""><br>
 			</div>
 			<div id="coherecustom" class="aidgpopuplistheader anotelabel hidden">
 				Uses Cohere's models through their own API.<br><br>
@@ -14051,6 +14444,8 @@ Current version: 129
 				</select>
 				<span class="color_green" style="font-weight: bold;">Please input Cohere API Key.</span><br><br>
 				<input class="form-control" type="password" id="custom_cohere_key" placeholder="Cohere API Key" value="" onfocus="focus_api_keys()" onblur="blur_api_keys()"><br>
+				<input type="checkbox" id="usecohereweb">
+				<div class="box-label" id="usecohereweblabel" title="">Use WebSearch</div>
 				<input type="checkbox" id="useocoherepreamble" onchange="togglecoherepreamble()">
 				<div class="box-label" id="useocoherepreamblelabel" title="">Use Preamble</div>
 
@@ -14145,7 +14540,7 @@ Current version: 129
 
 	<div class="popupcontainer flex hidden" id="settingscontainer">
 		<div class="popupbg flex"></div>
-		<div class="nspopup fixsize evenhigher">
+		<div class="nspopup flexsizevsmall evenhigher">
 			<div class="popuptitlebar">
 				<div class="popuptitletext">Settings</div>
 			</div>
@@ -14356,6 +14751,8 @@ Current version: 129
 								<option value="5">Q & A</option>
 								<option value="6">ChatML</option>
 								<option value="7">KoboldAI Format</option>
+								<option value="8">CommandR</option>
+								<option value="9">Llama 3 Chat</option>
 							</select>
 							<table class="settingsmall text-center" style="border-spacing: 3px 2px;	border-collapse: separate;">
 								<tr>
@@ -14550,7 +14947,7 @@ Current version: 129
 								</div>
 								</td>
 								<td class="settingsmall">
-									<button type="button" class="btn btn-primary" onclick="selectImgStyle()" style="font-size:11px; padding: 0px 4px; margin: 0px 1px 0px 1px;">Style<br>🎨</button>
+									<button type="button" class="btn btn-primary" onclick="selectImgStyle()" style="font-size:11px; padding: 0px 4px; margin: 0px 1px 0px 1px;">Setup<br>🎨</button>
 								</td>
 								</tr>
 								</table>
@@ -14722,110 +15119,131 @@ Current version: 129
 		<div class="popupbg flex"></div>
 		<div class="nspopup flexsizebig evenhigher">
 			<div class="popuptitlebar">
-				<div class="popuptitletext">Memory</div>
+				<div class="popuptitletext">Context Data</div>
 			</div>
-			<div class="settinglabel">
-				<span class="justifyleft">Memory<span class="helpicon">?<span
-					class="helptext">Put the information you want the AI to always remember. It will be inserted into the top of every request sent to the AI.</span></span></span>
-				<span class="justifyright flex-push-right" >
-					<div class="settinglabel" style="padding-top: 4px;">
-						<div class="justifyleft settingsmall" title="Add newline after injecting memory text">Newline After Memory </div>
-					   <input type="checkbox" id="newlineaftermemory" style="margin:0px 0 0;" checked>
-					</div>
-				</span>
-			</div>
-			<textarea class="form-control" id="memorytext" style="height: 120px;"
-				placeholder="Edit the memory to be sent with each request to the AI."></textarea>
+			<div><ul class="nav nav-tabs settingsnav">
+				<li id="memory_tab" class="active"><a class="" href="#" onclick="display_memory_tab(0)">Memory</a></li>
+				<li id="wi_tab"><a class="" href="#" onclick="display_memory_tab(1)">World Info</a></li>
+				<li id="token_tab"><a class="" href="#" onclick="display_memory_tab(2)">Tokens</a></li>
+			  </ul></div>
 
-			<div class="settinglabel">
-
-				<div class="justifyleft"><br>Author's Note<span class="helpicon">?<span
-					class="helptext">Similar to Memory, but inserted near the end of the text instead of the start. A good way to control the mood/behavior of the AI.</span></span></div>
-				<span class="justifyright flex-push-right" >
-					<button type="button" class="btn btn-primary" style="padding:4px 6px;margin-top:4px;" id="btnnotes" onclick="set_personal_notes()">Notes</button>
-					<button type="button" class="btn btn-primary" style="padding:4px 6px;margin-top:4px;" id="btnautogenmem" onclick="autogenerate_summary_memory()">AutoGenerate Memory</button>
-				</span>
+			<div class="memtabcontainer" id="memory_tab_container">
+				<div class="settinglabel">
+					<span class="justifyleft">Memory<span class="helpicon">?<span
+						class="helptext">Put the information you want the AI to always remember. It will be inserted into the top of every request sent to the AI.</span></span></span>
+					<span class="justifyright flex-push-right" >
+						<div class="settinglabel" style="padding-top: 4px;">
+							<div class="justifyleft settingsmall" title="Add newline after injecting memory text">Newline After Memory </div>
+						<input type="checkbox" id="newlineaftermemory" style="margin:0px 0 0;" checked>
+						</div>
+					</span>
+				</div>
+				<textarea class="form-control" id="memorytext" style="height: 120px;"
+					placeholder="Edit the memory to be sent with each request to the AI."></textarea>
+				<div class="settinglabel">
+					<div class="justifyleft"><br>Author's Note<span class="helpicon">?<span
+						class="helptext">Similar to Memory, but inserted near the end of the text instead of the start. A good way to control the mood/behavior of the AI.</span></span></div>
+					<span class="justifyright flex-push-right" >
+						<button type="button" class="btn btn-primary" style="padding:4px 6px;margin-top:4px;" id="btnnotes" onclick="set_personal_notes()">Notes</button>
+						<button type="button" class="btn btn-primary" style="padding:4px 6px;margin-top:4px;" id="btnautogenmem" onclick="autogenerate_summary_memory()">AutoGenerate Memory</button>
+					</span>
+				</div>
+				<textarea class="form-control" id="anotetext"
+					placeholder="Author's Note will be inserted close to end of context."></textarea>
+				<br>
+				<div class="settinglabel">
+					<span class="justifyleft">Author's Note Template<span class="helpicon">?<span
+						class="helptext">A placeholder, will be inserted with the author's note replacing the &lt;|&gt;. You generally don't need to change this.</span></span></span>
+					<span class="justifyright flex-push-right" >
+						A/N Strength<span class="helpicon">?<span
+							class="helptext">Controls how far back to insert the Author's Note. Notes injected closer to the end have a stronger effect.</span></span>
+					</span>
+				</div>
+				<div style="display: flex; column-gap: 4px;">
+				<input class="form-control anotetempbox" type="text"
+					placeholder="(the &lt;|&gt; will be replaced with the Author's Note text)" value="" id="anotetemplate">
+					<select style="padding:4px;" class="anotetempscale form-control" id="anote_strength">
+						<option value="480">Weak</option>
+						<option value="320">Medium</option>
+						<option value="160">Strong</option>
+						<option value="0">Immediate</option>
+					</select>
+				</div>
 			</div>
 
+			<div class="memtabcontainer" id="wi_tab_container">
+				<div style="text-align: right;">
+				<button type="button" style="padding:4px;margin:4px" class="btn btn-info widelbtn" id="wiadd" onclick="add_wi()">+Add</button>
+				</div>
+				<div class="wilist" id="wilist">
+				</div>
 
-			<textarea class="form-control" id="anotetext"
-				placeholder="Author's Note will be inserted close to end of context."></textarea>
-			<br>
-			<div class="settinglabel">
-				<span class="justifyleft">Author's Note Template<span class="helpicon">?<span
-					class="helptext">A placeholder, will be inserted with the author's note replacing the &lt;|&gt;. You generally don't need to change this.</span></span></span>
-				<span class="justifyright flex-push-right" >
-					A/N Strength<span class="helpicon">?<span
-						class="helptext">Controls how far back to insert the Author's Note. Notes injected closer to the end have a stronger effect.</span></span>
-				</span>
+				<div class="settinglabel" style="padding: 4px;">
+					<div class="justifyleft settingsmall">WI Insert Location <span class="helpicon">?<span
+						class="helptext">Controls where the world info should be inserted</span></span></div>
+				<select style="height:16px;padding:0px;margin:0px 4px 0; width:90px;font-size:10px;" class="form-control" id="wi_insertlocation">
+					<option value="0">After Memory</option>
+					<option value="1">Before A/N</option>
+				</select></div>
+				<div class="settinglabel" style="padding: 4px;">
+					<div class="justifyleft settingsmall">WI Search Depth <span class="helpicon">?<span
+						class="helptext">Controls how far back in the text to search for World Info Keys</span></span></div>
+				<select style="height:16px;padding:0px;margin:0px 4px 0; width:90px;font-size:10px;" class="form-control" id="wi_searchdepth">
+					<option value="0">Full Context</option>
+					<option value="1024">Last 1024</option>
+					<option value="512">Last 512</option>
+					<option value="256">Last 256</option>
+				</select></div>
+
+
+				<div style="float:right;">
+					<input class="settinglabel miniinput" style="margin: 3px; width: 90px;" type="text" placeholder="Quick Search" value="" id="wiquicksearch" oninput="wi_quick_search()">
+				</div>
+				<div class="settinglabel" style="padding: 4px;">
+					<div class="justifyleft settingsmall" title="Controls whether the world info keys are matched in a case-sensitive way.">Case Sensitive Keys </div>
+				<input type="checkbox" id="case_sensitive_wi" style="margin:0px 0 0;">
+				</div>
 			</div>
 
-			<div style="display: flex; column-gap: 4px;">
-			<input class="form-control anotetempbox" type="text"
-				placeholder="(the &lt;|&gt; will be replaced with the Author's Note text)" value="" id="anotetemplate">
-				<select style="padding:4px;" class="anotetempscale form-control" id="anote_strength">
-					<option value="480">Weak</option>
-					<option value="320">Medium</option>
-					<option value="160">Strong</option>
-					<option value="0">Immediate</option>
-				</select>
+			<div class="memtabcontainer" id="token_tab_container">
+				<div class="justifyleft settinglabel">Extra Stopping Sequences <span class="helpicon">?<span
+					class="helptext">Triggers the text generator to stop generating early if this sequence appears, in addition to default stop sequences. If you want multiple sequences, separate them with the following delimiter: ||$||</span></span></div>
+					<div class="color_red hidden" id="noextrastopseq">Stop Sequences may be unavailable.</div>
+					<div style="display: flex; column-gap: 4px; margin-bottom: 4px;">
+					<input class="form-control stopseqbox" type="text" placeholder="None" value="" id="extrastopseq">
+					<button type="button" class="btn btn-primary" style="width:90px;padding:6px 6px;" onclick="add_stop_seq()">Add New</button>
+				</div>
+				<div class="settinglabel">
+					<div class="justifyleft"><br>Logit Biases <span class="helpicon">?<span
+						class="helptext">Specify a dictionary of token IDs to modify the probability of occuring.</span></span></div>
+				</div>
+				<div><button type="button" class="btn btn-primary" style="width:134px;padding:6px 6px;" id="btnlogitbias" onclick="set_logit_bias()">Edit Logit Biases</button></div>
+				<div class="settinglabel">
+					<div class="justifyleft"><br>Custom Regex Replace <span class="helpicon">?<span
+						class="helptext">Allows transforming incoming text with up to 3 regex patterns, modifying all matches. Replacements will be applied in sequence.</span></span></div>
+				</div>
+				<table class="settinglabel text-center" style="border-spacing: 3px 2px;	border-collapse: separate;">
+					<tr>
+						<th>Pattern <span class="helpicon">?<span class="helptext">The regex pattern to match against any incoming text. Leave blank to disable.</span></span></th>
+						<th>Replacement <span class="helpicon">?<span class="helptext">The string to replace matches with. Capture groups are allowed (e.g. $1). To remove all matches, leave this blank.</span></span></th>
+					</tr>
+					<tr>
+					<td><input class="settinglabel miniinput" type="text" placeholder="(Inactive)" value="" id="regexreplace_pattern0"></td>
+					<td><input class="settinglabel miniinput" type="text" placeholder="(Remove)" value="" id="regexreplace_replacement0"></td>
+					</tr>
+					<tr>
+					<td><input class="settinglabel miniinput" type="text" placeholder="(Inactive)" value="" id="regexreplace_pattern1"></td>
+					<td><input class="settinglabel miniinput" type="text" placeholder="(Remove)" value="" id="regexreplace_replacement1"></td>
+					</tr>
+					<tr>
+					<td><input class="settinglabel miniinput" type="text" placeholder="(Inactive)" value="" id="regexreplace_pattern2"></td>
+					<td><input class="settinglabel miniinput" type="text" placeholder="(Remove)" value="" id="regexreplace_replacement2"></td>
+					</tr>
+				</table>
 			</div>
-			<br>
-			<div class="justifyleft settinglabel">Extra Stopping Sequences <span class="helpicon">?<span
-				class="helptext">Triggers the text generator to stop generating early if this sequence appears, in addition to default stop sequences. If you want multiple sequences, separate them with the following delimiter: ||$||</span></span></div>
-				<div class="color_red hidden" id="noextrastopseq">Stop Sequences may be unavailable.</div>
-				<div style="display: flex; column-gap: 4px; margin-bottom: 4px;">
-				<input class="form-control stopseqbox" type="text" placeholder="None" value="" id="extrastopseq">
-				<button type="button" class="btn btn-primary" style="width:104px;padding:6px 6px;" id="btnlogitbias" onclick="set_logit_bias()">Logit Biases</button>
-			</div>
+
 			<div class="popupfooter">
-				<button type="button" class="btn btn-primary" onclick="confirm_memory()">OK</button>
-				<button type="button" class="btn btn-primary" onclick="hide_popups()">Cancel</button>
-			</div>
-		</div>
-	</div>
-
-	<div class="popupcontainer flex hidden" id="wicontainer">
-		<div class="popupbg flex"></div>
-		<div class="nspopup higher">
-			<div class="popuptitlebar">
-				<div style="float:right;"><button type="button" class="btn btn-info widelbtn" id="wiadd" onclick="add_wi()">+</button></div>
-				<div class="popuptitletext">World Info</div>
-			</div>
-
-			<div class="wilist" id="wilist">
-
-			</div>
-
-			<div class="settinglabel" style="padding: 4px;">
-				<div class="justifyleft settingsmall">WI Insert Location <span class="helpicon">?<span
-					class="helptext">Controls where the world info should be inserted</span></span></div>
-			<select style="height:16px;padding:0px;margin:0px 4px 0; width:90px;font-size:10px;" class="form-control" id="wi_insertlocation">
-				<option value="0">After Memory</option>
-				<option value="1">Before A/N</option>
-			</select></div>
-			<div class="settinglabel" style="padding: 4px;">
-				<div class="justifyleft settingsmall">WI Search Depth <span class="helpicon">?<span
-					class="helptext">Controls how far back in the text to search for World Info Keys</span></span></div>
-			<select style="height:16px;padding:0px;margin:0px 4px 0; width:90px;font-size:10px;" class="form-control" id="wi_searchdepth">
-				<option value="0">Full Context</option>
-				<option value="1024">Last 1024</option>
-				<option value="512">Last 512</option>
-				<option value="256">Last 256</option>
-			</select></div>
-
-
-			<div style="float:right;">
-				<input class="settinglabel miniinput" style="margin: 3px; width: 90px;" type="text" placeholder="Quick Search" value="" id="wiquicksearch" oninput="wi_quick_search()">
-			</div>
-			<div class="settinglabel" style="padding: 4px;">
-				<div class="justifyleft settingsmall" title="Controls whether the world info keys are matched in a case-sensitive way.">Case Sensitive Keys </div>
-			   <input type="checkbox" id="case_sensitive_wi" style="margin:0px 0 0;">
-			</div>
-
-			<div class="popupfooter">
-
-				<button type="button" class="btn btn-primary" onclick="save_wi();autosave();hide_popups()">Ok</button>
+				<button type="button" class="btn btn-primary" onclick="confirm_memory();save_wi();render_gametext();hide_popups()">OK</button>
 				<button type="button" class="btn btn-primary" onclick="revert_wi();hide_popups()">Cancel</button>
 			</div>
 		</div>
@@ -14843,7 +15261,7 @@ Current version: 129
 			<div class="workerTableDiv">
 			<table class="table text-center workerTable">
 			<thead class="sticky-top bg-white">
-			<tr><th><a class="color_blueurl" href="#" onclick="sort_display_workers('name')">Name</a></th><th><a class="color_blueurl" href="#" onclick="sort_display_workers('defaultmodel')">Model</a></th><th><a class="color_blueurl" href="#" onclick="sort_display_workers('tokenspersec')">Capabilities</a></th><th><a class="color_blueurl" href="#" onclick="sort_display_workers('uptime')">Uptime</a></th><th><a class="color_blueurl" href="#" onclick="sort_display_workers('kudos_rewards')">Kudos</a></th><th>Cluster</th></tr>
+			<tr><th><a class="color_blueurl" href="#" onclick="sort_display_workers('name')">Name</a></th><th><a class="color_blueurl" href="#" onclick="sort_display_workers('defaultmodel')">Model</a></th><th><a class="color_blueurl" href="#" onclick="sort_display_workers('tokenspersec')">Capabilities</a></th><th><a class="color_blueurl" href="#" onclick="sort_display_workers('uptime')">Uptime</a></th><th><a class="color_blueurl" href="#" onclick="sort_display_workers('kudos_rewards')">Kudos</a></th></tr>
 			</thead>
 			<tbody id="workertable">
 			</tbody>
@@ -15108,6 +15526,9 @@ Current version: 129
 									<div class="ui-settings-inline" style="font-size: 10px; margin-left: 10px">
 										<div style="padding-top: 2px;">Rounded Bubbles: </div>
 										<input id="aui_rounded_bubbles"  type="checkbox" style="height: 10px">
+
+										<div style="padding-top: 2px; padding-left: 5px;">Color Background: </div>
+										<input id="aui_match_background"  type="checkbox" style="height: 10px">
 									</div>
 
 									<div class="ui-settings-inline">
@@ -15285,6 +15706,7 @@ Current version: 129
 
 			<div class="popupfooter">
 				<button type="button" class="btn btn-primary" onclick="onInputboxOk()">OK</button>
+				<button type="button" id="inputboxcancel" class="btn btn-primary hidden" onclick="onInputboxCancel()">Cancel</button>
 			</div>
 		</div>
 	</div>

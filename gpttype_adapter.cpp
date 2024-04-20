@@ -102,6 +102,7 @@ static size_t mem_per_token = 0;
 static std::vector<float> logits;
 static std::vector<int> smartcontext;
 static std::vector<std::string> stop_sequence;
+static std::vector<int> special_stop_sequence; //for stop sequences that don't have a string representation
 static std::vector<std::string> banned_tokens;
 static std::vector<int> banned_token_ids;
 static std::vector<llama_token_data> top_picks;
@@ -158,25 +159,40 @@ static std::string FileFormatTokenizeID(int id, FileFormat file_format)
     }
 }
 
-static void TokenizeString(const std::string & str_to_tokenize, std::vector<int> & output_tokens, FileFormat file_format)
+static void TokenizeString(const std::string & str_to_tokenize, std::vector<int> & output_tokens, FileFormat file_format, bool add_bos=true)
 {
     if (file_format == FileFormat::GGML || file_format == FileFormat::GGHF || file_format == FileFormat::GGJT || file_format == FileFormat::GGJT_2  || file_format == FileFormat::GGJT_3 || file_format == FileFormat::GGUF_GENERIC)
     {
         if(file_format == FileFormat::GGHF || file_format == FileFormat::GGJT || file_format == FileFormat::GGJT_2 )
         {
-            output_tokens = ::llama_v2_tokenize(llama_ctx_v2, str_to_tokenize, true);
+            output_tokens = ::llama_v2_tokenize(llama_ctx_v2, str_to_tokenize, add_bos);
         }
         else if (file_format == FileFormat::GGML)
         {
-            output_tokens = ::legacy_llama_v2_tokenize(llama_ctx_v2, str_to_tokenize, true);
+            output_tokens = ::legacy_llama_v2_tokenize(llama_ctx_v2, str_to_tokenize, add_bos);
         }
         else if (file_format == FileFormat::GGJT_3)
         {
-            output_tokens = ::llama_v3_tokenize(llama_ctx_v3, str_to_tokenize, true);
+            output_tokens = ::llama_v3_tokenize(llama_ctx_v3, str_to_tokenize, add_bos);
         }
         else
         {
             output_tokens = ::llama_tokenize(llama_ctx_v4, str_to_tokenize, true, true);
+            if(add_bos)
+            {
+                llama_token bostoadd = llama_token_bos(&(llama_ctx_v4->model));
+                if(output_tokens.size()==0)
+                {
+                    output_tokens.push_back(bostoadd);
+                }
+                else
+                {
+                    if(output_tokens[0]!=bostoadd)
+                    {
+                        output_tokens.insert(output_tokens.begin(), 1, bostoadd);
+                    }
+                }
+            }
         }
     }
     else
@@ -594,7 +610,8 @@ static void grammar_accept_token(FileFormat file_format, int32_t n_vocab, struct
     const auto   decoded     = decode_utf8(piece.c_str(), grammar->partial_utf8);
     const auto & code_points = decoded.first;
     for (auto it = code_points.begin(), end = code_points.end() - 1; it != end; ++it) {
-        grammar->stacks = llama_grammar_accept(grammar->rules, grammar->stacks, *it);
+        auto prev_stacks = grammar->stacks;
+        llama_grammar_accept(grammar->rules, prev_stacks, *it, grammar->stacks);
     }
     grammar->partial_utf8 = decoded.second;
     GGML_ASSERT(!grammar->stacks.empty());
@@ -802,8 +819,10 @@ ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in
                 float factor = file_format_meta.n_ctx_train/2048;
                 effectivenctx = effectivenctx/factor;
             }
-            rope_freq_base = (effectivenctx <= 2048 ? 10000.0f : (effectivenctx <= 3072 ? 26000.0f : (effectivenctx <= 4096 ? 32000.0f : (effectivenctx <= 6144 ? 54000.0f :
-            (effectivenctx <= 8192 ? 82684.0f : (effectivenctx <= 12288 ? 140000.0f : (effectivenctx <= 16384 ? 200000.0f : (effectivenctx <= 24576 ? 320000.0f : 440000.0f))))))));
+            float magic_multiplier = 8.0f;
+            float base_multiplier = effectivenctx*magic_multiplier;
+            float base_raw = 10000.0f;
+            rope_freq_base = (effectivenctx <= 2048 ? base_raw : base_multiplier);
 
         }
 
@@ -1048,7 +1067,8 @@ ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in
         else
         {
             //if the model modifes rope in any way, use the model values. Otherwise, use our automatic ones
-            if(llamamodel->hparams.rope_freq_base_train!=10000.0f ||
+            //special exception for llama, which uses auto scale
+            if((llamamodel->hparams.rope_freq_base_train!=10000.0f && llamamodel->hparams.rope_freq_base_train!=500000.0f) ||
             llamamodel->hparams.rope_freq_scale_train!=1.0f ||
             llamamodel->hparams.rope_scaling_type_train==2)
             {
@@ -1056,6 +1076,8 @@ ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in
             }
             else
             {
+                float multiplier_rope_base = llamamodel->hparams.rope_freq_base_train/10000.0f;
+                rope_freq_base *= multiplier_rope_base;
                 llama_ctx_params.rope_freq_base = rope_freq_base;
                 llama_ctx_params.rope_freq_scale = rope_freq_scale;
                 printf("Automatic RoPE Scaling: Using (scale:%.3f, base:%.1f).\n", rope_freq_scale, rope_freq_base);
@@ -1572,12 +1594,26 @@ generation_outputs gpttype_generate(const generation_inputs inputs)
     concat_output_mtx.unlock();
     last_stop_reason = stop_reason::OUT_OF_TOKENS;
     stop_sequence.clear();
+    special_stop_sequence.clear();
     for(int x=0;x<stop_token_max;++x)
     {
         std::string stopper = inputs.stop_sequence[x];
         if(stopper!="")
         {
             stop_sequence.push_back(stopper);
+
+            //if it tokenizes to a single token, AND it's a single non-printable special token, use that
+            std::vector<int> tmp;
+            TokenizeString(stopper, tmp, file_format, false);
+            if(tmp.size()==1) //tokenizes to exactly 1 special token
+            {
+                int specialid = tmp[0];
+                std::string tokenizedstr = FileFormatTokenizeID(specialid, file_format);
+                if(tokenizedstr=="") //must NOT have a text representation
+                {
+                    special_stop_sequence.push_back(specialid);
+                }
+            }
         }
     }
 
@@ -2209,6 +2245,21 @@ generation_outputs gpttype_generate(const generation_inputs inputs)
                 }
                 remaining_tokens = 0;
                 last_stop_reason = stop_reason::EOS_TOKEN_HIT;
+            }
+
+            for (const auto &matched : special_stop_sequence)
+            {
+                if(id==matched)
+                {
+                    stopper_unused_tokens = remaining_tokens;
+                    if(allow_regular_prints)
+                    {
+                        printf("\n(Special Stop Token Triggered! ID:%d)",matched);
+                    }
+                    remaining_tokens = 0;
+                    last_stop_reason = stop_reason::EOS_TOKEN_HIT;
+                    break;
+                }
             }
 
             for (const auto &matched : stop_sequence)

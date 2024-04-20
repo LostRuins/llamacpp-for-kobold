@@ -154,4 +154,5 @@ You can then run koboldcpp anywhere from the terminal by running `koboldcpp` to 
   - GPT-NeoX / Pythia / StableLM / Dolly / RedPajama
   - MPT models
   - Falcon (GGUF only)
+  - [Stable Diffusion and SDXL models](https://github.com/LostRuins/koboldcpp/wiki#can-i-generate-images-with-koboldcpp)
 
