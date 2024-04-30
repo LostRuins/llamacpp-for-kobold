@@ -3,11 +3,10 @@ name: Koboldcpp Builder Linux CUDA12
 on: workflow_dispatch
 env:
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+  KCPP_CUDA: 12.1.0
 
 jobs:
   linux:
-    variables:
-      KCPP_CUDA: "12.1.0"
     runs-on: ubuntu-20.04
     steps:
       - name: Clone
