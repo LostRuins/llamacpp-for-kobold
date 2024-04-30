@@ -18,7 +18,7 @@ if [[ ! -f "conda/envs/linux/bin/python" || $1 == "rebuild" ]]; then
 	echo rm environment.tmp.yaml
 fi
 KCPP_CUDA=$(<conda/envs/linux/cudaver)
-KCPP_CUDAAPPEND=-CUDA$KCPP_CUDA$KCPP_APPEND
+KCPP_CUDAAPPEND=-cuda$KCPP_CUDA$KCPP_APPEND
 
 bin/micromamba run -r conda -n linux make LLAMA_VULKAN=1 LLAMA_OPENBLAS=1 LLAMA_CLBLAST=1 LLAMA_CUBLAS=1 LLAMA_PORTABLE=1 LLAMA_ADD_CONDA_PATHS=1
 
