@@ -6,8 +6,8 @@ env:
 
 jobs:
   linux:
-  variables:
-    KCPP_CUDA: "12.1.0"
+    variables:
+      KCPP_CUDA: "12.1.0"
     runs-on: ubuntu-20.04
     steps:
       - name: Clone
