@@ -11,10 +11,10 @@ KoboldCpp is an easy-to-use AI text-generation software for GGML and GGUF models
 - **[Download the latest .exe release here](https://github.com/LostRuins/koboldcpp/releases/latest)** or clone the git repo.
 - Windows binaries are provided in the form of **koboldcpp.exe**, which is a pyinstaller wrapper for a few **.dll** files and **koboldcpp.py**. You can also rebuild it yourself with the provided makefiles and scripts.
 - Weights are not included, you can use the official llama.cpp `quantize.exe` to generate them from your official weight files (or download them from other places such as [TheBloke's Huggingface](https://huggingface.co/TheBloke).
-- To run, execute **koboldcpp.exe** or drag and drop your quantized `ggml_model.bin` file onto the .exe, and then connect with Kobold or Kobold Lite. If you're not on windows, then run the script **KoboldCpp.py** after compiling the libraries.
+- To run, simply execute **koboldcpp.exe**.
 - Launching with no command line arguments displays a GUI containing a subset of configurable settings. Generally you dont have to change much besides the `Presets` and `GPU Layers`. Read the `--help` for more info about each settings.
 - By default, you can connect to http://localhost:5001
-- You can also run it using the command line `koboldcpp.exe [ggml_model.bin] [port]`. For info, please check `koboldcpp.exe --help`
+- You can also run it using the command line. For info, please check `koboldcpp.exe --help`
 
 ### Improving Performance
 - **(Nvidia Only) GPU Acceleration**: If you're on Windows with an Nvidia GPU you can get CUDA support out of the box using the `--usecublas` flag, make sure you select the correct .exe with CUDA support.
@@ -64,23 +64,7 @@ when you can't use the precompiled binary directly, we provide an automated buil
 - Note: Many OSX users have found that the using Accelerate is actually faster than OpenBLAS. To try, you may wish to run with `--noblas` and compare speeds.
 
 ### Arch Linux Packages
-There are 4 community made AUR packages (Maintained by @AlpinDale) available: [CPU-only](https://aur.archlinux.org/packages/koboldcpp-cpu), [CLBlast](https://aur.archlinux.org/packages/koboldcpp-clblast), [CUBLAS](https://aur.archlinux.org/packages/koboldcpp-cuda), and [HIPBLAS](https://aur.archlinux.org/packages/koboldcpp-hipblas). They are, respectively, for users with no GPU, users with a GPU (vendor-agnostic), users with NVIDIA GPUs, and users with a supported AMD GPU.
-
-The recommended installation method is through an AUR helper such as [paru](https://aur.archlinux.org/packages/paru) or [yay](https://aur.archlinux.org/packages/yay):
-
-```sh
-paru -S koboldcpp-cpu
-```
-
-Alternatively, you can manually install, though it's not recommended (since the build depends on [customtkinter](https://aur.archlinux.org/packages/customtkinter)):
-
-```sh
-git clone https://aur.archlinux.org/koboldcpp-cpu.git && cd koboldcpp-cpu
-
-makepkg -si
-```
-
-You can then run koboldcpp anywhere from the terminal by running `koboldcpp` to spawn the GUI, or `koboldcpp --help` to view the list of commands for commandline execution (in case the GUI does not work).
+There are some community made AUR packages (Maintained by @AlpinDale) available: [CUBLAS](https://aur.archlinux.org/packages/koboldcpp-cuda), and [HIPBLAS](https://aur.archlinux.org/packages/koboldcpp-hipblas). They are intended for users with NVIDIA GPUs, and users with a supported AMD GPU. Note that these packages may be outdated, and it's probably better to use official KoboldCpp binaries.
 
 ## Compiling on Windows
 - You're encouraged to use the .exe released, but if you want to compile your binaries from source at Windows, the easiest way is:

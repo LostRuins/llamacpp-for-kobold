@@ -55,7 +55,7 @@ struct load_model_inputs
     const int gpulayers = 0;
     const float rope_freq_scale = 1.0f;
     const float rope_freq_base = 10000.0f;
-    const char * banned_tokens[ban_token_max];
+    const bool flash_attention = false;
     const float tensor_split[tensor_split_max];
 };
 struct generation_inputs
@@ -81,7 +81,8 @@ struct generation_inputs
     const float mirostat_tau;
     const samplers sampler_order[KCPP_SAMPLER_MAX];
     const int sampler_len;
-    const bool unban_tokens_rt;
+    const bool allow_eos_token;
+    const bool render_special;
     const char * stop_sequence[stop_token_max];
     const bool stream_sse;
     const char * grammar;
@@ -91,11 +92,12 @@ struct generation_inputs
     const float dynatemp_exponent = 1.0f;
     const float smoothing_factor = 0.0f;
     const logit_bias logit_biases[logit_bias_max];
-
+    const char * banned_tokens[ban_token_max];
 };
 struct generation_outputs
 {
     int status = -1;
+    int stopreason = stop_reason::INVALID;
     const char * text; //response will now be stored in c++ allocated memory
 };
 struct token_count_outputs

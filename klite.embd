@@ -7,7 +7,7 @@ Just copy this single static HTML file anywhere and open it in a browser, or fro
 Please go to https://github.com/LostRuins/lite.koboldai.net for updates on Kobold Lite.
 If you are submitting a pull request for Lite, PLEASE use the above repo, not the KoboldCpp one.
 Kobold Lite is under the AGPL v3.0 License unless otherwise exempted. Please do not remove this line.
-Current version: 134
+Current version: 136
 -Concedo
 -->
 
@@ -90,6 +90,9 @@ Current version: 134
 
 		.settingsmall{
 			font-size: 10px;
+		}
+		.settingsmall.widerinput {
+			width: 8ch;
 		}
 
 		.settinglabel input:focus {
@@ -296,7 +299,7 @@ Current version: 134
 			padding-right: 10px;
 		}
 
-		#extrastopseq, #anotetemplate {
+		.inlineinput {
 			background-color: #404040;
 			color: #ffffff;
 			resize: none;
@@ -1393,11 +1396,19 @@ Current version: 134
 
 		.widelbtn
 		{
-		font-size: 12px;
-		height: 24px;
-		padding: 5px;
-		margin: 2px;
-		font-weight: bolder;
+			font-size: 12px;
+			height: 24px;
+			padding: 5px;
+			margin: 2px;
+			font-weight: bolder;
+		}
+		.wiarrowbtn
+		{
+			font-size: 12px;
+			height: 18px;
+			padding: 2px;
+			margin: 0px 1px 0px 1px;
+			font-weight: bolder;
 		}
 		.wiinputkeycol
 		{
@@ -3062,6 +3073,9 @@ Current version: 134
 				if (custom_kobold_endpoint != "" && data && data.results != null && data.results.length > 0) {
 					synchro_streaming_response += data.results[0].text;
 					synchro_streaming_tokens_left -= tokens_per_tick;
+					if (data.results[0].finish_reason == "stop") {
+						last_stop_reason = "stop";
+					}
 
 					//handle some early stopping criterias
 					if (localsettings.opmode == 3) //stop on selfname found
@@ -3210,6 +3224,10 @@ Current version: 134
 						for (let event of chunk) {
 							if (event.event === 'message') {
 								synchro_pending_stream += event.data.token;
+								if(event.data.finish_reason=="stop")
+								{
+									last_stop_reason = "stop";
+								}
 							}
 						}
 					}
@@ -3585,6 +3603,7 @@ Current version: 134
 	var current_anote = ""; //stored author note
 	var current_anotetemplate = "[Author\'s note: <|>]";
 	var extrastopseq = "";
+	var tokenbans = "";
 	var anote_strength = 320; //distance from end
 	var newlineaftermemory = true;
 	var current_wi = []; //each item stores a wi object.
@@ -3611,6 +3630,7 @@ Current version: 134
 	var custom_claude_model = "";
 	var uses_cors_proxy = false; //we start off attempting a direct connection. switch to proxy if that fails
 	var synchro_polled_response = null;
+	var last_stop_reason = ""; //update stop reason if known
 	var synchro_pending_stream = ""; //used for token pseduo streaming for kobold api only
 	var waiting_for_autosummary = false;
 	var italics_regex = new RegExp(/\*(\S[^*]+\S)\*/g); //the fallback regex
@@ -3630,8 +3650,9 @@ Current version: 134
 	var welcome = "";
 	var personal_notes = "";
 	var logitbiasdict = {};
-	var regexreplace_pattern = [];
-	var regexreplace_replacement = [];
+	var regexreplace_data = [];
+	var placeholder_tags_data = [];
+	const num_regex_rows = 4;
 
 	var localsettings = {
 		my_api_key: "0000000000", //put here so it can be saved and loaded in persistent mode
@@ -3719,8 +3740,8 @@ Current version: 134
 		passed_ai_warning: false, //used to store AI safety panel acknowledgement state
 		entersubmit: true, //enter sends the prompt
 
-		max_context_length: 1600,
-		max_length: 120,
+		max_context_length: (localflag?2048:1600),
+		max_length: 140,
 		auto_ctxlen: true,
 		auto_genamt: true,
 		rep_pen: 1.1,
@@ -5076,13 +5097,14 @@ Current version: 134
 
 		//extra unofficial fields for the story
 		new_save_storyobj.extrastopseq = extrastopseq;
+		new_save_storyobj.tokenbans = tokenbans;
 		new_save_storyobj.anotestr = anote_strength;
 		new_save_storyobj.wisearchdepth = wi_searchdepth;
 		new_save_storyobj.wiinsertlocation = wi_insertlocation;
 		new_save_storyobj.personal_notes = personal_notes;
 		new_save_storyobj.logitbiasdict = JSON.parse(JSON.stringify(logitbiasdict));
-		new_save_storyobj.regexreplace_pattern = JSON.parse(JSON.stringify(regexreplace_pattern));
-		new_save_storyobj.regexreplace_replacement = JSON.parse(JSON.stringify(regexreplace_replacement));
+		new_save_storyobj.regexreplace_data = JSON.parse(JSON.stringify(regexreplace_data));
+		new_save_storyobj.placeholder_tags_data = JSON.parse(JSON.stringify(placeholder_tags_data));
 
 		if (export_settings) {
 			new_save_storyobj.savedsettings = JSON.parse(JSON.stringify(localsettings));
@@ -5253,9 +5275,10 @@ Current version: 134
 			let old_current_memory = current_memory;
 			let old_current_wi = current_wi;
 			let old_extrastopseq = extrastopseq;
+			let old_tokenbans = tokenbans;
 			let old_notes = personal_notes;
-			let old_regexreplace_pattern = regexreplace_pattern;
-			let old_regexreplace_replacement = regexreplace_replacement;
+			let old_regexreplace_data = regexreplace_data;
+			let old_placeholder_tags_data = placeholder_tags_data;
 
 			//determine if oldui file or newui file format
 			restart_new_game(false);
@@ -5308,6 +5331,10 @@ Current version: 134
 				if (storyobj.extrastopseq) {
 					extrastopseq = storyobj.extrastopseq;
 				}
+				if(storyobj.tokenbans)
+				{
+					tokenbans = storyobj.tokenbans;
+				}
 				if (storyobj.anotestr) {
 					anote_strength = storyobj.anotestr;
 				}
@@ -5326,11 +5353,22 @@ Current version: 134
 				if (storyobj.personal_notes) {
 					personal_notes = storyobj.personal_notes;
 				}
-				if (storyobj.regexreplace_pattern) {
-					regexreplace_pattern = storyobj.regexreplace_pattern;
+				//todo: remove temporary backwards compatibility for regex
+				if (storyobj.regexreplace_pattern && storyobj.regexreplace_replacement) {
+					let pat = storyobj.regexreplace_pattern;
+					let rep = storyobj.regexreplace_replacement;
+					let ll = Math.min(pat.length,rep.length)
+					for(let i=0;i<ll;++i)
+					{
+						regexreplace_data.push({"p":pat[i],"r":rep[i],"b":false});
+					}
 				}
-				if (storyobj.regexreplace_replacement) {
-					regexreplace_replacement = storyobj.regexreplace_replacement;
+				if (storyobj.regexreplace_data) {
+					regexreplace_data = storyobj.regexreplace_data;
+				}
+				if(storyobj.placeholder_tags_data)
+				{
+					placeholder_tags_data = storyobj.placeholder_tags_data;
 				}
 			} else {
 				//v2 load
@@ -5358,6 +5396,7 @@ Current version: 134
 							let nwi = {
 								"key": itm.key[0],
 								"keysecondary": (itm.keysecondary.length > 0 ? itm.keysecondary[0] : ""),
+								"keyanti": (itm.keyanti.length > 0 ? itm.keyanti[0] : ""),
 								"content": itm.content,
 								"comment": itm.comment,
 								"folder": null,
@@ -5391,8 +5430,9 @@ Current version: 134
 				if(!loadstopseq)
 				{
 					extrastopseq = old_extrastopseq;
-					regexreplace_pattern = old_regexreplace_pattern;
-					regexreplace_replacement = old_regexreplace_replacement;
+					regexreplace_data = old_regexreplace_data;
+					tokenbans = old_tokenbans;
+					placeholder_tags_data = old_placeholder_tags_data;
 				}
 
 				if (storyobj.savedsettings && storyobj.savedsettings != "")
@@ -5498,6 +5538,7 @@ Current version: 134
 			let nwi = {
 				"key": karr.join(","),
 				"keysecondary": "",
+				"keyanti": "",
 				"content": itm.entry,
 				"comment": "",
 				"folder": null,
@@ -5528,6 +5569,7 @@ Current version: 134
 			let nwi = {
 				"key": karr.join(","),
 				"keysecondary": ((ksarr && ksarr.length) > 0 ? ksarr.join(",") : ""),
+				"keyanti": "",
 				"content": itm.content,
 				"comment": itm.comment,
 				"folder": null,
@@ -5665,6 +5707,7 @@ Current version: 134
 			let nwi = {
 				"key": key,
 				"keysecondary": "",
+				"keyanti": "",
 				"content": itm.text,
 				"comment": "",
 				"folder": null,
@@ -5724,6 +5767,7 @@ Current version: 134
 								let nwi = {
 									"key": (keys ? keys : ""),
 									"keysecondary": "",
+									"keyanti": "",
 									"content": (entry ? entry : ""),
 									"comment": "",
 									"folder": null,
@@ -6723,25 +6767,53 @@ Current version: 134
 		},false,true);
 	}
 
-	var pendinglogitbias = {};
-	function set_logit_bias()
+	function expand_tokens_section(targetid)
 	{
-		inputBox("Enter OpenAI-formatted logit bias dictionary. Each key is the integer token IDs and their values are the biases (-100.0 to 100.0)<br><a href='https://platform.openai.com/docs/api-reference/chat/create#chat-create-logit_bias' class='color_blueurl'>Input is a JSON object, reference here.</a><br>Leave blank to disable.<br>","Set Logit Biases",JSON.stringify(pendinglogitbias),"Enter JSON Object",()=>{
-			let userinput = getInputBoxValue().trim();
-			if(userinput=="")
+		let tablist = ["expandregexreplace","expandtokenbans","expandlogitbias","expandplaceholdertags"];
+
+		for(let i=0;i<tablist.length;++i)
+		{
+			if(tablist[i]!=targetid)
 			{
-				pendinglogitbias = {};
+				document.getElementById(tablist[i]).classList.add("hidden");
+			}
+		}
+
+		if(targetid!="")
+		{
+			if(document.getElementById(targetid).classList.contains("hidden"))
+			{
+				document.getElementById(targetid).classList.remove("hidden");
 			}
 			else
 			{
-				try {
-					pendinglogitbias = JSON.parse(userinput);
-				} catch (e) {
-					msgbox("Your logit bias JSON dictionary was not correctly formatted!");
-				}
+				document.getElementById(targetid).classList.add("hidden");
 			}
+		}
+	}
 
-		},true,true);
+	function add_logit_bias()
+	{
+		let key = document.getElementById("newlogitbiasid").value;
+		let val = document.getElementById("newlogitbiasval").value;
+		if(key && val && key.trim()!="" && val.trim()!="")
+		{
+			let old = document.getElementById("logitbiastxtarea").value;
+			try {
+				let dict = JSON.parse(old);
+				key = parseInt(key);
+				val = parseInt(val);
+				if(!isNaN(key) && !isNaN(val))
+				{
+					dict[key] = parseInt(val);
+					document.getElementById("logitbiastxtarea").value = JSON.stringify(dict,null,2);
+				}
+			} catch (e) {
+				msgbox("Your inputs or logit bias JSON dictionary was not correctly formatted!");
+			}
+			document.getElementById("newlogitbiasid").value = "";
+			document.getElementById("newlogitbiasval").value = "";
+		}
 	}
 
 	function add_stop_seq()
@@ -6757,6 +6829,23 @@ Current version: 134
 				}
 				ov += userinput.trim();
 				document.getElementById("extrastopseq").value = ov;
+			}
+		},false);
+	}
+
+	function add_token_ban()
+	{
+		inputBox("Enter a token substring to be banned. ALL matching tokens will be removed.\nFor example adding 'ice' will also ban 'nice' and 'rice', assuming they are individual tokens.","Add Banned Token Substring","","Enter a Token Substring",()=>{
+			let userinput = getInputBoxValue();
+			if(userinput.trim()!="")
+			{
+				let ov = document.getElementById("tokenbans").value;
+				if(ov!="")
+				{
+					ov += "||$||";
+				}
+				ov += userinput.trim();
+				document.getElementById("tokenbans").value = ov;
 			}
 		},false);
 	}
@@ -7343,6 +7432,10 @@ Current version: 134
 											{
 												document.getElementById("max_context_length_slide").max = ep_maxctx;
 												document.getElementById("max_context_length_slide_label").innerText = ep_maxctx;
+												if(localflag && localsettings.max_context_length==2048 && ep_maxctx>2048)
+												{
+													localsettings.max_context_length = ep_maxctx;
+												}
 											}
 										}).catch(error => {
 											console.log("Failed to get true max ctx: " + error);
@@ -8253,6 +8346,7 @@ Current version: 134
 		document.getElementById("miro_type").value = localsettings.miro_type;
 		document.getElementById("miro_tau").value = localsettings.miro_tau;
 		document.getElementById("miro_eta").value = localsettings.miro_eta;
+		edit_instruct_tag_format();
 		if(is_using_kcpp_with_mirostat())
 		{
 			document.getElementById("mirosupporteddiv").classList.remove("hidden");
@@ -8480,6 +8574,28 @@ Current version: 134
 		}
 	}
 
+	function confirm_chat_and_instruct_tags()
+	{
+		localsettings.chatname = document.getElementById("chatname").value;
+		if (localsettings.chatname == null || localsettings.chatname == "") {
+			localsettings.chatname = "You";
+		}
+		let newopps = replaceAll(document.getElementById("chatopponent").value,"\n","||$||");
+		if(localsettings.chatopponent!=newopps)
+		{
+			groupchat_removals = [];
+		}
+		localsettings.chatopponent = newopps;
+		localsettings.instruct_starttag = document.getElementById("instruct_starttag").value;
+		if (localsettings.instruct_starttag == null || localsettings.instruct_starttag == "") {
+			localsettings.instruct_starttag = "\\n### Instruction:\\n";
+		}
+		localsettings.instruct_endtag = document.getElementById("instruct_endtag").value;
+		if (localsettings.instruct_endtag == null || localsettings.instruct_endtag == "") {
+			localsettings.instruct_endtag = "\\n### Response:\\n";
+		}
+	}
+
 	function confirm_settings() {
 		localsettings.max_context_length = document.getElementById("max_context_length").value;
 		localsettings.max_length = document.getElementById("max_length").value;
@@ -8530,24 +8646,7 @@ Current version: 134
 		localsettings.generate_images_model = document.getElementById("generate_images_model").value;
 		localsettings.generate_images_mode = document.getElementById("generate_images_mode").value;
 		localsettings.opmode = document.getElementById("opmode").value;
-		localsettings.chatname = document.getElementById("chatname").value;
-		if (localsettings.chatname == null || localsettings.chatname == "") {
-			localsettings.chatname = "You";
-		}
-		let newopps = replaceAll(document.getElementById("chatopponent").value,"\n","||$||");
-		if(localsettings.chatopponent!=newopps)
-		{
-			groupchat_removals = [];
-		}
-		localsettings.chatopponent = newopps;
-		localsettings.instruct_starttag = document.getElementById("instruct_starttag").value;
-		if (localsettings.instruct_starttag == null || localsettings.instruct_starttag == "") {
-			localsettings.instruct_starttag = "\\n### Instruction:\\n";
-		}
-		localsettings.instruct_endtag = document.getElementById("instruct_endtag").value;
-		if (localsettings.instruct_endtag == null || localsettings.instruct_endtag == "") {
-			localsettings.instruct_endtag = "\\n### Response:\\n";
-		}
+		confirm_chat_and_instruct_tags();
 		localsettings.sampler_seed = document.getElementById("sampler_seed").value;
 		localsettings.min_p = document.getElementById("min_p").value;
 		localsettings.dynatemp_range = document.getElementById("dynatemp_range").value;
@@ -8625,7 +8724,7 @@ Current version: 134
 
 		//clean and clamp invalid values
 		localsettings.max_context_length = cleannum(localsettings.max_context_length, 8, 999999);
-		localsettings.max_length = cleannum(localsettings.max_length, 1, (localsettings.max_context_length-1));
+		localsettings.max_length = cleannum(localsettings.max_length, 1, Math.floor(localsettings.max_context_length*0.85)); //clamp to max 85% of max ctx
 		localsettings.temperature = cleannum(localsettings.temperature, 0.01, 5);
 		localsettings.rep_pen = cleannum(localsettings.rep_pen, 0.1, 5);
 		localsettings.rep_pen_range = cleannum(localsettings.rep_pen_range, 0, localsettings.max_context_length);
@@ -8652,54 +8751,86 @@ Current version: 134
 		render_gametext(false);
 	}
 
-	function toggle_instruct_tag_format()
+	function get_preset_instruct_tag_format(sel)
 	{
-		let sel = document.getElementById('instruct_tag_format').value;
+		let st = "";
+		let et = "";
+
 		switch(sel)
 		{
 			case "1": //alpaca
-				document.getElementById('instruct_starttag').value = defaultsettings.instruct_starttag;
-				document.getElementById('instruct_endtag').value = defaultsettings.instruct_endtag;
+				st = defaultsettings.instruct_starttag;
+				et = defaultsettings.instruct_endtag;
 				break;
 			case "2": //vicuna
-				document.getElementById('instruct_starttag').value = "\\nUSER: ";
-				document.getElementById('instruct_endtag').value = "\\nASSISTANT: ";
+				st = "\\nUSER: ";
+				et = "\\nASSISTANT: ";
 				break;
 			case "3": //metharme
-				document.getElementById('instruct_starttag').value = `<|user|>`;
-				document.getElementById('instruct_endtag').value = `<|model|>`;
+				st = `<|user|>`;
+				et = `<|model|>`;
 				break;
 			case "4": //llama 2 chat
-				document.getElementById('instruct_starttag').value = "[INST] ";
-				document.getElementById('instruct_endtag').value = " [/INST]";
+				st = "[INST] ";
+				et = " [/INST]";
 				break;
 			case "5": //Q & A
-				document.getElementById('instruct_starttag').value = "\\nQuestion: ";
-				document.getElementById('instruct_endtag').value = "\\nAnswer: ";
+				st = "\\nQuestion: ";
+				et = "\\nAnswer: ";
 				break;
 			case "6": //ChatML
-				document.getElementById('instruct_starttag').value = "<|im_end|>\\n<|im_start|>user\\n";
-				document.getElementById('instruct_endtag').value = "<|im_end|>\\n<|im_start|>assistant\\n";
+				st = "<|im_end|>\\n<|im_start|>user\\n";
+				et = "<|im_end|>\\n<|im_start|>assistant\\n";
 				break;
 			case "7": //Input & Output
-				document.getElementById('instruct_starttag').value = "\\n{{[INPUT]}}\\n";
-				document.getElementById('instruct_endtag').value = "\\n{{[OUTPUT]}}\\n";
+				st = "\\n{{[INPUT]}}\\n";
+				et = "\\n{{[OUTPUT]}}\\n";
 				break;
 			case "8": //CommandR
-				document.getElementById('instruct_starttag').value = "<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|USER_TOKEN|>";
-				document.getElementById('instruct_endtag').value = "<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>";
+				st = "<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|USER_TOKEN|>";
+				et = "<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>";
 				break;
 			case "9": //llama 3 chat
-				document.getElementById('instruct_starttag').value = "<|eot_id|><|start_header_id|>user<|end_header_id|>\\n\\n";
-				document.getElementById('instruct_endtag').value = "<|eot_id|><|start_header_id|>assistant<|end_header_id|>\\n\\n";
+				st = "<|eot_id|><|start_header_id|>user<|end_header_id|>\\n\\n";
+				et = "<|eot_id|><|start_header_id|>assistant<|end_header_id|>\\n\\n";
 				break;
 			default:
 				break;
 		}
+
+		return {"start":st,"end":et};
+	}
+	function toggle_instruct_tag_format()
+	{
+		let sel = document.getElementById('instruct_tag_format').value;
+		let itags = get_preset_instruct_tag_format(sel);
+		if(itags.start!="" && itags.end!="")
+		{
+			document.getElementById('instruct_starttag').value = itags.start;
+			document.getElementById('instruct_endtag').value = itags.end;
+		}
 	}
 	function edit_instruct_tag_format()
 	{
-		document.getElementById('instruct_tag_format').value = "0";
+		let dropdown = document.getElementById('instruct_tag_format');
+		let options = dropdown.options;
+		let found = false;
+		for (let i = 0; i < options.length; i++) {
+			let option = options[i];
+			let itags = get_preset_instruct_tag_format(option.value);
+			let st = document.getElementById('instruct_starttag').value;
+			let et = document.getElementById('instruct_endtag').value;
+			if(itags.start!="" && itags.end!="" && itags.start==st && itags.end==et)
+			{
+				document.getElementById('instruct_tag_format').value = option.value;
+				found = true;
+				break;
+			}
+		}
+		if(!found)
+		{
+			document.getElementById('instruct_tag_format').value = "0";
+		}
 	}
 
 	function handle_bot_name_input()
@@ -8863,16 +8994,29 @@ Current version: 134
 		current_anotetemplate = document.getElementById("anotetemplate").value;
 		anote_strength = document.getElementById("anote_strength").value;
 		extrastopseq = document.getElementById("extrastopseq").value;
+		tokenbans = document.getElementById("tokenbans").value;
 		newlineaftermemory = (document.getElementById("newlineaftermemory").checked?true:false);
-		logitbiasdict = pendinglogitbias;
-		regexreplace_pattern = [];
-		regexreplace_replacement = [];
-		for(let i=0;i<20;++i)
+		try
+		{
+			let lb = document.getElementById("logitbiastxtarea").value;
+			let dict = {};
+			if(lb!="")
+			{
+				dict = JSON.parse(lb);
+			}
+			logitbiasdict = dict;
+		} catch (e) {
+			console.log("Your logit bias JSON dictionary was not correctly formatted!");
+		}
+		regexreplace_data = [];
+		for(let i=0;i<num_regex_rows;++i)
 		{
 			let v1 = "";
 			let v2 = "";
+			let bothways = false;
 			let box1 = document.getElementById("regexreplace_pattern"+i);
 			let box2 = document.getElementById("regexreplace_replacement"+i);
+			let bw = document.getElementById("regexreplace_bothways"+i).checked;
 			if(!box1 || !box2)
 			{
 				break;
@@ -8888,8 +9032,33 @@ Current version: 134
 
 			if(v1)
 			{
-				regexreplace_pattern.push(v1);
-				regexreplace_replacement.push(v2);
+				regexreplace_data.push({"p":v1,"r":v2,"b":bw});
+			}
+		}
+
+		localsettings.placeholder_tags = (document.getElementById("placeholder_tags2").checked?true:false);
+		//bit of a hack to save modified placeholders
+		document.getElementById("chatname").value = document.getElementById("placeholder_replace_hc0").value;
+		document.getElementById("chatopponent").value = document.getElementById("placeholder_replace_hc1").value;
+		document.getElementById("instruct_starttag").value = document.getElementById("placeholder_replace_hc2").value;
+		document.getElementById("instruct_endtag").value = document.getElementById("placeholder_replace_hc3").value;
+		confirm_chat_and_instruct_tags();
+		placeholder_tags_data = [];
+		for(let i=0;i<num_regex_rows;++i)
+		{
+			let v1 = "";
+			let v2 = "";
+			let box1 = document.getElementById("placeholder_pattern"+i);
+			let box2 = document.getElementById("placeholder_replace"+i);
+			if(!box1 || !box2)
+			{
+				break;
+			}
+			v1 = box1.value;
+			v2 = box2.value;
+			if(v1 && v2)
+			{
+				placeholder_tags_data.push({"p":v1,"r":v2});
 			}
 		}
 
@@ -9045,6 +9214,7 @@ Current version: 134
 		pending_response_id = "";
 		poll_in_progress = false;
 		synchro_polled_response = null;
+		last_stop_reason = "";
 		synchro_pending_stream = "";
 		waiting_for_autosummary = false;
 		horde_poll_nearly_completed = false;
@@ -9061,6 +9231,7 @@ Current version: 134
 		nextgeneratedimagemilestone = generateimagesinterval;
 		pending_response_id = "";
 		synchro_polled_response = null;
+		last_stop_reason = "";
 		synchro_pending_stream = "";
 		waiting_for_autosummary = false;
 		last_reply_was_empty = false;
@@ -9086,13 +9257,14 @@ Current version: 134
 			current_anote = "";
 			current_wi = [];
 			extrastopseq = "";
+			tokenbans = "";
 			anote_strength = 320;
 			logitbiasdict = {};
 			wi_searchdepth = 0;
 			wi_insertlocation = 0;
 			current_anotetemplate = "[Author's note: <|>]";
-			regexreplace_pattern = [];
-			regexreplace_replacement = [];
+			regexreplace_data = [];
+			placeholder_tags_data = [];
 		}
 		render_gametext(save); //necessary to trigger an autosave to wipe out current story in case they exit browser after newgame.
 	}
@@ -9150,13 +9322,23 @@ Current version: 134
 
 	function replace_placeholders_direct(inputtxt)
 	{
-		inputtxt = replaceAll(inputtxt,"{{user}}",localsettings.chatname?localsettings.chatname:"You",true);
-		inputtxt = replaceAll(inputtxt,"{{char}}",localsettings.chatopponent?localsettings.chatopponent:defaultchatopponent,true);
 		inputtxt = replaceAll(inputtxt,instructstartplaceholder,get_instruct_starttag(false));
 		inputtxt = replaceAll(inputtxt,instructendplaceholder,get_instruct_endtag(false));
 		//failsafe to handle removing newline tags
 		inputtxt = replaceAll(inputtxt,instructstartplaceholder.trim(),get_instruct_starttag(false));
 		inputtxt = replaceAll(inputtxt,instructendplaceholder.trim(),get_instruct_endtag(false));
+
+		inputtxt = replaceAll(inputtxt,"{{user}}",localsettings.chatname?localsettings.chatname:"You",true);
+		inputtxt = replaceAll(inputtxt,"{{char}}",localsettings.chatopponent?localsettings.chatopponent:defaultchatopponent,true);
+
+		for(let i=0;i<placeholder_tags_data.length;++i)
+		{
+			if(placeholder_tags_data[i].p && placeholder_tags_data[i].r)
+			{
+				inputtxt = replaceAll(inputtxt,placeholder_tags_data[i].p,placeholder_tags_data[i].r);
+			}
+		}
+
 		return inputtxt;
 	}
 	function replace_placeholders(inputtxt)
@@ -9611,7 +9793,7 @@ Current version: 134
 					let xtts_payload = {
 						"text": text,
 						"speaker_wav": document.getElementById("xtts_voices").value,
-						"language": "EN"
+						"language": document.getElementById("xtts_lang").value.trim()
 					};
 					fetch(localsettings.saved_xtts_url + xtts_gen_endpoint, {
 						method: 'POST',
@@ -9643,7 +9825,7 @@ Current version: 134
 					formData.append("narrator_enabled", false);
 					formData.append("narrator_voice_gen", document.getElementById("xtts_voices").value);
 					formData.append("text_not_inside", "character"); // character or narrator, determines which to use
-					formData.append("language", "en");
+					formData.append("language", document.getElementById("xtts_lang").value.trim().toLowerCase());
 					formData.append("output_file_name", "audiofile"); // NOTE: file name only, with no extension and no dashes!
 					formData.append("output_file_timestamp", true);
 					formData.append("autoplay", false); //to play in browser
@@ -9682,6 +9864,20 @@ Current version: 134
 	function submit_generation() {
 
 		let newgen = document.getElementById("input_text").value;
+
+		//apply regex transforms
+		if(regexreplace_data && regexreplace_data.length>0)
+		{
+			for(let i=0;i<regexreplace_data.length;++i)
+			{
+				if(regexreplace_data[i].b && regexreplace_data[i].p!="")
+				{
+					let pat = new RegExp(regexreplace_data[i].p, "gm");
+					newgen = newgen.replace(pat, regexreplace_data[i].r);
+				}
+			}
+		}
+
 		const user_input_empty = (newgen.trim()=="");
 		let doNotGenerate = false;
 		pending_context_postinjection = "";
@@ -10041,25 +10237,50 @@ Current version: 134
 
 						//selective, but bad secondary key. treat as only 1 key
 						let invalidseckey = (wi.selective && (wi.keysecondary == "" || wi.keysecondary == null));
+						let invalidantikey = (wi.selective && (wi.keyanti == "" || wi.keyanti == null));
 
 						let wiks = wi.key.split(",");
 
-						if (!wi.selective || invalidseckey) {
+						if (!wi.selective || (invalidseckey && invalidantikey)) {
 							if (localsettings.case_sensitive_wi) {
 								shoulduse = wiks.some(k => wimatch_context.includes(k.trim()));
 							} else {
 								shoulduse = wiks.some(k => wimatch_context.includes(k.trim().toLowerCase()));
 							}
-						} else {
-							let wiks2 = wi.keysecondary.split(",");
+						}
+						else
+						{
+							let wikanti = [];
+							let wiks2 = [];
+							if(!invalidantikey)
+							{
+								wikanti = wi.keyanti.split(",");
+							}
+							if(!invalidseckey)
+							{
+								wiks2 = wi.keysecondary.split(",");
+							}
+							let t1=false, t2=false, t3=false;
 							if (localsettings.case_sensitive_wi) {
-								let t1 = wiks.some(k => wimatch_context.includes(k.trim()));
-								let t2 = wiks2.some(k => wimatch_context.includes(k.trim()));
-								shoulduse = (t1 && t2);
+								t1 = wiks.some(k => wimatch_context.includes(k.trim()));
+								t2 = wiks2.some(k => wimatch_context.includes(k.trim()));
+								t3 = wikanti.some(k => wimatch_context.includes(k.trim()));
 							} else {
-								let t1 = wiks.some(k => wimatch_context.includes(k.trim().toLowerCase()));
-								let t2 = wiks2.some(k => wimatch_context.includes(k.trim().toLowerCase()));
+								t1 = wiks.some(k => wimatch_context.includes(k.trim().toLowerCase()));
+								t2 = wiks2.some(k => wimatch_context.includes(k.trim().toLowerCase()));
+								t3 = wikanti.some(k => wimatch_context.includes(k.trim().toLowerCase()));
+							}
+							if(!invalidantikey && !invalidseckey) //all keys valid
+							{
+								shoulduse = (t1 && t2 && !t3);
+							}
+							else if(invalidantikey)
+							{
 								shoulduse = (t1 && t2);
+							}
+							else
+							{
+								shoulduse = (t1 && !t3);
 							}
 						}
 					}
@@ -10277,6 +10498,24 @@ Current version: 134
 		return seqs;
 	}
 
+	function get_token_bans()
+	{
+		let seqs = [];
+		if (tokenbans != "") {
+			let rep = replaceAll(tokenbans, "\\n", "\n");
+			let srep = rep.split("||$||");
+			if (srep.length > 0 && !seqs) {
+				seqs = [];
+			}
+			for (let i = 0; i < srep.length; ++i) {
+				if (srep[i] && srep[i] != "") {
+					seqs.push(srep[i]);
+				}
+			}
+		}
+		return seqs;
+	}
+
 	function dispatch_submit_generation(submit_payload, input_was_empty) //if input is not empty, always unban eos
 	{
 		console.log(submit_payload);
@@ -10296,6 +10535,7 @@ Current version: 134
 			submit_payload.params.dynatemp_range = localsettings.dynatemp_range;
 			submit_payload.params.dynatemp_exponent = localsettings.dynatemp_exponent;
 			submit_payload.params.smoothing_factor = localsettings.smoothing_factor;
+			submit_payload.params.banned_tokens = get_token_bans();
 		}
 		//presence pen and logit bias for OAI and newer kcpp
 		if((custom_kobold_endpoint != "" && is_using_kcpp_with_mirostat()) || custom_oai_endpoint!="")
@@ -10313,6 +10553,7 @@ Current version: 134
 			poll_ticks_passed = 0;
 			poll_in_progress = false;
 			synchro_polled_response = null;
+			last_stop_reason = "";
 			synchro_pending_stream = "";
 
 			//if this is set, we don't use horde, use the custom endpoint instead
@@ -11384,7 +11625,11 @@ Current version: 134
 		gentxt = trim_extra_stop_seqs(gentxt,true);
 
 		//always trim incomplete sentences for adventure and chat (if not multiline)
-		if (localsettings.opmode == 2 || (localsettings.opmode == 3 && !localsettings.allow_continue_chat) || localsettings.trimsentences == true) {
+		//do not trim if instruct mode AND stop token reached
+		let donottrim = ((localsettings.opmode == 4||localsettings.opmode == 3) && last_stop_reason=="stop");
+		if (!donottrim && (localsettings.opmode == 2
+		|| (localsettings.opmode == 3 && !localsettings.allow_continue_chat)
+		|| localsettings.trimsentences == true)) {
 			gentxt = end_trim_to_sentence(gentxt,true);
 		}
 
@@ -11392,14 +11637,14 @@ Current version: 134
 		gentxt = trim_extra_stop_seqs(gentxt,false);
 
 		//apply regex transform
-		if(regexreplace_pattern && regexreplace_pattern.length>0)
+		if(regexreplace_data && regexreplace_data.length>0)
 		{
-			for(let i=0;i<regexreplace_pattern.length;++i)
+			for(let i=0;i<regexreplace_data.length;++i)
 			{
-				if(regexreplace_pattern[i]!="")
+				if(regexreplace_data[i].p!="")
 				{
-					let pat = new RegExp(regexreplace_pattern[i], "gm");
-					gentxt = gentxt.replace(pat, regexreplace_replacement[i]);
+					let pat = new RegExp(regexreplace_data[i].p, "gm");
+					gentxt = gentxt.replace(pat, regexreplace_data[i].r);
 				}
 			}
 		}
@@ -11965,6 +12210,7 @@ Current version: 134
 							}
 						}
 						synchro_polled_response = null;
+						last_stop_reason = "";
 						synchro_pending_stream = "";
 						show_abort_button(false);
 						render_gametext();
@@ -13088,8 +13334,10 @@ Current version: 134
 		document.getElementById("anotetemplate").value = current_anotetemplate;
 		document.getElementById("anote_strength").value = anote_strength;
 		document.getElementById("extrastopseq").value = extrastopseq;
+		document.getElementById("tokenbans").value = tokenbans;
 		document.getElementById("newlineaftermemory").checked = (newlineaftermemory?true:false);
-		pendinglogitbias = logitbiasdict;
+		document.getElementById("logitbiastxtarea").value = JSON.stringify(logitbiasdict,null,2);
+
 		if(custom_kobold_endpoint!="" || !is_using_custom_ep() )
 		{
 			document.getElementById("noextrastopseq").classList.add("hidden");
@@ -13103,16 +13351,113 @@ Current version: 134
 		backup_wi();
 		update_wi();
 
-		for(let i=0;i<20;++i)
+		populate_placeholder_tags();
+		populate_regex_replacers();
+
+		if(is_using_custom_ep())
+		{
+			document.getElementById("nologitbias").classList.add("hidden");
+			document.getElementById("notokenbans").classList.add("hidden");
+		}
+		else
+		{
+			document.getElementById("nologitbias").classList.remove("hidden");
+			document.getElementById("notokenbans").classList.remove("hidden");
+		}
+
+	}
+
+	function populate_regex_replacers()
+	{
+		let regextablehtml = `
+		<tr>
+		<th>Pattern <span class="helpicon">?<span class="helptext">The regex pattern to match against any incoming text. Leave blank to disable.</span></span></th>
+		<th>Replacement <span class="helpicon">?<span class="helptext">The string to replace matches with. Capture groups are allowed (e.g. $1). To remove all matches, leave this blank.</span></span></th>
+		<th>Both Ways <span class="helpicon">?<span class="helptext">If enabled, regex applies for both inputs and outputs, otherwise output only.</span></span></th>
+		</tr>`;
+		let regextable = document.getElementById("regex_replace_table");
+
+		for(let i=0;i<num_regex_rows;++i)
+		{
+			regextablehtml += `
+			<tr>
+			<td><input class="settinglabel miniinput" type="text" placeholder="(Inactive)" value="" id="regexreplace_pattern${i}"></td>
+			<td><input class="settinglabel miniinput" type="text" placeholder="(Remove)" value="" id="regexreplace_replacement${i}"></td>
+			<td><input type="checkbox" id="regexreplace_bothways${i}" style="margin:0px 0 0;"></td>
+			</tr>
+			`;
+		}
+
+		regextable.innerHTML = regextablehtml;
+
+		for(let i=0;i<num_regex_rows;++i)
 		{
 			let a1 = document.getElementById("regexreplace_pattern"+i);
 			let a2 = document.getElementById("regexreplace_replacement"+i);
+			let a3 = document.getElementById("regexreplace_bothways"+i);
+			if(a1 && a2 && a3)
+			{
+				if(i<regexreplace_data.length)
+				{
+					a1.value = regexreplace_data[i].p;
+					a2.value = regexreplace_data[i].r;
+					a3.checked = (regexreplace_data[i].b?true:false);
+				}
+				else
+				{
+					a1.value = a2.value = "";
+					a3.checked = false;
+				}
+			}
+		}
+	}
+
+	function populate_placeholder_tags()
+	{
+		let regextablehtml = `
+		<tr>
+		<th>Placeholder <span class="helpicon">?<span class="helptext">The placeholder to match against</span></span></th>
+		<th>Replacement <span class="helpicon">?<span class="helptext">The text to substitude on display. Actual context is unchanged.</span></span></th>
+		</tr>`;
+		let regextable = document.getElementById("placeholder_replace_table");
+
+		let hardcoded1 = ["{{user}}","{{char}}","{{[INPUT]}}","{{[OUTPUT]}}"];
+		let hardcoded2 = [localsettings.chatname,localsettings.chatopponent,localsettings.instruct_starttag,localsettings.instruct_endtag];
+
+		for(let i=0;i<hardcoded1.length;++i)
+		{
+			regextablehtml += `
+			<tr>
+			<td>${hardcoded1[i]}</td>
+			<td><input class="settinglabel miniinput" type="text" placeholder="" value="${hardcoded2[i]}" id="placeholder_replace_hc${i}"></td>
+			</tr>
+			`;
+		}
+
+		for(let i=0;i<num_regex_rows;++i)
+		{
+			regextablehtml += `
+			<tr>
+			<td><input class="settinglabel miniinput" type="text" placeholder="(Inactive)" value="" id="placeholder_pattern${i}"></td>
+			<td><input class="settinglabel miniinput" type="text" placeholder="(Remove)" value="" id="placeholder_replace${i}"></td>
+			</tr>
+			`;
+		}
+
+		regextable.innerHTML = regextablehtml;
+
+		document.getElementById("placeholder_tags2").checked = localsettings.placeholder_tags;
+
+		for(let i=0;i<num_regex_rows;++i)
+		{
+			let a1 = document.getElementById("placeholder_pattern"+i);
+			let a2 = document.getElementById("placeholder_replace"+i);
 			if(a1 && a2)
 			{
-				if(i<regexreplace_pattern.length)
+				if(i<placeholder_tags_data.length)
 				{
-					a1.value = regexreplace_pattern[i];
-					a2.value = regexreplace_replacement[i];
+					a1.value = placeholder_tags_data[i].p;
+					a2.value = placeholder_tags_data[i].r;
 				}
 				else
 				{
@@ -13120,9 +13465,6 @@ Current version: 134
 				}
 			}
 		}
-
-		document.getElementById("btnlogitbias").disabled = !is_using_custom_ep();
-
 	}
 
 	function toggle_wi_sk(idx) {
@@ -13130,14 +13472,17 @@ Current version: 134
 		ce.selective = !ce.selective;
 		var tgt = document.getElementById("wiskt" + idx);
 		var tgt2 = document.getElementById("wikeysec" + idx);
+		var tgt3 = document.getElementById("wikeyanti" + idx);
 		if (ce.selective) {
 			tgt.classList.add("witoggleron");
 			tgt.classList.remove("witoggleroff");
 			tgt2.classList.remove("hidden");
+			tgt3.classList.remove("hidden");
 		} else {
 			tgt.classList.remove("witoggleron");
 			tgt.classList.add("witoggleroff");
 			tgt2.classList.add("hidden");
+			tgt3.classList.add("hidden");
 		}
 	}
 
@@ -13161,11 +13506,34 @@ Current version: 134
 		update_wi();
 	}
 
+	function up_wi(idx) {
+		save_wi();
+		var ce = current_wi[idx];
+		if (idx > 0 && idx < current_wi.length) {
+			const temp = current_wi[idx - 1];
+			current_wi[idx - 1] = current_wi[idx];
+			current_wi[idx] = temp;
+   		}
+		update_wi();
+	}
+
+	function down_wi(idx) {
+		save_wi();
+		var ce = current_wi[idx];
+		if (idx >= 0 && idx+1 < current_wi.length) {
+			const temp = current_wi[idx + 1];
+			current_wi[idx + 1] = current_wi[idx];
+			current_wi[idx] = temp;
+   		}
+		update_wi();
+	}
+
 	function add_wi() {
 		save_wi();
 		var ne = {
 			"key": "",
 			"keysecondary": "",
+			"keyanti": "",
 			"content": "",
 			"comment": "",
 			"folder": null,
@@ -13181,6 +13549,7 @@ Current version: 134
 		for (var i = 0; i < current_wi.length; ++i) {
 			current_wi[i].key = document.getElementById("wikey" + i).value;
 			current_wi[i].keysecondary = document.getElementById("wikeysec" + i).value;
+			current_wi[i].keyanti = document.getElementById("wikeyanti" + i).value;
 			current_wi[i].content = document.getElementById("wival" + i).value;
 			let prb = document.getElementById("wirng" + i).value;
 			current_wi[i].probability = (prb?prb:100);
@@ -13217,6 +13586,7 @@ Current version: 134
 			var winame = escapeHtml(curr.key);
 			var witxt = escapeHtml(curr.content);
 			var wisec = curr.keysecondary;
+			var wianti = curr.keyanti;
 			var wirngval = (curr.probability?curr.probability:100);
 
 			var ishidden = false;
@@ -13227,13 +13597,16 @@ Current version: 134
 
 			let probarr = [100,90,75,50,25,10,5,1];
 
-			selectionhtml += `<tr class='`+ (ishidden?"hidden":"") +`' id="wirow` + i + `"><td class="col-8" style="font-size: 10px;">` +
-			`<button type="button" class="btn btn-danger widelbtn" id="widel` + i + `" onclick="return del_wi(` + i + `)">X</button></td>` +
+			selectionhtml += `<tr class='`+ (ishidden?"hidden":"") +`' id="wirow` + i + `"><td class="col-8" style="font-size: 10px;">`
+			+`<button type="button" class="btn btn-danger widelbtn" id="widel` + i + `" onclick="return del_wi(` + i + `)">X</button></td>`
+			+`<td><button type="button" class="btn btn-primary wiarrowbtn" id="wiup` + i + `" onclick="return up_wi(` + i + `)">▲</button>`
+			+`<button type="button" class="btn btn-primary wiarrowbtn" id="widown` + i + `" onclick="return down_wi(` + i + `)">▼</button></td>` +
 			`<td class="col-6 wiinputkeycol">
 			<input class="form-control wiinputkey" id="wikey`+ i + `" placeholder="Key(s)" value="` + winame + `">
-			<input class="form-control wiinputkey `+ (curr.selective ? `` : `hidden`) + `" id="wikeysec` + i + `" placeholder="Sec. Key(s)" value="` + wisec + `">` + `</td>
+			<input class="form-control wiinputkey `+ (curr.selective ? `` : `hidden`) + `" id="wikeysec` + i + `" placeholder="Sec. Key(s)" value="` + wisec + `">` + `
+			<input class="form-control wiinputkey `+ (curr.selective ? `` : `hidden`) + `" id="wikeyanti` + i + `" placeholder="Anti Key(s)" value="` + wianti + `">` + `</td>
 			<td class="col-10 wiinputvalcol">
-			<textarea class="form-control wiinputval" style="line-height:1.1" id="wival`+ i + `" placeholder="What To Remember" rows="3">` + witxt + `</textarea>
+			<textarea class="form-control wiinputval" style="line-height:1.1" id="wival`+ i + `" placeholder="What To Remember" rows="4">` + witxt + `</textarea>
 			</td>
 			<td>
 			<a id="wiskt`+ i + `" href="#" class=` + (curr.selective ? "witoggleron" : "witoggleroff") + ` title="Toggle Selective Key mode (if enabled, this world info entry will be included in memory only if at least one PRIMARY KEY and at least one SECONDARY KEY are both present in the story)" onclick="return toggle_wi_sk(` + i + `)">📑</a>
@@ -13872,14 +14245,10 @@ Current version: 134
 				input = input.replaceAll(othernamesregex, function(match) {
 					return "{{botplaceholder}}<p class='aui_nametag'>" + match.substring(0,match.length-2).trim() + "</p>";
 				});
-				// input = input.replaceAll(othernamesregex2, function(match) {
-				// 	return "{{botplaceholder}}<p class='aui_nametag'>" + match.substring(0,match.length-2).trim() + "</p>";
-				// });
 			}
 			else
 			{
 				input = input.replaceAll(othernamesregex, "{{botplaceholder}}");
-				//input = input.replaceAll(othernamesregex2, "{{botplaceholder}}");
 			}
 
 			you = "{{userplaceholder}}";
@@ -14583,7 +14952,7 @@ Current version: 134
 						<div class="settinglabel">
 							<div class="justifyleft settingsmall">Max Ctx. Tokens <span class="helpicon">?<span class="helptext">Max
 										number of context tokens submitted to the AI. Must exceed Amount to Generate. Can be further increased by editing the textbox. Older models stop at 2048, newer ones can do 4096 or greater.</span></span></div>
-							<input inputmode="numeric" class="justifyright flex-push-right settingsmall" id="max_context_length"
+							<input inputmode="numeric" class="justifyright flex-push-right settingsmall widerinput" id="max_context_length"
 								value=1024 oninput="
 						   document.getElementById('max_context_length_slide').value = this.value;">
 						</div>
@@ -14966,7 +15335,8 @@ Current version: 134
 								<td><select class="form-control" id="xtts_voices" style="font-size:12px;height:20px;padding:0;margin:0px 0 0;">
 								<option value="female_calm" selected>female_calm</option><option value="female">female</option><option value="male">male</option>
 								</select></td>
-								</tr></table>
+								</tr><tr style="font-size:12px;padding:2px;margin:0px 0 0;"><td>Language </td><td><input class="settinglabel miniinput" type="text" value="EN" id="xtts_lang" style="margin-left:3px; height:18px; width: 40px; padding: 2px;"></td></tr>
+								</table>
 							</div>
 						</div>
 						<div class="settinglabel">
@@ -15160,7 +15530,7 @@ Current version: 134
 					</span>
 				</div>
 				<div style="display: flex; column-gap: 4px;">
-				<input class="form-control anotetempbox" type="text"
+				<input class="form-control anotetempbox inlineinput" type="text"
 					placeholder="(the &lt;|&gt; will be replaced with the Author's Note text)" value="" id="anotetemplate">
 					<select style="padding:4px;" class="anotetempscale form-control" id="anote_strength">
 						<option value="480">Weak</option>
@@ -15210,36 +15580,67 @@ Current version: 134
 					class="helptext">Triggers the text generator to stop generating early if this sequence appears, in addition to default stop sequences. If you want multiple sequences, separate them with the following delimiter: ||$||</span></span></div>
 					<div class="color_red hidden" id="noextrastopseq">Stop Sequences may be unavailable.</div>
 					<div style="display: flex; column-gap: 4px; margin-bottom: 4px;">
-					<input class="form-control stopseqbox" type="text" placeholder="None" value="" id="extrastopseq">
+					<input class="form-control stopseqbox inlineinput" type="text" placeholder="None" value="" id="extrastopseq">
 					<button type="button" class="btn btn-primary" style="width:90px;padding:6px 6px;" onclick="add_stop_seq()">Add New</button>
 				</div>
-				<div class="settinglabel">
-					<div class="justifyleft"><br>Logit Biases <span class="helpicon">?<span
-						class="helptext">Specify a dictionary of token IDs to modify the probability of occuring.</span></span></div>
+
+				<div style="padding:3px;" class="justifyleft settinglabel">Logit Biases <span class="helpicon">?<span
+					class="helptext">Specify a dictionary of token IDs to modify the probability of occuring.</span></span>
+					<button type="button" class="btn btn-primary" style="font-size:12px;padding:2px 2px;" onclick="expand_tokens_section('expandlogitbias')">Expand Section</button>
 				</div>
-				<div><button type="button" class="btn btn-primary" style="width:134px;padding:6px 6px;" id="btnlogitbias" onclick="set_logit_bias()">Edit Logit Biases</button></div>
-				<div class="settinglabel">
-					<div class="justifyleft"><br>Custom Regex Replace <span class="helpicon">?<span
-						class="helptext">Allows transforming incoming text with up to 3 regex patterns, modifying all matches. Replacements will be applied in sequence.</span></span></div>
+				<div id="expandlogitbias" class="hidden">
+					<div class="color_red hidden" id="nologitbias">Logit bias may be unavailable.</div>
+					<div style="color:#ffffff;">Enter OpenAI-formatted logit bias dictionary. Each key is the integer token IDs and their values are the biases (-100.0 to 100.0). Leave blank to disable.<br><a href='https://platform.openai.com/docs/api-reference/chat/create#chat-create-logit_bias' target='_blank' class='color_blueurl'>Input is a JSON object, reference here.</a><br></div>
+					<textarea class="form-control" style="line-height:1.1;margin-bottom: 4px;padding:3px" id="logitbiastxtarea" placeholder="" rows="5"></textarea>
+					<div style="display: flex; column-gap: 4px; margin-bottom: 4px;">
+					<input style="padding:2px" class="form-control stopseqbox inlineinput" inputmode="numeric" type="text" placeholder="Token ID" value="" id="newlogitbiasid">
+					<input style="padding:2px" class="form-control stopseqbox inlineinput" inputmode="text" type="text" placeholder="Bias Value" value="" id="newlogitbiasval">
+					<button type="button" class="btn btn-primary" style="width:90px;padding:6px 6px;" onclick="add_logit_bias()">Add New</button>
+					</div>
 				</div>
-				<table class="settinglabel text-center" style="border-spacing: 3px 2px;	border-collapse: separate;">
-					<tr>
-						<th>Pattern <span class="helpicon">?<span class="helptext">The regex pattern to match against any incoming text. Leave blank to disable.</span></span></th>
-						<th>Replacement <span class="helpicon">?<span class="helptext">The string to replace matches with. Capture groups are allowed (e.g. $1). To remove all matches, leave this blank.</span></span></th>
-					</tr>
-					<tr>
-					<td><input class="settinglabel miniinput" type="text" placeholder="(Inactive)" value="" id="regexreplace_pattern0"></td>
-					<td><input class="settinglabel miniinput" type="text" placeholder="(Remove)" value="" id="regexreplace_replacement0"></td>
-					</tr>
-					<tr>
-					<td><input class="settinglabel miniinput" type="text" placeholder="(Inactive)" value="" id="regexreplace_pattern1"></td>
-					<td><input class="settinglabel miniinput" type="text" placeholder="(Remove)" value="" id="regexreplace_replacement1"></td>
-					</tr>
-					<tr>
-					<td><input class="settinglabel miniinput" type="text" placeholder="(Inactive)" value="" id="regexreplace_pattern2"></td>
-					<td><input class="settinglabel miniinput" type="text" placeholder="(Remove)" value="" id="regexreplace_replacement2"></td>
-					</tr>
-				</table>
+
+				<div style="padding:3px;" class="justifyleft settinglabel">Token Filter <span class="helpicon">?<span
+					class="helptext">Outright removal for ANY tokens containing a specific substring from model vocab. If you want multiple sequences, separate them with the following delimiter: ||$||</span></span>
+					<button type="button" class="btn btn-primary" style="font-size:12px;padding:2px 2px;" onclick="expand_tokens_section('expandtokenbans')">Expand Section</button>
+				</div>
+				<div id="expandtokenbans" class="hidden">
+					<div class="color_red hidden" id="notokenbans">Token filter may be unavailable.</div>
+					<div style="color:#ffffff;">Outright removal for ANY tokens containing a specific substring from model vocab. If you want multiple sequences, separate them with the following delimiter: ||$||<br><em>Note: If you're trying to ban a specific token ID, you should use Logit Bias instead!</em><br></div>
+					<div style="display: flex; column-gap: 4px; margin-bottom: 4px;">
+					<input class="form-control stopseqbox inlineinput" type="text" placeholder="None" value="" id="tokenbans">
+					<button type="button" class="btn btn-primary" style="width:90px;padding:6px 6px;" onclick="add_token_ban()">Add New</button>
+					</div>
+				</div>
+
+				<div style="padding:3px;" class="justifyleft settinglabel">Regex Replace <span class="helpicon">?<span
+					class="helptext">Allows transforming incoming text with regex patterns, modifying all matches. Replacements will be applied in sequence.</span></span>
+					<button type="button" class="btn btn-primary" style="font-size:12px;padding:2px 2px;" onclick="expand_tokens_section('expandregexreplace')">Expand Section</button>
+				</div>
+				<div id="expandregexreplace" class="hidden">
+					<table id="regex_replace_table" class="settinglabel text-center" style="border-spacing: 3px 2px; border-collapse: separate;">
+					</table>
+				</div>
+
+				<div style="padding:3px;" class="justifyleft settinglabel">Placeholder Tags <span class="helpicon">?<span
+					class="helptext">Configure automatic substitutions for placeholders in text.</span></span>
+					<button type="button" class="btn btn-primary" style="font-size:12px;padding:2px 2px;" onclick="expand_tokens_section('expandplaceholdertags')">Expand Section</button>
+				</div>
+				<div id="expandplaceholdertags" class="hidden">
+					<div class="settinglabel justifyleft">Stories can use placeholders like {{user}} and {{[INPUT]}} that require dynamic substitution. If disabled, uses plaintext tags verbatim.</div>
+					<div class="settinglabel">
+						<div class="justifyleft settingsmall">Enable Placeholder Tags <span class="helpicon">?<span
+							class="helptext">If enabled, uses placeholders that get swapped on submit. If disabled, uses plaintext verbatim.</span></span></div>
+					<input type="checkbox" id="placeholder_tags2">
+					</div>
+					<table id="placeholder_replace_table" class="settinglabel text-center" style="border-spacing: 3px 2px; border-collapse: separate;">
+					</table>
+				</div>
+
+				<!-- <div style="padding:3px;" class="justifyleft settinglabel">Repetition Exclusions <span class="helpicon">?<span
+					class="helptext">Configure specific tokens that will be excluded from repetition and presence penalties.</span></span>
+					<button type="button" class="btn btn-primary" style="font-size:12px;padding:2px 2px;" onclick="expand_tokens_section('')">Expand Section</button>
+				</div> -->
+
 			</div>
 
 			<div class="popupfooter">

@@ -545,6 +545,7 @@ void sd_log_cb(enum sd_log_level_t level, const char* log, void* data) {
     }
 }
 
+//concedo notes: if it crashes, make sure you specify --type!
 int main(int argc, const char* argv[]) {
     SDParams params;
     parse_args(argc, argv, params);

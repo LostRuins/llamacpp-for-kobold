@@ -9,7 +9,7 @@
 # scenarios and everything Kobold and Kobold Lite have to offer.
 
 import ctypes
-import os
+import os, math
 import argparse
 import json, sys, http.server, time, asyncio, socket, threading
 from concurrent.futures import ThreadPoolExecutor
@@ -56,7 +56,7 @@ class load_model_inputs(ctypes.Structure):
                 ("gpulayers", ctypes.c_int),
                 ("rope_freq_scale", ctypes.c_float),
                 ("rope_freq_base", ctypes.c_float),
-                ("banned_tokens", ctypes.c_char_p * ban_token_max),
+                ("flash_attention", ctypes.c_bool),
                 ("tensor_split", ctypes.c_float * tensor_split_max)]
 
 class generation_inputs(ctypes.Structure):
@@ -81,7 +81,8 @@ class generation_inputs(ctypes.Structure):
                 ("mirostat_eta", ctypes.c_float),
                 ("sampler_order", ctypes.c_int * sampler_order_max),
                 ("sampler_len", ctypes.c_int),
-                ("unban_tokens_rt", ctypes.c_bool),
+                ("allow_eos_token", ctypes.c_bool),
+                ("render_special", ctypes.c_bool),
                 ("stop_sequence", ctypes.c_char_p * stop_token_max),
                 ("stream_sse", ctypes.c_bool),
                 ("grammar", ctypes.c_char_p),
@@ -90,10 +91,12 @@ class generation_inputs(ctypes.Structure):
                 ("dynatemp_range", ctypes.c_float),
                 ("dynatemp_exponent", ctypes.c_float),
                 ("smoothing_factor", ctypes.c_float),
-                ("logit_biases", logit_bias * logit_bias_max)]
+                ("logit_biases", logit_bias * logit_bias_max),
+                ("banned_tokens", ctypes.c_char_p * ban_token_max)]
 
 class generation_outputs(ctypes.Structure):
     _fields_ = [("status", ctypes.c_int),
+                ("stopreason", ctypes.c_int),
                 ("text", ctypes.c_char_p)]
 
 class sd_load_model_inputs(ctypes.Structure):
@@ -370,6 +373,7 @@ def load_model(model_filename):
     inputs.mmproj_filename = args.mmproj.encode("UTF-8") if args.mmproj else "".encode("UTF-8")
     inputs.use_smartcontext = args.smartcontext
     inputs.use_contextshift = (0 if args.noshift else 1)
+    inputs.flash_attention = args.flashattention
     inputs.blasbatchsize = args.blasbatchsize
     inputs.forceversion = args.forceversion
     inputs.gpulayers = args.gpulayers
@@ -389,16 +393,10 @@ def load_model(model_filename):
 
     inputs.executable_path = (getdirpath()+"/").encode("UTF-8")
     inputs.debugmode = args.debugmode
-    banned_tokens = args.bantokens
-    for n in range(ban_token_max):
-        if not banned_tokens or n >= len(banned_tokens):
-            inputs.banned_tokens[n] = "".encode("UTF-8")
-        else:
-            inputs.banned_tokens[n] = banned_tokens[n].encode("UTF-8")
     ret = handle.load_model(inputs)
     return ret
 
-def generate(prompt, memory="", images=[], max_length=32, max_context_length=512, temperature=0.7, top_k=100, top_a=0.0, top_p=0.92, min_p=0.0, typical_p=1.0, tfs=1.0, rep_pen=1.0, rep_pen_range=128, presence_penalty=0.0, mirostat=0, mirostat_tau=5.0, mirostat_eta=0.1, sampler_order=[6,0,1,3,4,2,5], seed=-1, stop_sequence=[], use_default_badwordsids=False, stream_sse=False, grammar='', grammar_retain_state=False, genkey='', trimstop=False, quiet=False, dynatemp_range=0.0, dynatemp_exponent=1.0, smoothing_factor=0.0, logit_biases={}):
+def generate(prompt, memory="", images=[], max_length=32, max_context_length=512, temperature=0.7, top_k=100, top_a=0.0, top_p=0.92, min_p=0.0, typical_p=1.0, tfs=1.0, rep_pen=1.0, rep_pen_range=128, presence_penalty=0.0, mirostat=0, mirostat_tau=5.0, mirostat_eta=0.1, sampler_order=[6,0,1,3,4,2,5], seed=-1, stop_sequence=[], use_default_badwordsids=False, stream_sse=False, grammar='', grammar_retain_state=False, genkey='', trimstop=False, quiet=False, dynatemp_range=0.0, dynatemp_exponent=1.0, smoothing_factor=0.0, logit_biases={}, render_special=False, banned_tokens=[]):
     global maxctx, args, currentusergenkey, totalgens, pendingabortkey
     inputs = generation_inputs()
     inputs.prompt = prompt.encode("UTF-8")
@@ -436,7 +434,8 @@ def generate(prompt, memory="", images=[], max_length=32, max_context_length=512
     inputs.smoothing_factor = smoothing_factor
     inputs.grammar = grammar.encode("UTF-8")
     inputs.grammar_retain_state = grammar_retain_state
-    inputs.unban_tokens_rt = not use_default_badwordsids
+    inputs.allow_eos_token = not use_default_badwordsids
+    inputs.render_special = render_special
     if mirostat in (1, 2):
         inputs.mirostat = mirostat
         inputs.mirostat_tau = mirostat_tau
@@ -484,6 +483,12 @@ def generate(prompt, memory="", images=[], max_length=32, max_context_length=512
                 inputs.logit_biases[n] = logit_bias(-1, 0.0)
                 print(f"Skipped unparsable logit bias:{ex}")
 
+    for n in range(ban_token_max):
+        if not banned_tokens or n >= len(banned_tokens):
+            inputs.banned_tokens[n] = "".encode("UTF-8")
+        else:
+            inputs.banned_tokens[n] = banned_tokens[n].encode("UTF-8")
+
     currentusergenkey = genkey
     totalgens += 1
     #early exit if aborted
@@ -491,7 +496,7 @@ def generate(prompt, memory="", images=[], max_length=32, max_context_length=512
     if pendingabortkey!="" and pendingabortkey==genkey:
         print(f"\nDeferred Abort for GenKey: {pendingabortkey}")
         pendingabortkey = ""
-        return ""
+        return {"text":"","status":-1,"stopreason":-1}
     else:
         ret = handle.generate(inputs)
         outstr = ""
@@ -502,7 +507,7 @@ def generate(prompt, memory="", images=[], max_length=32, max_context_length=512
                 sindex = outstr.find(trim_str)
                 if sindex != -1 and trim_str!="":
                     outstr = outstr[:sindex]
-        return outstr
+        return {"text":outstr,"status":ret.status,"stopreason":ret.stopreason}
 
 
 def sd_load_model(model_filename):
@@ -606,6 +611,15 @@ def bring_terminal_to_foreground():
         ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 9)
         ctypes.windll.user32.SetForegroundWindow(ctypes.windll.kernel32.GetConsoleWindow())
 
+def string_contains_sequence_substring(inputstr,sequences):
+    if inputstr.strip()=="":
+        return False
+    for s in sequences:
+        if s.strip()=="":
+            continue
+        if s.strip() in inputstr.strip() or inputstr.strip() in s.strip():
+            return True
+    return False
 
 #################################################################
 ### A hacky simple HTTP server simulating a kobold api by Concedo
@@ -622,7 +636,7 @@ maxhordelen = 256
 modelbusy = threading.Lock()
 requestsinqueue = 0
 defaultport = 5001
-KcppVersion = "1.63"
+KcppVersion = "1.64"
 showdebug = True
 showsamplerwarning = True
 showmaxctxwarning = True
@@ -645,6 +659,99 @@ nocertify = False
 start_time = time.time()
 last_req_time = time.time()
 last_non_horde_req_time = time.time()
+currfinishreason = "null"
+using_gui_launcher = False
+
+def transform_genparams(genparams, api_format):
+    #alias all nonstandard alternative names for rep pen.
+    rp1 = genparams.get('repeat_penalty', 1.0)
+    rp2 = genparams.get('repetition_penalty', 1.0)
+    rp3 = genparams.get('rep_pen', 1.0)
+    rp_max = max(rp1,rp2,rp3)
+    genparams["rep_pen"] = rp_max
+
+    if api_format==1:
+        genparams["prompt"] = genparams.get('text', "")
+        genparams["top_k"] = int(genparams.get('top_k', 120))
+        genparams["max_length"] = genparams.get('max', 100)
+
+    elif api_format==2:
+        if "ignore_eos" in genparams and not ("use_default_badwordsids" in genparams):
+            genparams["use_default_badwordsids"] = genparams.get('ignore_eos', False)
+
+    elif api_format==3 or api_format==4:
+        genparams["max_length"] = genparams.get('max_tokens', 100)
+        presence_penalty = genparams.get('presence_penalty', genparams.get('frequency_penalty', 0.0))
+        genparams["presence_penalty"] = presence_penalty
+        # openai allows either a string or a list as a stop sequence
+        if isinstance(genparams.get('stop',[]), list):
+            genparams["stop_sequence"] = genparams.get('stop', [])
+        else:
+            genparams["stop_sequence"] = [genparams.get('stop')]
+
+        genparams["sampler_seed"] = genparams.get('seed', -1)
+        genparams["use_default_badwordsids"] = genparams.get('ignore_eos', False)
+        genparams["mirostat"] = genparams.get('mirostat_mode', 0)
+
+        if api_format==4:
+            # translate openai chat completion messages format into one big string.
+            messages_array = genparams.get('messages', [])
+            default_adapter = {} if chatcompl_adapter is None else chatcompl_adapter
+            adapter_obj = genparams.get('adapter', default_adapter)
+            messages_string = ""
+            system_message_start = adapter_obj.get("system_start", "\n### Instruction:\n")
+            system_message_end = adapter_obj.get("system_end", "")
+            user_message_start = adapter_obj.get("user_start", "\n### Instruction:\n")
+            user_message_end = adapter_obj.get("user_end", "")
+            assistant_message_start = adapter_obj.get("assistant_start", "\n### Response:\n")
+            assistant_message_end = adapter_obj.get("assistant_end", "")
+            images_added = []
+
+            for message in messages_array:
+                if message['role'] == "system":
+                    messages_string += system_message_start
+                elif message['role'] == "user":
+                    messages_string += user_message_start
+                elif message['role'] == "assistant":
+                    messages_string += assistant_message_start
+
+                # content can be a string or an array of objects
+                curr_content = message['content']
+                if isinstance(curr_content, str):
+                        messages_string += curr_content
+                elif isinstance(curr_content, list): #is an array
+                    for item in curr_content:
+                        if item['type']=="text":
+                                messages_string += item['text']
+                        elif item['type']=="image_url":
+                            if item['image_url'] and item['image_url']['url'] and item['image_url']['url'].startswith("data:image"):
+                                images_added.append(item['image_url']['url'].split(",", 1)[1])
+
+                if message['role'] == "system":
+                    messages_string += system_message_end
+                elif message['role'] == "user":
+                    messages_string += user_message_end
+                elif message['role'] == "assistant":
+                    messages_string += assistant_message_end
+
+            messages_string += assistant_message_start
+            genparams["prompt"] = messages_string
+            if len(images_added)>0:
+                genparams["images"] = images_added
+            if len(genparams.get('stop_sequence', []))==0: #only set stop seq if it wont overwrite existing
+                genparams["stop_sequence"] = [user_message_start.strip(),assistant_message_start.strip()]
+            else:
+                genparams["stop_sequence"].append(user_message_start.strip())
+                genparams["stop_sequence"].append(assistant_message_start.strip())
+            genparams["trim_stop"] = True
+
+    elif api_format==5:
+        firstimg = genparams.get('image', "")
+        genparams["images"] = [firstimg]
+        genparams["max_length"] = 32
+        genparams["prompt"] = "### Instruction: In one sentence, write a descriptive caption for this image.\n### Response:"
+
+    return genparams
 
 class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
     sys_version = ""
@@ -667,93 +774,11 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     async def generate_text(self, genparams, api_format, stream_flag):
         from datetime import datetime
-        global friendlymodelname, chatcompl_adapter
+        global friendlymodelname, chatcompl_adapter, currfinishreason
         is_quiet = args.quiet
+        currfinishreason = "null"
+
         def run_blocking(): #api format 1=basic,2=kai,3=oai,4=oai-chat
-
-            #alias all nonstandard alternative names for rep pen.
-            rp1 = genparams.get('repeat_penalty', 1.0)
-            rp2 = genparams.get('repetition_penalty', 1.0)
-            rp3 = genparams.get('rep_pen', 1.0)
-            rp_max = max(rp1,rp2,rp3)
-            genparams["rep_pen"] = rp_max
-
-            if api_format==1:
-                genparams["prompt"] = genparams.get('text', "")
-                genparams["top_k"] = int(genparams.get('top_k', 120))
-                genparams["max_length"] = genparams.get('max', 100)
-
-            elif api_format==3 or api_format==4:
-                genparams["max_length"] = genparams.get('max_tokens', 100)
-                presence_penalty = genparams.get('presence_penalty', genparams.get('frequency_penalty', 0.0))
-                genparams["presence_penalty"] = presence_penalty
-                # openai allows either a string or a list as a stop sequence
-                if isinstance(genparams.get('stop',[]), list):
-                    genparams["stop_sequence"] = genparams.get('stop', [])
-                else:
-                    genparams["stop_sequence"] = [genparams.get('stop')]
-
-                genparams["sampler_seed"] = genparams.get('seed', -1)
-                genparams["use_default_badwordsids"] = genparams.get('ignore_eos', False)
-                genparams["mirostat"] = genparams.get('mirostat_mode', 0)
-
-                if api_format==4:
-                    # translate openai chat completion messages format into one big string.
-                    messages_array = genparams.get('messages', [])
-                    default_adapter = {} if chatcompl_adapter is None else chatcompl_adapter
-                    adapter_obj = genparams.get('adapter', default_adapter)
-                    messages_string = ""
-                    system_message_start = adapter_obj.get("system_start", "\n### Instruction:\n")
-                    system_message_end = adapter_obj.get("system_end", "")
-                    user_message_start = adapter_obj.get("user_start", "\n### Instruction:\n")
-                    user_message_end = adapter_obj.get("user_end", "")
-                    assistant_message_start = adapter_obj.get("assistant_start", "\n### Response:\n")
-                    assistant_message_end = adapter_obj.get("assistant_end", "")
-                    images_added = []
-
-                    for message in messages_array:
-                        if message['role'] == "system":
-                            messages_string += system_message_start
-                        elif message['role'] == "user":
-                            messages_string += user_message_start
-                        elif message['role'] == "assistant":
-                            messages_string += assistant_message_start
-
-                        # content can be a string or an array of objects
-                        curr_content = message['content']
-                        if isinstance(curr_content, str):
-                             messages_string += curr_content
-                        elif isinstance(curr_content, list): #is an array
-                            for item in curr_content:
-                                if item['type']=="text":
-                                     messages_string += item['text']
-                                elif item['type']=="image_url":
-                                    if item['image_url'] and item['image_url']['url'] and item['image_url']['url'].startswith("data:image"):
-                                        images_added.append(item['image_url']['url'].split(",", 1)[1])
-
-                        if message['role'] == "system":
-                            messages_string += system_message_end
-                        elif message['role'] == "user":
-                            messages_string += user_message_end
-                        elif message['role'] == "assistant":
-                            messages_string += assistant_message_end
-
-                    messages_string += assistant_message_start
-                    genparams["prompt"] = messages_string
-                    if len(images_added)>0:
-                        genparams["images"] = images_added
-                    if len(genparams.get('stop_sequence', []))==0: #only set stop seq if it wont overwrite existing
-                        genparams["stop_sequence"] = [user_message_start.strip(),assistant_message_start.strip()]
-                    else:
-                        genparams["stop_sequence"].append(user_message_start.strip())
-                        genparams["stop_sequence"].append(assistant_message_start.strip())
-                    genparams["trim_stop"] = True
-
-            elif api_format==5:
-                    firstimg = genparams.get('image', "")
-                    genparams["images"] = [firstimg]
-                    genparams["max_length"] = 32
-                    genparams["prompt"] = "### Instruction: In one sentence, write a descriptive caption for this image.\n### Response:"
 
             #flag instance as non-idle for a while
             washordereq = genparams.get('genkey', '').startswith('HORDEREQ_')
@@ -793,16 +818,21 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                 dynatemp_range=genparams.get('dynatemp_range', 0.0),
                 dynatemp_exponent=genparams.get('dynatemp_exponent', 1.0),
                 smoothing_factor=genparams.get('smoothing_factor', 0.0),
-                logit_biases=genparams.get('logit_bias', {})
+                logit_biases=genparams.get('logit_bias', {}),
+                render_special=genparams.get('render_special', False),
+                banned_tokens=genparams.get('banned_tokens', []),
                 )
 
-        recvtxt = ""
+        genout = {"text":"","status":-1,"stopreason":-1}
         if stream_flag:
             loop = asyncio.get_event_loop()
             executor = ThreadPoolExecutor()
-            recvtxt = await loop.run_in_executor(executor, run_blocking)
+            genout = await loop.run_in_executor(executor, run_blocking)
         else:
-            recvtxt = run_blocking()
+            genout = run_blocking()
+
+        recvtxt = genout['text']
+        currfinishreason = ("length" if (genout['stopreason']!=1) else "stop")
 
         #flag instance as non-idle for a while
         washordereq = genparams.get('genkey', '').startswith('HORDEREQ_')
@@ -818,15 +848,15 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
         elif api_format==3:
             res = {"id": "cmpl-1", "object": "text_completion", "created": 1, "model": friendlymodelname,
             "usage": {"prompt_tokens": 100,"completion_tokens": 100,"total_tokens": 200},
-            "choices": [{"text": recvtxt, "index": 0, "finish_reason": "length"}]}
+            "choices": [{"text": recvtxt, "index": 0, "finish_reason": currfinishreason}]}
         elif api_format==4:
             res = {"id": "chatcmpl-1", "object": "chat.completion", "created": 1, "model": friendlymodelname,
             "usage": {"prompt_tokens": 100,"completion_tokens": 100,"total_tokens": 200},
-            "choices": [{"index": 0, "message":{"role": "assistant", "content": recvtxt,}, "finish_reason": "length"}]}
+            "choices": [{"index": 0, "message":{"role": "assistant", "content": recvtxt,}, "finish_reason": currfinishreason}]}
         elif api_format==5:
             res = {"caption": end_trim_to_sentence(recvtxt)}
         else:
-            res = {"results": [{"text": recvtxt}]}
+            res = {"results": [{"text": recvtxt, "finish_reason":currfinishreason}]}
 
         try:
             return res
@@ -846,8 +876,8 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(f'data: {data}\n\n'.encode())
         self.wfile.flush()
 
-    async def handle_sse_stream(self, api_format):
-        global friendlymodelname
+    async def handle_sse_stream(self, genparams, api_format):
+        global friendlymodelname, currfinishreason
         self.send_response(200)
         self.send_header("cache-control", "no-cache")
         self.send_header("connection", "keep-alive")
@@ -855,10 +885,15 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         current_token = 0
         incomplete_token_buffer = bytearray()
+        async_sleep_short = 0.02
         await asyncio.sleep(0.25) #anti race condition, prevent check from overtaking generate
         try:
+            tokenReserve = "" #keeps fully formed tokens that we cannot send out yet
             while True:
                 streamDone = handle.has_finished() #exit next loop on done
+                if streamDone:
+                    sr = handle.get_last_stop_reason()
+                    currfinishreason = ("length" if (sr!=1) else "stop")
                 tokenStr = ""
                 streamcount = handle.get_stream_count()
                 while current_token < streamcount:
@@ -875,20 +910,39 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                         incomplete_token_buffer.clear()
                         tokenStr += tokenSeg
 
-                if tokenStr!="":
-                    if api_format == 4:  # if oai chat, set format to expected openai streaming response
-                        event_str = json.dumps({"id":"koboldcpp","object":"chat.completion.chunk","created":1,"model":friendlymodelname,"choices":[{"index":0,"finish_reason":"length","delta":{'role':'assistant','content':tokenStr}}]})
-                        await self.send_oai_sse_event(event_str)
-                    elif api_format == 3:  # non chat completions
-                        event_str = json.dumps({"id":"koboldcpp","object":"text_completion","created":1,"model":friendlymodelname,"choices":[{"index":0,"finish_reason":"length","text":tokenStr}]})
-                        await self.send_oai_sse_event(event_str)
+                if tokenStr!="" or streamDone:
+                    sseq = genparams.get('stop_sequence', [])
+                    trimstop = genparams.get('trim_stop', False)
+                    if trimstop and not streamDone and string_contains_sequence_substring(tokenStr,sseq):
+                        tokenReserve += tokenStr
+                        await asyncio.sleep(async_sleep_short) #if a stop sequence could trigger soon, do not send output
                     else:
-                        event_str = json.dumps({"token": tokenStr})
-                        await self.send_kai_sse_event(event_str)
-                    tokenStr = ""
+                        if tokenStr!="":
+                            tokenStr = tokenReserve + tokenStr
+                            tokenReserve = ""
 
+                            #apply trimming if needed
+                            if trimstop:
+                                for trim_str in sseq:
+                                    sindex = tokenStr.find(trim_str)
+                                    if sindex != -1 and trim_str!="":
+                                        tokenStr = tokenStr[:sindex]
+
+                        if tokenStr!="" or streamDone:
+                            if api_format == 4:  # if oai chat, set format to expected openai streaming response
+                                event_str = json.dumps({"id":"koboldcpp","object":"chat.completion.chunk","created":1,"model":friendlymodelname,"choices":[{"index":0,"finish_reason":currfinishreason,"delta":{'role':'assistant','content':tokenStr}}]})
+                                await self.send_oai_sse_event(event_str)
+                            elif api_format == 3:  # non chat completions
+                                event_str = json.dumps({"id":"koboldcpp","object":"text_completion","created":1,"model":friendlymodelname,"choices":[{"index":0,"finish_reason":currfinishreason,"text":tokenStr}]})
+                                await self.send_oai_sse_event(event_str)
+                            else:
+                                event_str = json.dumps({"token": tokenStr, "finish_reason":currfinishreason})
+                                await self.send_kai_sse_event(event_str)
+                            tokenStr = ""
+                        else:
+                            await asyncio.sleep(async_sleep_short)
                 else:
-                    await asyncio.sleep(0.02) #this should keep things responsive
+                    await asyncio.sleep(async_sleep_short) #this should keep things responsive
 
                 if streamDone:
                     if api_format == 4 or api_format == 3:  # if oai chat, send last [DONE] message consistent with openai format
@@ -907,12 +961,14 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
         await asyncio.sleep(0.05)
 
 
-    async def handle_request(self, genparams, api_format, stream_flag):
+    async def handle_request(self, raw_genparams, api_format, stream_flag):
         tasks = []
+
+        genparams = transform_genparams(raw_genparams, api_format)
 
         try:
             if stream_flag:
-                tasks.append(self.handle_sse_stream(api_format))
+                tasks.append(self.handle_sse_stream(genparams, api_format))
 
             generate_task = asyncio.create_task(self.generate_text(genparams, api_format, stream_flag))
             tasks.append(generate_task)
@@ -1446,6 +1502,9 @@ def show_new_gui():
     from tkinter.filedialog import askopenfilename
     from tkinter.filedialog import asksaveasfile
 
+    global using_gui_launcher
+    using_gui_launcher = True
+
     # if args received, launch
     if len(sys.argv) != 1:
         import tkinter as tk
@@ -1465,15 +1524,50 @@ def show_new_gui():
 
     import customtkinter as ctk
     nextstate = 0 #0=exit, 1=launch
-    windowwidth = 540
-    windowheight = 500
+    original_windowwidth = 550
+    original_windowheight = 550
+    windowwidth = original_windowwidth
+    windowheight = original_windowheight
     ctk.set_appearance_mode("dark")
     root = ctk.CTk()
-    root.geometry(str(windowwidth) + "x" + str(windowheight))
+    root.geometry(f"{windowwidth}x{windowheight}")
     root.title("KoboldCpp v"+KcppVersion)
-    root.resizable(False,False)
+    root.resizable(True,True)
+
     gtooltip_box = None
     gtooltip_label = None
+
+    window_reference_width = None
+    window_reference_height = None
+    previous_event_width = None
+    previous_event_height = None
+    def on_resize(event):
+        if not event.widget.master:
+            nonlocal window_reference_width, window_reference_height, previous_event_width,previous_event_height
+            if not window_reference_width and not window_reference_height:
+                window_reference_width = event.width
+                window_reference_height = event.height
+                previous_event_width = window_reference_width
+                previous_event_height = window_reference_height
+            else:
+                new_width = event.width
+                new_height = event.height
+                incr_w = new_width/window_reference_width
+                incr_h = new_height/window_reference_height
+                smallratio = min(incr_w,incr_h)
+                smallratio = round(smallratio,2)
+                if new_width != previous_event_width or new_height!=previous_event_height:
+                    lastpos = root.geometry()
+                    lparr = lastpos.split('+', 1)
+                    lastpos = f"+{lparr[1]}" if (len(lparr)==2) else ""
+                    previous_event_width = new_width
+                    previous_event_height = new_height
+                    windowwidth = math.floor(original_windowwidth*smallratio)
+                    windowheight = math.floor(original_windowheight*smallratio)
+                    root.geometry(f"{windowwidth}x{windowheight}{lastpos}")
+                    ctk.set_widget_scaling(smallratio)
+
+    root.bind("<Configure>", on_resize)
 
     # trigger empty tooltip then remove it
     def show_tooltip(event, tooltip_text=None):
@@ -1534,7 +1628,7 @@ def show_new_gui():
     # slider data
     blasbatchsize_values = ["-1", "32", "64", "128", "256", "512", "1024", "2048"]
     blasbatchsize_text = ["Don't Batch BLAS","32","64","128","256","512","1024","2048"]
-    contextsize_text = ["256", "512", "1024", "2048", "3072", "4096", "6144", "8192", "12288", "16384", "24576", "32768", "49152", "65536"]
+    contextsize_text = ["256", "512", "1024", "2048", "3072", "4096", "6144", "8192", "12288", "16384", "24576", "32768", "49152", "65536", "98304", "131072"]
     runopts = [opt for lib, opt in lib_option_pairs if file_exists(lib)]
     antirunopts = [opt.replace("Use ", "") for lib, opt in lib_option_pairs if not (opt in runopts)]
 
@@ -1570,6 +1664,7 @@ def show_new_gui():
     contextshift = ctk.IntVar(value=1)
     remotetunnel = ctk.IntVar(value=0)
     smartcontext = ctk.IntVar()
+    flashattention = ctk.IntVar(value=0)
     context_var = ctk.IntVar()
     customrope_var = ctk.IntVar()
     customrope_scale = ctk.StringVar(value="1.0")
@@ -1858,6 +1953,10 @@ def show_new_gui():
         else:
             smartcontextbox.grid_forget()
 
+    def guibench():
+        args.benchmark = "stdout"
+        launchbrowser.set(0)
+        guilaunch()
 
     def changerunmode(a,b,c):
         global runmode_untouched
@@ -1998,6 +2097,8 @@ def show_new_gui():
     makeslider(hardware_tab, "BLAS Batch Size:", blasbatchsize_text, blas_size_var, 0, 7, 16, set=5,tooltip="How many tokens to process at once per batch.\nLarger values use more memory.")
     # force version
     makelabelentry(hardware_tab, "Force Version:" , version_var, 100, 50,"If the autodetected version is wrong, you can change it here.\nLeave as 0 for default.")
+    ctk.CTkButton(hardware_tab , text = "Run Benchmark", command = guibench ).grid(row=110,column=0, stick="se", padx= 0, pady=2)
+
 
     runopts_var.trace('w', changerunmode)
     changerunmode(1,1,1)
@@ -2014,7 +2115,6 @@ def show_new_gui():
     # context size
     makeslider(tokens_tab, "Context Size:",contextsize_text, context_var, 0, len(contextsize_text)-1, 20, set=3,tooltip="What is the maximum context size to support. Model specific. You cannot exceed it.\nLarger contexts require more memory, and not all models support it.")
 
-
     customrope_scale_entry, customrope_scale_label = makelabelentry(tokens_tab, "RoPE Scale:", customrope_scale,tooltip="For Linear RoPE scaling. RoPE frequency scale.")
     customrope_base_entry, customrope_base_label = makelabelentry(tokens_tab, "RoPE Base:", customrope_base,tooltip="For NTK Aware Scaling. RoPE frequency base.")
     def togglerope(a,b,c):
@@ -2026,6 +2126,7 @@ def show_new_gui():
                 item.grid_forget()
     makecheckbox(tokens_tab,  "Custom RoPE Config", variable=customrope_var, row=22, command=togglerope,tooltiptxt="Override the default RoPE configuration with custom RoPE scaling.")
     togglerope(1,1,1)
+    makecheckbox(tokens_tab, "Use FlashAttention", flashattention, 28,tooltiptxt="Enable flash attention for GGUF models.")
     makefileentry(tokens_tab, "ChatCompletions Adapter:", "Select ChatCompletions Adapter File", chatcompletionsadapter_var, 30,tooltiptxt="Select an optional ChatCompletions Adapter JSON file to force custom instruct tags.")
 
     # Model Tab
@@ -2086,7 +2187,6 @@ def show_new_gui():
     makelabelentry(images_tab, "Image threads:" , sd_threads_var, 6, 50,"How many threads to use during image generation.\nIf left blank, uses same value as threads.")
     makecheckbox(images_tab, "Compress Weights (Saves Memory)", sd_quant_var, 8,tooltiptxt="Quantizes the SD model weights to save memory. May degrade quality.")
 
-
     # launch
     def guilaunch():
         if model_var.get() == "" and sd_model_var.get() == "":
@@ -2105,6 +2205,7 @@ def show_new_gui():
         args.highpriority = highpriority.get()==1
         args.nommap = disablemmap.get()==1
         args.smartcontext = smartcontext.get()==1
+        args.flashattention = flashattention.get()==1
         args.noshift = contextshift.get()==0
         args.remotetunnel = remotetunnel.get()==1
         args.foreground = keepforeground.get()==1
@@ -2189,6 +2290,7 @@ def show_new_gui():
         highpriority.set(1 if "highpriority" in dict and dict["highpriority"] else 0)
         disablemmap.set(1 if "nommap" in dict and dict["nommap"] else 0)
         smartcontext.set(1 if "smartcontext" in dict and dict["smartcontext"] else 0)
+        flashattention.set(1 if "flashattention" in dict and dict["flashattention"] else 0)
         contextshift.set(0 if "noshift" in dict and dict["noshift"] else 1)
         remotetunnel.set(1 if "remotetunnel" in dict and dict["remotetunnel"] else 0)
         keepforeground.set(1 if "foreground" in dict and dict["foreground"] else 0)
@@ -2217,7 +2319,7 @@ def show_new_gui():
                     if str(g) in dict["usecublas"]:
                         gpu_choice_var.set(str(g+1))
                         break
-        elif "usevulkan" in dict:
+        elif "usevulkan" in dict and dict['usevulkan'] is not None:
             if "noavx2" in dict and dict["noavx2"]:
                 if vulkan_noavx2_option is not None:
                     runopts_var.set(vulkan_noavx2_option)
@@ -2824,6 +2926,8 @@ def main(launch_args,start_server=True):
             exitcounter = 999
             ermsg = "Reason: " + str(ex) + "\nFile selection GUI unsupported.\ncustomtkinter python module required!\nPlease check command line: script.py --help"
             show_gui_msgbox("Warning, GUI failed to start",ermsg)
+            if args.skiplauncher:
+                print(f"Note: In order to use --skiplauncher, you need to specify a model with --model")
             time.sleep(3)
             sys.exit(2)
 
@@ -3084,7 +3188,8 @@ def main(launch_args,start_server=True):
         benchprompt = "11111111"
         for i in range(0,10): #generate massive prompt
             benchprompt += benchprompt
-        result = generate(benchprompt,memory="",images=[],max_length=benchlen,max_context_length=benchmaxctx,temperature=0.1,top_k=1,rep_pen=1,use_default_badwordsids=True)
+        genout = generate(benchprompt,memory="",images=[],max_length=benchlen,max_context_length=benchmaxctx,temperature=0.1,top_k=1,rep_pen=1,use_default_badwordsids=True)
+        result = genout['text']
         result = (result[:5] if len(result)>5 else "")
         resultok = (result=="11111")
         t_pp = float(handle.get_last_process_time())*float(benchmaxctx-benchlen)*0.001
@@ -3127,6 +3232,11 @@ def main(launch_args,start_server=True):
     else:
         # Flush stdout for previous win32 issue so the client can see output.
         print(f"Server was not started, main function complete. Idling.", flush=True)
+        global using_gui_launcher
+        if using_gui_launcher:
+            print("===")
+            print("Press a key to exit", flush=True)
+            input()
 
 def run_in_queue(launch_args, input_queue, output_queue):
     main(launch_args, start_server=False)
@@ -3137,7 +3247,9 @@ def run_in_queue(launch_args, input_queue, output_queue):
                 data = input_queue.get()
                 if data['command'] == 'generate':
                     (args, kwargs) = data['data']
-                output_queue.put({'command': 'generated text', 'data': generate(*args, **kwargs)})
+                genout = generate(*args, **kwargs)
+                result = genout['text']
+                output_queue.put({'command': 'generated text', 'data': result})
         time.sleep(0.2)
 
 def start_in_seperate_process(launch_args):
@@ -3185,7 +3297,7 @@ if __name__ == '__main__':
     compatgroup.add_argument("--noblas", help="Do not use OpenBLAS for accelerated prompt ingestion", action='store_true')
     parser.add_argument("--gpulayers", help="Set number of layers to offload to GPU when using GPU. Requires GPU.",metavar=('[GPU layers]'), nargs='?', const=1, type=int, default=0)
     parser.add_argument("--tensor_split", help="For CUDA and Vulkan only, ratio to split tensors across multiple GPUs, space-separated list of proportions, e.g. 7 3", metavar=('[Ratios]'), type=float, nargs='+')
-    parser.add_argument("--contextsize", help="Controls the memory allocated for maximum context size, only change if you need more RAM for big contexts. (default 2048). Supported values are [256,512,1024,2048,3072,4096,6144,8192,12288,16384,24576,32768,49152,65536]. IF YOU USE ANYTHING ELSE YOU ARE ON YOUR OWN.",metavar=('[256,512,1024,2048,3072,4096,6144,8192,12288,16384,24576,32768,49152,65536]'), type=check_range(int,256,262144), default=2048)
+    parser.add_argument("--contextsize", help="Controls the memory allocated for maximum context size, only change if you need more RAM for big contexts. (default 2048). Supported values are [256,512,1024,2048,3072,4096,6144,8192,12288,16384,24576,32768,49152,65536,98304,131072]. IF YOU USE ANYTHING ELSE YOU ARE ON YOUR OWN.",metavar=('[256,512,1024,2048,3072,4096,6144,8192,12288,16384,24576,32768,49152,65536,98304,131072]'), type=check_range(int,256,262144), default=2048)
     parser.add_argument("--ropeconfig", help="If set, uses customized RoPE scaling from configured frequency scale and frequency base (e.g. --ropeconfig 0.25 10000). Otherwise, uses NTK-Aware scaling set automatically based on context size. For linear rope, simply set the freq-scale and ignore the freq-base",metavar=('[rope-freq-scale]', '[rope-freq-base]'), default=[0.0, 10000.0], type=float, nargs='+')
     #more advanced params
     parser.add_argument("--blasbatchsize", help="Sets the batch size used in BLAS processing (default 512). Setting it to -1 disables BLAS mode, but keeps other benefits like GPU offload.", type=int,choices=[-1,32,64,128,256,512,1024,2048], default=512)
@@ -3193,7 +3305,6 @@ if __name__ == '__main__':
     parser.add_argument("--lora", help="LLAMA models only, applies a lora file on top of model. Experimental.", metavar=('[lora_filename]', '[lora_base]'), nargs='+')
     parser.add_argument("--smartcontext", help="Reserving a portion of context to try processing less frequently.", action='store_true')
     parser.add_argument("--noshift", help="If set, do not attempt to Trim and Shift the GGUF context.", action='store_true')
-    parser.add_argument("--bantokens", help="You can manually specify a list of token SUBSTRINGS that the AI cannot use. This bans ALL instances of that substring.", metavar=('[token_substrings]'), nargs='+')
     parser.add_argument("--forceversion", help="If the model file format detection fails (e.g. rogue modified model) you can set this to override the detected format (enter desired version, e.g. 401 for GPTNeoX-Type2).",metavar=('[version]'), type=int, default=0)
     parser.add_argument("--nommap", help="If set, do not use mmap to load newer models", action='store_true')
     parser.add_argument("--usemlock", help="For Apple Systems. Force system to keep model in RAM rather than swapping or compressing", action='store_true')
@@ -3216,5 +3327,6 @@ if __name__ == '__main__':
     parser.add_argument("--password", help="Enter a password required to use this instance. This key will be required for all text endpoints. Image endpoints are not secured.", default=None)
     parser.add_argument("--ignoremissing", help="Ignores all missing non-essential files, just skipping them instead.", action='store_true')
     parser.add_argument("--chatcompletionsadapter", help="Select an optional ChatCompletions Adapter JSON file to force custom instruct tags.", default="")
+    parser.add_argument("--flashattention", help="Enables flash attention (Experimental).", action='store_true')
 
     main(parser.parse_args(),start_server=True)
