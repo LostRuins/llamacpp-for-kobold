@@ -55,6 +55,7 @@ struct load_model_inputs
     const int gpulayers = 0;
     const float rope_freq_scale = 1.0f;
     const float rope_freq_base = 10000.0f;
+    const bool flash_attention = false;
     const float tensor_split[tensor_split_max];
 };
 struct generation_inputs

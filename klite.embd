@@ -8791,8 +8791,8 @@ Current version: 136
 				et = "<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>";
 				break;
 			case "9": //llama 3 chat
-				st = "<|eot_id|><|start_header_id|>user<|end_header_id|>";
-				et = "<|eot_id|><|start_header_id|>assistant<|end_header_id|>";
+				st = "<|eot_id|><|start_header_id|>user<|end_header_id|>\\n\\n";
+				et = "<|eot_id|><|start_header_id|>assistant<|end_header_id|>\\n\\n";
 				break;
 			default:
 				break;
