@@ -45,7 +45,6 @@ class load_model_inputs(ctypes.Structure):
                 ("mmproj_filename", ctypes.c_char_p),
                 ("use_mmap", ctypes.c_bool),
                 ("use_mlock", ctypes.c_bool),
-                ("use_smartcontext", ctypes.c_bool),
                 ("use_contextshift", ctypes.c_bool),
                 ("clblast_info", ctypes.c_int),
                 ("cublas_info", ctypes.c_int),
@@ -82,6 +81,7 @@ class generation_inputs(ctypes.Structure):
                 ("sampler_order", ctypes.c_int * sampler_order_max),
                 ("sampler_len", ctypes.c_int),
                 ("allow_eos_token", ctypes.c_bool),
+                ("bypass_eos_token", ctypes.c_bool),
                 ("render_special", ctypes.c_bool),
                 ("stop_sequence", ctypes.c_char_p * stop_token_max),
                 ("stream_sse", ctypes.c_bool),
@@ -371,7 +371,6 @@ def load_model(model_filename):
             inputs.lora_base = args.lora[1].encode("UTF-8")
 
     inputs.mmproj_filename = args.mmproj.encode("UTF-8") if args.mmproj else "".encode("UTF-8")
-    inputs.use_smartcontext = args.smartcontext
     inputs.use_contextshift = (0 if args.noshift else 1)
     inputs.flash_attention = args.flashattention
     inputs.blasbatchsize = args.blasbatchsize
@@ -396,7 +395,7 @@ def load_model(model_filename):
     ret = handle.load_model(inputs)
     return ret
 
-def generate(prompt, memory="", images=[], max_length=32, max_context_length=512, temperature=0.7, top_k=100, top_a=0.0, top_p=0.92, min_p=0.0, typical_p=1.0, tfs=1.0, rep_pen=1.0, rep_pen_range=128, presence_penalty=0.0, mirostat=0, mirostat_tau=5.0, mirostat_eta=0.1, sampler_order=[6,0,1,3,4,2,5], seed=-1, stop_sequence=[], use_default_badwordsids=False, stream_sse=False, grammar='', grammar_retain_state=False, genkey='', trimstop=False, quiet=False, dynatemp_range=0.0, dynatemp_exponent=1.0, smoothing_factor=0.0, logit_biases={}, render_special=False, banned_tokens=[]):
+def generate(prompt, memory="", images=[], max_length=32, max_context_length=512, temperature=0.7, top_k=100, top_a=0.0, top_p=0.92, min_p=0.0, typical_p=1.0, tfs=1.0, rep_pen=1.0, rep_pen_range=128, presence_penalty=0.0, mirostat=0, mirostat_tau=5.0, mirostat_eta=0.1, sampler_order=[6,0,1,3,4,2,5], seed=-1, stop_sequence=[], use_default_badwordsids=False, stream_sse=False, grammar='', grammar_retain_state=False, genkey='', trimstop=False, quiet=False, dynatemp_range=0.0, dynatemp_exponent=1.0, smoothing_factor=0.0, logit_biases={}, render_special=False, banned_tokens=[], bypass_eos_token=False):
     global maxctx, args, currentusergenkey, totalgens, pendingabortkey
     inputs = generation_inputs()
     inputs.prompt = prompt.encode("UTF-8")
@@ -435,6 +434,7 @@ def generate(prompt, memory="", images=[], max_length=32, max_context_length=512
     inputs.grammar = grammar.encode("UTF-8")
     inputs.grammar_retain_state = grammar_retain_state
     inputs.allow_eos_token = not use_default_badwordsids
+    inputs.bypass_eos_token = bypass_eos_token
     inputs.render_special = render_special
     if mirostat in (1, 2):
         inputs.mirostat = mirostat
@@ -517,12 +517,13 @@ def sd_load_model(model_filename):
     inputs.model_filename = model_filename.encode("UTF-8")
     thds = args.threads
     quant = 0
-    if len(args.sdconfig) > 2:
-        sdt = int(args.sdconfig[2])
+
+    if args.sdthreads and args.sdthreads > 0:
+        sdt = int(args.sdthreads)
         if sdt > 0:
             thds = sdt
-    if len(args.sdconfig) > 3:
-        quant = (1 if args.sdconfig[3]=="quant" else 0)
+    if args.sdquant:
+        quant = 1
 
     inputs.threads = thds
     inputs.quant = quant
@@ -554,18 +555,10 @@ def sd_generate(genparams):
     width = (64 if width < 64 else width)
     height = (64 if height < 64 else height)
 
-    #quick mode
-    if args.sdconfig and len(args.sdconfig)>1:
-        if args.sdconfig[1]=="quick":
-            cfg_scale = 1
-            sample_steps = 7
-            sample_method = "dpm++ 2m karras"
-            reslimit = 512
-            print("\nSDConfig: Quick Mode (Low Quality). Step counts, resolution, sampler, and cfg scale are fixed.")
-        elif args.sdconfig[1]=="clamped":
-            sample_steps = (40 if sample_steps > 40 else sample_steps)
-            reslimit = 512
-            print("\nSDConfig: Clamped Mode (For Shared Use). Step counts and resolution are clamped.")
+    if args.sdclamped:
+        sample_steps = (40 if sample_steps > 40 else sample_steps)
+        reslimit = 512
+        print("\nImgGen: Clamped Mode (For Shared Use). Step counts and resolution are clamped.")
 
     biggest = max(width,height)
     if biggest > reslimit:
@@ -636,7 +629,7 @@ maxhordelen = 256
 modelbusy = threading.Lock()
 requestsinqueue = 0
 defaultport = 5001
-KcppVersion = "1.64"
+KcppVersion = "1.65"
 showdebug = True
 showsamplerwarning = True
 showmaxctxwarning = True
@@ -654,6 +647,9 @@ gui_layers_untouched = True
 runmode_untouched = True
 preloaded_story = None
 chatcompl_adapter = None
+embedded_kailite = None
+embedded_kcpp_docs = None
+embedded_kcpp_sdui = None
 sslvalid = False
 nocertify = False
 start_time = time.time()
@@ -661,8 +657,10 @@ last_req_time = time.time()
 last_non_horde_req_time = time.time()
 currfinishreason = "null"
 using_gui_launcher = False
+using_outdated_flags = False
 
 def transform_genparams(genparams, api_format):
+    #api format 1=basic,2=kai,3=oai,4=oai-chat,5=interrogate
     #alias all nonstandard alternative names for rep pen.
     rp1 = genparams.get('repeat_penalty', 1.0)
     rp2 = genparams.get('repetition_penalty', 1.0)
@@ -673,14 +671,14 @@ def transform_genparams(genparams, api_format):
     if api_format==1:
         genparams["prompt"] = genparams.get('text', "")
         genparams["top_k"] = int(genparams.get('top_k', 120))
-        genparams["max_length"] = genparams.get('max', 100)
+        genparams["max_length"] = genparams.get('max', 150)
 
     elif api_format==2:
         if "ignore_eos" in genparams and not ("use_default_badwordsids" in genparams):
             genparams["use_default_badwordsids"] = genparams.get('ignore_eos', False)
 
     elif api_format==3 or api_format==4:
-        genparams["max_length"] = genparams.get('max_tokens', 100)
+        genparams["max_length"] = genparams.get('max_tokens', (256 if api_format==4 else 150))
         presence_penalty = genparams.get('presence_penalty', genparams.get('frequency_penalty', 0.0))
         genparams["presence_penalty"] = presence_penalty
         # openai allows either a string or a list as a stop sequence
@@ -748,7 +746,7 @@ def transform_genparams(genparams, api_format):
     elif api_format==5:
         firstimg = genparams.get('image', "")
         genparams["images"] = [firstimg]
-        genparams["max_length"] = 32
+        genparams["max_length"] = 42
         genparams["prompt"] = "### Instruction: In one sentence, write a descriptive caption for this image.\n### Response:"
 
     return genparams
@@ -757,11 +755,9 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
     sys_version = ""
     server_version = "ConcedoLlamaForKoboldServer"
 
-    def __init__(self, addr, port, embedded_kailite, embedded_kcpp_docs):
+    def __init__(self, addr, port):
         self.addr = addr
         self.port = port
-        self.embedded_kailite = embedded_kailite
-        self.embedded_kcpp_docs = embedded_kcpp_docs
 
     def __call__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -791,7 +787,7 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                 memory=genparams.get('memory', ""),
                 images=genparams.get('images', []),
                 max_context_length=genparams.get('max_context_length', maxctx),
-                max_length=genparams.get('max_length', 100),
+                max_length=genparams.get('max_length', 150),
                 temperature=genparams.get('temperature', 0.7),
                 top_k=genparams.get('top_k', 100),
                 top_a=genparams.get('top_a', 0.0),
@@ -821,6 +817,7 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                 logit_biases=genparams.get('logit_bias', {}),
                 render_special=genparams.get('render_special', False),
                 banned_tokens=genparams.get('banned_tokens', []),
+                bypass_eos_token=genparams.get('bypass_eos', False),
                 )
 
         genout = {"text":"","status":-1,"stopreason":-1}
@@ -1088,6 +1085,7 @@ Enter Prompt:<br>
         self.wfile.write(finalhtml)
 
     def do_GET(self):
+        global embedded_kailite, embedded_kcpp_docs, embedded_kcpp_sdui
         global maxctx, maxhordelen, friendlymodelname, KcppVersion, totalgens, preloaded_story, exitcounter, currentusergenkey, friendlysdmodelname, fullsdmodelpath, mmprojpath, password
         self.path = self.path.rstrip('/')
         response_body = None
@@ -1095,10 +1093,10 @@ Enter Prompt:<br>
 
         if self.path in ["", "/?"] or self.path.startswith(('/?','?')): #it's possible for the root url to have ?params without /
             content_type = 'text/html'
-            if self.embedded_kailite is None:
+            if embedded_kailite is None:
                 response_body = (f"Embedded Kobold Lite is not found.<br>You will have to connect via the main KoboldAI client, or <a href='https://lite.koboldai.net?local=1&port={self.port}'>use this URL</a> to connect.").encode()
             else:
-                response_body = self.embedded_kailite
+                response_body = embedded_kailite
 
         elif self.path in ["/noscript", "/noscript?"] or self.path.startswith(('/noscript?','noscript?')): #it's possible for the root url to have ?params without /
             self.noscript_webui()
@@ -1176,10 +1174,19 @@ Enter Prompt:<br>
 
         elif self.path=="/api" or self.path=="/docs" or self.path.startswith(('/api/?json=','/api?json=','/docs/?json=','/docs?json=')):
             content_type = 'text/html'
-            if self.embedded_kcpp_docs is None:
+            if embedded_kcpp_docs is None:
                 response_body = (f"KoboldCpp API is running!\n\nAPI usage reference can be found at the wiki: https://github.com/LostRuins/koboldcpp/wiki").encode()
             else:
-                response_body = self.embedded_kcpp_docs
+                response_body = embedded_kcpp_docs
+
+        elif self.path=="/sdui":
+            content_type = 'text/html'
+            if embedded_kcpp_sdui is None:
+                response_body = (f"KoboldCpp API is running, but KCPP SDUI is not loaded").encode()
+            elif not args.sdmodel:
+                response_body = (f"No SD model was loaded. You can load one with --sdmodel").encode()
+            else:
+                response_body = embedded_kcpp_sdui
 
         elif self.path=="/v1":
             content_type = 'text/html'
@@ -1438,8 +1445,9 @@ def is_port_in_use(portNum):
     except Exception as ex:
         return True
 
-def RunServerMultiThreaded(addr, port, embedded_kailite = None, embedded_kcpp_docs = None):
+def RunServerMultiThreaded(addr, port):
     global exitcounter, sslvalid
+    global embedded_kailite, embedded_kcpp_docs, embedded_kcpp_sdui
     if is_port_in_use(port):
         print(f"Warning: Port {port} already appears to be in use by another program.")
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1465,7 +1473,7 @@ def RunServerMultiThreaded(addr, port, embedded_kailite = None, embedded_kcpp_do
 
         def run(self):
             global exitcounter
-            handler = ServerRequestHandler(addr, port, embedded_kailite, embedded_kcpp_docs)
+            handler = ServerRequestHandler(addr, port)
             with http.server.HTTPServer((addr, port), handler, False) as self.httpd:
                 try:
                     self.httpd.socket = sock
@@ -1502,19 +1510,17 @@ def show_new_gui():
     from tkinter.filedialog import askopenfilename
     from tkinter.filedialog import asksaveasfile
 
-    global using_gui_launcher
-    using_gui_launcher = True
-
     # if args received, launch
     if len(sys.argv) != 1:
         import tkinter as tk
         root = tk.Tk() #we dont want the useless window to be visible, but we want it in taskbar
         root.attributes("-alpha", 0)
         args.model_param = askopenfilename(title="Select ggml model .bin or .gguf file or .kcpps config")
-        root.destroy()
+        root.withdraw()
+        root.quit()
         if args.model_param and args.model_param!="" and args.model_param.lower().endswith('.kcpps'):
             loadconfigfile(args.model_param)
-        if not args.model_param and not args.sdconfig:
+        if not args.model_param and not args.sdmodel:
             global exitcounter
             exitcounter = 999
             print("\nNo ggml model or kcpps file was selected. Exiting.")
@@ -1530,7 +1536,7 @@ def show_new_gui():
     windowheight = original_windowheight
     ctk.set_appearance_mode("dark")
     root = ctk.CTk()
-    root.geometry(f"{windowwidth}x{windowheight}")
+    root.geometry(str(windowwidth) + "x" + str(windowheight))
     root.title("KoboldCpp v"+KcppVersion)
     root.resizable(True,True)
 
@@ -1559,15 +1565,19 @@ def show_new_gui():
                 if new_width != previous_event_width or new_height!=previous_event_height:
                     lastpos = root.geometry()
                     lparr = lastpos.split('+', 1)
-                    lastpos = f"+{lparr[1]}" if (len(lparr)==2) else ""
+                    lastpos = ("+"+str(lparr[1])) if (len(lparr)==2) else ""
                     previous_event_width = new_width
                     previous_event_height = new_height
                     windowwidth = math.floor(original_windowwidth*smallratio)
+                    windowwidth = max(256, min(1024, windowwidth))
                     windowheight = math.floor(original_windowheight*smallratio)
-                    root.geometry(f"{windowwidth}x{windowheight}{lastpos}")
+                    windowheight = max(256, min(1024, windowheight))
+                    root.geometry(str(windowwidth) + "x" + str(windowheight) + str(lastpos))
                     ctk.set_widget_scaling(smallratio)
 
     root.bind("<Configure>", on_resize)
+    global using_gui_launcher
+    using_gui_launcher = True
 
     # trigger empty tooltip then remove it
     def show_tooltip(event, tooltip_text=None):
@@ -1663,7 +1673,6 @@ def show_new_gui():
 
     contextshift = ctk.IntVar(value=1)
     remotetunnel = ctk.IntVar(value=0)
-    smartcontext = ctk.IntVar()
     flashattention = ctk.IntVar(value=0)
     context_var = ctk.IntVar()
     customrope_var = ctk.IntVar()
@@ -1691,7 +1700,7 @@ def show_new_gui():
     password_var = ctk.StringVar()
 
     sd_model_var = ctk.StringVar()
-    sd_quick_var = ctk.IntVar(value=0)
+    sd_clamped_var = ctk.IntVar(value=0)
     sd_threads_var = ctk.StringVar(value=str(default_threads))
     sd_quant_var = ctk.IntVar(value=0)
 
@@ -1779,7 +1788,6 @@ def show_new_gui():
         return
 
     # decided to follow yellowrose's and kalomaze's suggestions, this function will automatically try to determine GPU identifiers
-    # todo: autopick the right number of layers when a model is selected.
     # run in new thread so it doesnt block. does not return anything, instead overwrites specific values and redraws GUI
     def auto_gpu_heuristics():
         from subprocess import run, CalledProcessError
@@ -1948,10 +1956,7 @@ def show_new_gui():
     gpulayers_var.trace("w", changed_gpulayers)
 
     def togglectxshift(a,b,c):
-        if contextshift.get()==0:
-            smartcontextbox.grid(row=1, column=0, padx=8, pady=1,  stick="nw")
-        else:
-            smartcontextbox.grid_forget()
+        pass
 
     def guibench():
         args.benchmark = "stdout"
@@ -1987,7 +1992,6 @@ def show_new_gui():
 
         if index == "Use CuBLAS" or index == "Use hipBLAS (ROCm)":
             lowvram_box.grid(row=4, column=0, padx=8, pady=1,  stick="nw")
-            quick_lowvram_box.grid(row=4, column=0, padx=8, pady=1,  stick="nw")
             mmq_box.grid(row=4, column=1, padx=8, pady=1,  stick="nw")
             quick_mmq_box.grid(row=4, column=1, padx=8, pady=1,  stick="nw")
             splitmode_box.grid(row=5, column=1, padx=8, pady=1,  stick="nw")
@@ -1995,7 +1999,6 @@ def show_new_gui():
             tensor_split_entry.grid(row=8, column=1, padx=8, pady=1, stick="nw")
         else:
             lowvram_box.grid_forget()
-            quick_lowvram_box.grid_forget()
             mmq_box.grid_forget()
             quick_mmq_box.grid_forget()
             tensor_split_label.grid_forget()
@@ -2033,7 +2036,6 @@ def show_new_gui():
     quick_gpuname_label.grid(row=3, column=1, padx=75, sticky="W")
     quick_gpuname_label.configure(text_color="#ffff00")
     quick_gpu_layers_entry,quick_gpu_layers_label = makelabelentry(quick_tab,"GPU Layers:", gpulayers_var, 6, 50,"How many layers to offload onto the GPU.\nVRAM intensive, usage increases with model and context size.\nRequires some trial and error to find the best fit value.")
-    quick_lowvram_box = makecheckbox(quick_tab,  "Low VRAM (No KV offload)", lowvram_var, 4,0,tooltiptxt="Avoid offloading KV Cache or scratch buffers to VRAM.\nAllows more layers to fit, but may result in a speed loss.")
     quick_mmq_box = makecheckbox(quick_tab,  "Use QuantMatMul (mmq)", mmq_var, 4,1,tooltiptxt="Enable MMQ mode instead of CuBLAS for prompt processing. Read the wiki. Speed may vary.")
 
 
@@ -2108,7 +2110,6 @@ def show_new_gui():
     # Tokens Tab
     tokens_tab = tabcontent["Tokens"]
     # tokens checkboxes
-    smartcontextbox = makecheckbox(tokens_tab, "Use SmartContext", smartcontext, 1,tooltiptxt="Uses SmartContext. Now considered outdated and not recommended.\nCheck the wiki for more info.")
     makecheckbox(tokens_tab, "Use ContextShift", contextshift, 2,tooltiptxt="Uses Context Shifting to reduce reprocessing.\nRecommended. Check the wiki for more info.", command=togglectxshift)
     togglectxshift(1,1,1)
 
@@ -2183,7 +2184,7 @@ def show_new_gui():
     # Image Gen Tab
     images_tab = tabcontent["Image Gen"]
     makefileentry(images_tab, "Stable Diffusion Model (safetensors/gguf):", "Select Stable Diffusion Model File", sd_model_var, 1, filetypes=[("*.safetensors *.gguf","*.safetensors *.gguf")], tooltiptxt="Select a .safetensors or .gguf Stable Diffusion model file on disk to be loaded.")
-    makecheckbox(images_tab, "Quick Mode (Low Quality)", sd_quick_var, 4,tooltiptxt="Force optimal generation settings for speed.")
+    makecheckbox(images_tab, "Clamped Mode (Limit Resolution)", sd_clamped_var, 4,tooltiptxt="Limit generation steps and resolution settings for shared use.")
     makelabelentry(images_tab, "Image threads:" , sd_threads_var, 6, 50,"How many threads to use during image generation.\nIf left blank, uses same value as threads.")
     makecheckbox(images_tab, "Compress Weights (Saves Memory)", sd_quant_var, 8,tooltiptxt="Quantizes the SD model weights to save memory. May degrade quality.")
 
@@ -2194,7 +2195,8 @@ def show_new_gui():
             model_var.set(tmp)
         nonlocal nextstate
         nextstate = 1
-        root.destroy()
+        root.withdraw()
+        root.quit()
         pass
 
     def export_vars():
@@ -2204,7 +2206,6 @@ def show_new_gui():
         args.launch     = launchbrowser.get()==1
         args.highpriority = highpriority.get()==1
         args.nommap = disablemmap.get()==1
-        args.smartcontext = smartcontext.get()==1
         args.flashattention = flashattention.get()==1
         args.noshift = contextshift.get()==0
         args.remotetunnel = remotetunnel.get()==1
@@ -2273,14 +2274,25 @@ def show_new_gui():
         args.host = host_var.get()
         args.multiuser = multiuser_var.get()
 
-        if horde_apikey_var.get()=="" or horde_workername_var.get()=="":
-            args.hordeconfig = None if usehorde_var.get() == 0 else [horde_name_var.get(), horde_gen_var.get(), horde_context_var.get()]
-        else:
-            args.hordeconfig = None if usehorde_var.get() == 0 else [horde_name_var.get(), horde_gen_var.get(), horde_context_var.get(), horde_apikey_var.get(), horde_workername_var.get()]
+        if usehorde_var.get() != 0:
+            args.hordemodelname = horde_name_var.get()
+            args.hordegenlen = int(horde_gen_var.get())
+            args.hordemaxctx = int(horde_context_var.get())
+            if horde_apikey_var.get()!="" and horde_workername_var.get()!="":
+                args.hordekey = horde_apikey_var.get()
+                args.hordeworkername = horde_workername_var.get()
 
-        args.sdconfig = None if sd_model_var.get() == "" else [sd_model_var.get(), ("quick" if sd_quick_var.get()==1 else "normal"),(int(threads_var.get()) if sd_threads_var.get()=="" else int(sd_threads_var.get())),("quant" if sd_quant_var.get()==1 else "noquant")]
+        if sd_model_var.get() != "":
+            args.sdmodel = sd_model_var.get()
+        if sd_clamped_var.get()==1:
+            args.sdclamped = True
+        args.sdthreads = (0 if sd_threads_var.get()=="" else int(sd_threads_var.get()))
+        if sd_quant_var.get()==1:
+            args.sdquant = True
 
     def import_vars(dict):
+        dict = convert_outdated_args(dict)
+
         if "threads" in dict:
             threads_var.set(dict["threads"])
         usemlock.set(1 if "usemlock" in dict and dict["usemlock"] else 0)
@@ -2289,7 +2301,6 @@ def show_new_gui():
         launchbrowser.set(1 if "launch" in dict and dict["launch"] else 0)
         highpriority.set(1 if "highpriority" in dict and dict["highpriority"] else 0)
         disablemmap.set(1 if "nommap" in dict and dict["nommap"] else 0)
-        smartcontext.set(1 if "smartcontext" in dict and dict["smartcontext"] else 0)
         flashattention.set(1 if "flashattention" in dict and dict["flashattention"] else 0)
         contextshift.set(0 if "noshift" in dict and dict["noshift"] else 1)
         remotetunnel.set(1 if "remotetunnel" in dict and dict["remotetunnel"] else 0)
@@ -2371,12 +2382,12 @@ def show_new_gui():
 
         if "blasbatchsize" in dict and dict["blasbatchsize"]:
             blas_size_var.set(blasbatchsize_values.index(str(dict["blasbatchsize"])))
-        if "forceversion" in dict and dict["forceversion"]:
-            version_var.set(str(dict["forceversion"]))
 
-        if "model_param" in dict and dict["model_param"]:
-            model_var.set(dict["model_param"])
+        version_var.set(str(dict["forceversion"]) if ("forceversion" in dict and dict["forceversion"]) else "0")
+        model_var.set(dict["model_param"] if ("model_param" in dict and dict["model_param"]) else "")
 
+        lora_var.set("")
+        lora_base_var.set("")
         if "lora" in dict and dict["lora"]:
             if len(dict["lora"]) > 1:
                 lora_var.set(dict["lora"][0])
@@ -2384,49 +2395,33 @@ def show_new_gui():
             else:
                 lora_var.set(dict["lora"][0])
 
-        if "mmproj" in dict and dict["mmproj"]:
-            mmproj_var.set(dict["mmproj"])
+        mmproj_var.set(dict["mmproj"] if ("mmproj" in dict and dict["mmproj"]) else "")
 
+        ssl_cert_var.set("")
+        ssl_key_var.set("")
         if "ssl" in dict and dict["ssl"]:
             if len(dict["ssl"]) == 2:
                 ssl_cert_var.set(dict["ssl"][0])
                 ssl_key_var.set(dict["ssl"][1])
 
-        if "password" in dict and dict["password"]:
-            password_var.set(dict["password"])
+        password_var.set(dict["password"] if ("password" in dict and dict["password"]) else "")
+        preloadstory_var.set(dict["preloadstory"] if ("preloadstory" in dict and dict["preloadstory"]) else "")
+        chatcompletionsadapter_var.set(dict["chatcompletionsadapter"] if ("chatcompletionsadapter" in dict and dict["chatcompletionsadapter"]) else "")
+        port_var.set(dict["port_param"] if ("port_param" in dict and dict["port_param"]) else defaultport)
+        host_var.set(dict["host"] if ("host" in dict and dict["host"]) else "")
+        multiuser_var.set(dict["multiuser"] if ("multiuser" in dict) else 1)
 
-        if "preloadstory" in dict and dict["preloadstory"]:
-            preloadstory_var.set(dict["preloadstory"])
+        horde_name_var.set(dict["hordemodelname"] if ("hordemodelname" in dict and dict["hordemodelname"]) else "koboldcpp")
+        horde_context_var.set(dict["hordemaxctx"] if ("hordemaxctx" in dict and dict["hordemaxctx"]) else maxhordectx)
+        horde_gen_var.set(dict["hordegenlen"] if ("hordegenlen" in dict and dict["hordegenlen"]) else maxhordelen)
+        horde_apikey_var.set(dict["hordekey"] if ("hordekey" in dict and dict["hordekey"]) else "")
+        horde_workername_var.set(dict["hordeworkername"] if ("hordeworkername" in dict and dict["hordeworkername"]) else "")
+        usehorde_var.set(1 if ("hordekey" in dict and dict["hordekey"]) else 0)
 
-        if "chatcompletionsadapter" in dict and dict["chatcompletionsadapter"]:
-            chatcompletionsadapter_var.set(dict["chatcompletionsadapter"])
-
-        if "port_param" in dict and dict["port_param"]:
-            port_var.set(dict["port_param"])
-
-        if "host" in dict and dict["host"]:
-            host_var.set(dict["host"])
-
-        if "multiuser" in dict:
-            multiuser_var.set(dict["multiuser"])
-
-        if "hordeconfig" in dict and dict["hordeconfig"] and len(dict["hordeconfig"]) > 1:
-            horde_name_var.set(dict["hordeconfig"][0])
-            horde_gen_var.set(dict["hordeconfig"][1])
-            horde_context_var.set(dict["hordeconfig"][2])
-            if len(dict["hordeconfig"]) > 4:
-                horde_apikey_var.set(dict["hordeconfig"][3])
-                horde_workername_var.set(dict["hordeconfig"][4])
-                usehorde_var.set("1")
-
-        if "sdconfig" in dict and dict["sdconfig"] and len(dict["sdconfig"]) > 0:
-            sd_model_var.set(dict["sdconfig"][0])
-            if len(dict["sdconfig"]) > 1:
-                sd_quick_var.set(1 if dict["sdconfig"][1]=="quick" else 0)
-            if len(dict["sdconfig"]) > 2:
-                sd_threads_var.set(str(dict["sdconfig"][2]))
-            if len(dict["sdconfig"]) > 3:
-                sd_quant_var.set(str(dict["sdconfig"][3])=="quant")
+        sd_model_var.set(dict["sdmodel"] if ("sdmodel" in dict and dict["sdmodel"]) else "")
+        sd_clamped_var.set(1 if ("sdclamped" in dict and dict["sdclamped"]) else 0)
+        sd_threads_var.set(str(dict["sdthreads"]) if ("sdthreads" in dict and dict["sdthreads"]) else str(default_threads))
+        sd_quant_var.set(1 if ("sdquant" in dict and dict["sdquant"]) else 0)
 
     def save_config():
         file_type = [("KoboldCpp Settings", "*.kcpps")]
@@ -2486,7 +2481,7 @@ def show_new_gui():
         # processing vars
         export_vars()
 
-        if not args.model_param and not args.sdconfig:
+        if not args.model_param and not args.sdmodel:
             exitcounter = 999
             print("\nNo text or image model file was selected. Exiting.")
             time.sleep(3)
@@ -2500,7 +2495,8 @@ def show_gui_msgbox(title,message):
         root = tk.Tk()
         root.attributes("-alpha", 0)
         messagebox.showerror(title=title, message=message)
-        root.destroy()
+        root.withdraw()
+        root.quit()
     except Exception as ex2:
         pass
 
@@ -2697,7 +2693,53 @@ def run_horde_worker(args, api_key, worker_name):
     time.sleep(3)
     sys.exit(2)
 
-def setuptunnel():
+def convert_outdated_args(args):
+    dict = args
+    if isinstance(args, argparse.Namespace):
+        dict = vars(args)
+
+    global using_outdated_flags
+    using_outdated_flags = False
+    if "sdconfig" in dict and dict["sdconfig"] and len(dict["sdconfig"])>0:
+        using_outdated_flags = True
+        dict["sdmodel"] = dict["sdconfig"][0]
+        if dict["sdconfig"] and len(dict["sdconfig"]) > 1:
+            dict["sdclamped"] = True
+        if dict["sdconfig"] and len(dict["sdconfig"]) > 2:
+            dict["sdthreads"] = int(dict["sdconfig"][2])
+        if dict["sdconfig"] and len(dict["sdconfig"]) > 3:
+            dict["sdquant"] = (True if dict["sdconfig"][3]=="quant" else False)
+    if "hordeconfig" in dict and dict["hordeconfig"] and dict["hordeconfig"][0]!="":
+        using_outdated_flags = True
+        dict["hordemodelname"] = dict["hordeconfig"][0]
+        if len(dict["hordeconfig"]) > 1:
+            dict["hordegenlen"] = int(dict["hordeconfig"][1])
+        if len(dict["hordeconfig"]) > 2:
+            dict["hordemaxctx"] = int(dict["hordeconfig"][2])
+        if len(dict["hordeconfig"]) > 4:
+            dict["hordekey"] = dict["hordeconfig"][3]
+            dict["hordeworkername"] = dict["hordeconfig"][4]
+    check_deprecation_warning()
+    return args
+
+def check_deprecation_warning():
+    # slightly naggy warning to encourage people to switch to new flags
+    # if you want you can remove this at your own risk,
+    # but i am not going to troubleshoot or provide support for deprecated flags.
+    global using_outdated_flags
+    if using_outdated_flags:
+        print(f"\n=== !!! IMPORTANT WARNING !!! ===")
+        print("You are using one or more OUTDATED config files or launch flags!")
+        print("The flags --smartcontext, --hordeconfig and --sdconfig have been DEPRECATED, and MAY be REMOVED in future!")
+        print("They will still work for now, but you SHOULD switch to the updated flags instead, to avoid future issues!")
+        print("New flags are: --hordemodelname --hordeworkername --hordekey --hordemaxctx --hordegenlen --sdmodel --sdthreads --sdquant --sdclamped")
+        print("For more information on these flags, please check --help")
+        print(">>> If you are using the GUI launcher, simply re-saving your config again will get rid of this warning.")
+        print("=== !!! IMPORTANT WARNING !!! ===\n")
+
+
+
+def setuptunnel(has_sd):
     # This script will help setup a cloudflared tunnel for accessing KoboldCpp over the internet
     # It should work out of the box on both linux and windows
     try:
@@ -2729,9 +2771,10 @@ def setuptunnel():
                     found = re.findall(pattern, line)
                     for x in found:
                         tunneloutput = x
-
                         print(f"Your remote Kobold API can be found at {tunneloutput}/api")
                         print(f"Your remote OpenAI Compatible API can be found at {tunneloutput}/v1")
+                        if has_sd:
+                            print(f"StableUI is available at {tunneloutput}/sdui/")
                         print("======\n")
                         print(f"Your remote tunnel is ready, please connect to {tunneloutput}", flush=True)
                         return
@@ -2885,10 +2928,8 @@ def sanitize_string(input_string):
     return sanitized_string
 
 def main(launch_args,start_server=True):
-    global args, friendlymodelname, friendlysdmodelname, fullsdmodelpath, mmprojpath, password
-    args = launch_args
-    embedded_kailite = None
-    embedded_kcpp_docs = None
+    global embedded_kailite, embedded_kcpp_docs, embedded_kcpp_sdui
+    global libname, args, friendlymodelname, friendlysdmodelname, fullsdmodelpath, mmprojpath, password
 
     #perform some basic cleanup of old temporary directories
     try:
@@ -2896,7 +2937,7 @@ def main(launch_args,start_server=True):
     except Exception as e:
         print(f"Error cleaning up orphaned pyinstaller dirs: {e}")
 
-
+    args = launch_args
     if args.config and len(args.config)==1:
         if isinstance(args.config[0], str) and os.path.exists(args.config[0]):
            loadconfigfile(args.config[0])
@@ -2908,6 +2949,7 @@ def main(launch_args,start_server=True):
             print("Specified kcpp config file invalid or not found.")
             time.sleep(3)
             sys.exit(2)
+    args = convert_outdated_args(args)
 
     #positional handling for kcpps files (drag and drop)
     if args.model_param and args.model_param!="" and args.model_param.lower().endswith('.kcpps'):
@@ -2916,7 +2958,7 @@ def main(launch_args,start_server=True):
     if not args.model_param:
         args.model_param = args.model
 
-    if not args.model_param and not args.sdconfig:
+    if not args.model_param and not args.sdmodel:
         #give them a chance to pick a file
         print("For command line arguments, please refer to --help")
         print("***")
@@ -2960,19 +3002,22 @@ def main(launch_args,start_server=True):
         newmdldisplayname = os.path.splitext(newmdldisplayname)[0]
         friendlymodelname = "koboldcpp/" + sanitize_string(newmdldisplayname)
 
-    if args.hordeconfig and args.hordeconfig[0]!="":
-        global maxhordelen, maxhordectx, showdebug
-        friendlymodelname = args.hordeconfig[0]
+    global maxhordelen, maxhordectx, showdebug
+    if args.hordemodelname and args.hordemodelname!="":
+        friendlymodelname = args.hordemodelname
         if args.debugmode == 1:
             friendlymodelname = "debug-" + friendlymodelname
         if not friendlymodelname.startswith("koboldcpp/"):
             friendlymodelname = "koboldcpp/" + friendlymodelname
-        if len(args.hordeconfig) > 1:
-            maxhordelen = int(args.hordeconfig[1])
-        if len(args.hordeconfig) > 2:
-            maxhordectx = int(args.hordeconfig[2])
+
+    if (args.hordemodelname and args.hordemodelname!="") or (args.hordeworkername and args.hordeworkername!="") or (args.hordekey and args.hordekey!=""):
         if args.debugmode == 0:
             args.debugmode = -1
+
+    if args.hordegenlen and args.hordegenlen > 0:
+        maxhordelen = int(args.hordegenlen)
+    if args.hordemaxctx and args.hordemaxctx > 0:
+        maxhordectx = int(args.hordemaxctx)
 
     if args.debugmode != 1:
         showdebug = False
@@ -3003,6 +3048,13 @@ def main(launch_args,start_server=True):
     if args.nocertify:
         global nocertify
         nocertify = True
+
+    if args.gpulayers and args.gpulayers>0:
+        global libname, lib_default, lib_openblas, lib_failsafe, lib_noavx2
+        nogood = [lib_default,lib_openblas,lib_failsafe,lib_noavx2]
+        if libname in nogood and sys.platform!="darwin":
+            print("WARNING: GPU layers is set, but a GPU backend was not selected!")
+            pass
 
     init_library() # Note: if blas does not exist and is enabled, program will crash.
     print("==========")
@@ -3070,7 +3122,7 @@ def main(launch_args,start_server=True):
         print(args)
         # Flush stdout for win32 issue with regards to piping in terminals,
         # especially before handing over to C++ context.
-        print(f"==========\nLoading model: {modelname} \n[Threads: {args.threads}, BlasThreads: {args.blasthreads}, SmartContext: {args.smartcontext}, ContextShift: {not (args.noshift)}]", flush=True)
+        print(f"==========\nLoading model: {modelname}", flush=True)
         loadok = load_model(modelname)
         print("Load Text Model OK: " + str(loadok))
 
@@ -3081,13 +3133,13 @@ def main(launch_args,start_server=True):
             sys.exit(3)
 
     #handle loading image model
-    if args.sdconfig:
-        imgmodel = args.sdconfig[0]
+    if args.sdmodel and args.sdmodel!="":
+        imgmodel = args.sdmodel
         if not imgmodel or not os.path.exists(imgmodel):
             print(f"Cannot find image model file: {imgmodel}")
             if args.ignoremissing:
-                print(f"Ignoring missing sdconfig img model file...")
-                args.sdconfig = None
+                print(f"Ignoring missing img model file...")
+                args.sdmodel = None
             else:
                 exitcounter = 999
                 time.sleep(3)
@@ -3125,8 +3177,18 @@ def main(launch_args,start_server=True):
         basepath = os.path.abspath(os.path.dirname(__file__))
         with open(os.path.join(basepath, "kcpp_docs.embd"), mode='rb') as f:
             embedded_kcpp_docs = f.read()
+            print("Embedded API docs loaded.")
     except Exception as e:
         print("Could not find Embedded KoboldCpp API docs.")
+
+    try:
+        basepath = os.path.abspath(os.path.dirname(__file__))
+        with open(os.path.join(basepath, "kcpp_sdui.embd"), mode='rb') as f:
+            embedded_kcpp_sdui = f.read()
+            if args.sdmodel:
+                print("Embedded SDUI loaded.")
+    except Exception as e:
+        print("Could not find Embedded SDUI.")
 
     if args.port_param!=defaultport:
         args.port = args.port_param
@@ -3147,6 +3209,8 @@ def main(launch_args,start_server=True):
     if not args.remotetunnel:
         print(f"Starting Kobold API on port {args.port} at {epurl}/api/")
         print(f"Starting OpenAI Compatible API on port {args.port} at {epurl}/v1/")
+        if args.sdmodel:
+            print(f"StableUI is available at {epurl}/sdui/")
 
     if args.launch:
         try:
@@ -3155,10 +3219,13 @@ def main(launch_args,start_server=True):
         except:
             print("--launch was set, but could not launch web browser automatically.")
 
-    if args.hordeconfig and len(args.hordeconfig)>4:
-        horde_thread = threading.Thread(target=run_horde_worker,args=(args,args.hordeconfig[3],args.hordeconfig[4]))
-        horde_thread.daemon = True
-        horde_thread.start()
+    if args.hordekey and args.hordekey!="":
+        if args.hordeworkername and args.hordeworkername!="":
+            horde_thread = threading.Thread(target=run_horde_worker,args=(args,args.hordekey,args.hordeworkername))
+            horde_thread.daemon = True
+            horde_thread.start()
+        else:
+            print("Horde worker could not start. You need to specify a horde worker name with --hordeworkername")
 
     #if post-ready script specified, execute it
     if args.onready:
@@ -3171,7 +3238,6 @@ def main(launch_args,start_server=True):
 
     if args.model_param and args.benchmark:
         from datetime import datetime, timezone
-        global libname
         start_server = False
         save_to_file = (args.benchmark!="stdout" and args.benchmark!="")
         benchmaxctx =  (16384 if maxctx>16384 else maxctx)
@@ -3185,8 +3251,8 @@ def main(launch_args,start_server=True):
         else:
             print(f"\nRunning benchmark (Not Saved)...")
 
-        benchprompt = "11111111"
-        for i in range(0,10): #generate massive prompt
+        benchprompt = "1111111111111111"
+        for i in range(0,12): #generate massive prompt
             benchprompt += benchprompt
         genout = generate(benchprompt,memory="",images=[],max_length=benchlen,max_context_length=benchmaxctx,temperature=0.1,top_k=1,rep_pen=1,use_default_badwordsids=True)
         result = genout['text']
@@ -3197,7 +3263,7 @@ def main(launch_args,start_server=True):
         s_pp = float(benchmaxctx-benchlen)/t_pp
         s_gen = float(benchlen)/t_gen
         datetimestamp = datetime.now(timezone.utc)
-        print(f"\nBenchmark Completed - Results:\n======")
+        print(f"\nBenchmark Completed - v{KcppVersion} Results:\n======")
         print(f"Timestamp: {datetimestamp}")
         print(f"Backend: {libname}")
         print(f"Layers: {args.gpulayers}")
@@ -3220,23 +3286,23 @@ def main(launch_args,start_server=True):
                     file.write(f"\n{datetimestamp},{libname},{args.gpulayers},{benchmodel},{benchmaxctx},{benchlen},{t_pp:.2f},{s_pp:.2f},{t_gen:.2f},{s_gen:.2f},{(t_pp+t_gen):.2f},{resultok},{result}")
             except Exception as e:
                 print(f"Error writing benchmark to file: {e}")
+        global using_gui_launcher
+        if using_gui_launcher and not save_to_file:
+            print("===")
+            print("Press ENTER key to exit.", flush=True)
+            input()
 
-
+    check_deprecation_warning()
     if start_server:
         if args.remotetunnel:
-            setuptunnel()
+            setuptunnel(True if args.sdmodel else False)
         else:
             # Flush stdout for previous win32 issue so the client can see output.
             print(f"======\nPlease connect to custom endpoint at {epurl}", flush=True)
-        asyncio.run(RunServerMultiThreaded(args.host, args.port, embedded_kailite, embedded_kcpp_docs))
+        asyncio.run(RunServerMultiThreaded(args.host, args.port))
     else:
         # Flush stdout for previous win32 issue so the client can see output.
         print(f"Server was not started, main function complete. Idling.", flush=True)
-        global using_gui_launcher
-        if using_gui_launcher:
-            print("===")
-            print("Press a key to exit", flush=True)
-            input()
 
 def run_in_queue(launch_args, input_queue, output_queue):
     main(launch_args, start_server=False)
@@ -3277,56 +3343,73 @@ if __name__ == '__main__':
     # print("Python version: " + sys.version)
     parser = argparse.ArgumentParser(description='KoboldCpp Server')
     modelgroup = parser.add_mutually_exclusive_group() #we want to be backwards compatible with the unnamed positional args
-    modelgroup.add_argument("--model", help="Model file to load", nargs="?")
+    modelgroup.add_argument("--model", metavar=('filename'), help="Model file to load", nargs="?")
     modelgroup.add_argument("model_param", help="Model file to load (positional)", nargs="?")
     portgroup = parser.add_mutually_exclusive_group() #we want to be backwards compatible with the unnamed positional args
-    portgroup.add_argument("--port", help="Port to listen on", default=defaultport, type=int, action='store')
+    portgroup.add_argument("--port", metavar=('[portnumber]'), help="Port to listen on", default=defaultport, type=int, action='store')
     portgroup.add_argument("port_param", help="Port to listen on (positional)", default=defaultport, nargs="?", type=int, action='store')
-    parser.add_argument("--host", help="Host IP to listen on. If empty, all routable interfaces are accepted.", default="")
+    parser.add_argument("--host", metavar=('[ipaddr]'), help="Host IP to listen on. If empty, all routable interfaces are accepted.", default="")
     parser.add_argument("--launch", help="Launches a web browser when load is completed.", action='store_true')
-    parser.add_argument("--config", help="Load settings from a .kcpps file. Other arguments will be ignored", type=str, nargs=1)
+    parser.add_argument("--config", metavar=('[filename]'), help="Load settings from a .kcpps file. Other arguments will be ignored", type=str, nargs=1)
     physical_core_limit = 1
     if os.cpu_count()!=None and os.cpu_count()>1:
         physical_core_limit = int(os.cpu_count()/2)
     default_threads = (physical_core_limit if physical_core_limit<=3 else max(3,physical_core_limit-1))
-    parser.add_argument("--threads", help="Use a custom number of threads if specified. Otherwise, uses an amount based on CPU cores", type=int, default=default_threads)
+    parser.add_argument("--threads", metavar=('[threads]'), help="Use a custom number of threads if specified. Otherwise, uses an amount based on CPU cores", type=int, default=default_threads)
     compatgroup = parser.add_mutually_exclusive_group()
     compatgroup.add_argument("--usecublas", help="Use CuBLAS for GPU Acceleration. Requires CUDA. Select lowvram to not allocate VRAM scratch buffer. Enter a number afterwards to select and use 1 GPU. Leaving no number will use all GPUs. For hipBLAS binaries, please check YellowRoseCx rocm fork.", nargs='*',metavar=('[lowvram|normal] [main GPU ID] [mmq] [rowsplit]'), choices=['normal', 'lowvram', '0', '1', '2', '3', 'mmq', 'rowsplit'])
     compatgroup.add_argument("--usevulkan", help="Use Vulkan for GPU Acceleration. Can optionally specify GPU Device ID (e.g. --usevulkan 0).", metavar=('[Device ID]'), nargs='*', type=int, default=None)
     compatgroup.add_argument("--useclblast", help="Use CLBlast for GPU Acceleration. Must specify exactly 2 arguments, platform ID and device ID (e.g. --useclblast 1 0).", type=int, choices=range(0,9), nargs=2)
-    compatgroup.add_argument("--noblas", help="Do not use OpenBLAS for accelerated prompt ingestion", action='store_true')
+    compatgroup.add_argument("--noblas", help="Do not use any accelerated prompt ingestion", action='store_true')
+    parser.add_argument("--contextsize", help="Controls the memory allocated for maximum context size, only change if you need more RAM for big contexts. (default 2048). Supported values are [256,512,1024,2048,3072,4096,6144,8192,12288,16384,24576,32768,49152,65536,98304,131072]. IF YOU USE ANYTHING ELSE YOU ARE ON YOUR OWN.",metavar=('[256,512,1024,2048,3072,4096,6144,8192,12288,16384,24576,32768,49152,65536,98304,131072]'), type=check_range(int,256,262144), default=2048)
     parser.add_argument("--gpulayers", help="Set number of layers to offload to GPU when using GPU. Requires GPU.",metavar=('[GPU layers]'), nargs='?', const=1, type=int, default=0)
     parser.add_argument("--tensor_split", help="For CUDA and Vulkan only, ratio to split tensors across multiple GPUs, space-separated list of proportions, e.g. 7 3", metavar=('[Ratios]'), type=float, nargs='+')
-    parser.add_argument("--contextsize", help="Controls the memory allocated for maximum context size, only change if you need more RAM for big contexts. (default 2048). Supported values are [256,512,1024,2048,3072,4096,6144,8192,12288,16384,24576,32768,49152,65536,98304,131072]. IF YOU USE ANYTHING ELSE YOU ARE ON YOUR OWN.",metavar=('[256,512,1024,2048,3072,4096,6144,8192,12288,16384,24576,32768,49152,65536,98304,131072]'), type=check_range(int,256,262144), default=2048)
-    parser.add_argument("--ropeconfig", help="If set, uses customized RoPE scaling from configured frequency scale and frequency base (e.g. --ropeconfig 0.25 10000). Otherwise, uses NTK-Aware scaling set automatically based on context size. For linear rope, simply set the freq-scale and ignore the freq-base",metavar=('[rope-freq-scale]', '[rope-freq-base]'), default=[0.0, 10000.0], type=float, nargs='+')
+
     #more advanced params
-    parser.add_argument("--blasbatchsize", help="Sets the batch size used in BLAS processing (default 512). Setting it to -1 disables BLAS mode, but keeps other benefits like GPU offload.", type=int,choices=[-1,32,64,128,256,512,1024,2048], default=512)
-    parser.add_argument("--blasthreads", help="Use a different number of threads during BLAS if specified. Otherwise, has the same value as --threads",metavar=('[threads]'), type=int, default=0)
-    parser.add_argument("--lora", help="LLAMA models only, applies a lora file on top of model. Experimental.", metavar=('[lora_filename]', '[lora_base]'), nargs='+')
-    parser.add_argument("--smartcontext", help="Reserving a portion of context to try processing less frequently.", action='store_true')
-    parser.add_argument("--noshift", help="If set, do not attempt to Trim and Shift the GGUF context.", action='store_true')
-    parser.add_argument("--forceversion", help="If the model file format detection fails (e.g. rogue modified model) you can set this to override the detected format (enter desired version, e.g. 401 for GPTNeoX-Type2).",metavar=('[version]'), type=int, default=0)
-    parser.add_argument("--nommap", help="If set, do not use mmap to load newer models", action='store_true')
-    parser.add_argument("--usemlock", help="For Apple Systems. Force system to keep model in RAM rather than swapping or compressing", action='store_true')
-    parser.add_argument("--noavx2", help="Do not use AVX2 instructions, a slower compatibility mode for older devices.", action='store_true')
-    parser.add_argument("--debugmode", help="Shows additional debug info in the terminal.", nargs='?', const=1, type=int, default=0)
-    parser.add_argument("--skiplauncher", help="Doesn't display or use the GUI launcher.", action='store_true')
-    parser.add_argument("--hordeconfig", help="Sets the display model name to something else, for easy use on AI Horde. Optional additional parameters set the horde max genlength, max ctxlen, API key and worker name.",metavar=('[hordemodelname]', '[hordegenlength] [hordemaxctx] [hordeapikey] [hordeworkername]'), nargs='+')
-    parser.add_argument("--onready", help="An optional shell command to execute after the model has been loaded.", metavar=('[shell command]'), type=str, default="",nargs=1)
-    parser.add_argument("--benchmark", help="Do not start server, instead run benchmarks. If filename is provided, appends results to provided file.", metavar=('[filename]'), nargs='?', const="stdout", type=str, default=None)
-    parser.add_argument("--multiuser", help="Runs in multiuser mode, which queues incoming requests instead of blocking them.", metavar=('limit'), nargs='?', const=1, type=int, default=0)
-    parser.add_argument("--remotetunnel", help="Uses Cloudflare to create a remote tunnel, allowing you to access koboldcpp remotely over the internet even behind a firewall.", action='store_true')
-    parser.add_argument("--highpriority", help="Experimental flag. If set, increases the process CPU priority, potentially speeding up generation. Use caution.", action='store_true')
-    parser.add_argument("--foreground", help="Windows only. Sends the terminal to the foreground every time a new prompt is generated. This helps avoid some idle slowdown issues.", action='store_true')
-    parser.add_argument("--preloadstory", help="Configures a prepared story json save file to be hosted on the server, which frontends (such as Kobold Lite) can access over the API.", default="")
-    parser.add_argument("--quiet", help="Enable quiet mode, which hides generation inputs and outputs in the terminal. Quiet mode is automatically enabled when running --hordeconfig.", action='store_true')
-    parser.add_argument("--ssl", help="Allows all content to be served over SSL instead. A valid UNENCRYPTED SSL cert and key .pem files must be provided", metavar=('[cert_pem]', '[key_pem]'), nargs='+')
-    parser.add_argument("--nocertify", help="Allows insecure SSL connections. Use this if you have cert errors and need to bypass certificate restrictions.", action='store_true')
-    parser.add_argument("--sdconfig", help="Specify a stable diffusion safetensors model to enable image generation. If quick is specified, force optimal generation settings for speed.",metavar=('[sd_filename]', '[normal|quick|clamped] [threads] [quant|noquant]'), nargs='+')
-    parser.add_argument("--mmproj", help="Select a multimodal projector file for LLaVA.", default="")
-    parser.add_argument("--password", help="Enter a password required to use this instance. This key will be required for all text endpoints. Image endpoints are not secured.", default=None)
-    parser.add_argument("--ignoremissing", help="Ignores all missing non-essential files, just skipping them instead.", action='store_true')
-    parser.add_argument("--chatcompletionsadapter", help="Select an optional ChatCompletions Adapter JSON file to force custom instruct tags.", default="")
-    parser.add_argument("--flashattention", help="Enables flash attention (Experimental).", action='store_true')
+    advparser = parser.add_argument_group('Advanced Commands')
+    advparser.add_argument("--ropeconfig", help="If set, uses customized RoPE scaling from configured frequency scale and frequency base (e.g. --ropeconfig 0.25 10000). Otherwise, uses NTK-Aware scaling set automatically based on context size. For linear rope, simply set the freq-scale and ignore the freq-base",metavar=('[rope-freq-scale]', '[rope-freq-base]'), default=[0.0, 10000.0], type=float, nargs='+')
+    advparser.add_argument("--blasbatchsize", help="Sets the batch size used in BLAS processing (default 512). Setting it to -1 disables BLAS mode, but keeps other benefits like GPU offload.", type=int,choices=[-1,32,64,128,256,512,1024,2048], default=512)
+    advparser.add_argument("--blasthreads", help="Use a different number of threads during BLAS if specified. Otherwise, has the same value as --threads",metavar=('[threads]'), type=int, default=0)
+    advparser.add_argument("--lora", help="LLAMA models only, applies a lora file on top of model. Experimental.", metavar=('[lora_filename]', '[lora_base]'), nargs='+')
+    advparser.add_argument("--noshift", help="If set, do not attempt to Trim and Shift the GGUF context.", action='store_true')
+    advparser.add_argument("--nommap", help="If set, do not use mmap to load newer models", action='store_true')
+    advparser.add_argument("--usemlock", help="For Apple Systems. Force system to keep model in RAM rather than swapping or compressing", action='store_true')
+    advparser.add_argument("--noavx2", help="Do not use AVX2 instructions, a slower compatibility mode for older devices.", action='store_true')
+    advparser.add_argument("--debugmode", help="Shows additional debug info in the terminal.", nargs='?', const=1, type=int, default=0)
+    advparser.add_argument("--skiplauncher", help="Doesn't display or use the GUI launcher.", action='store_true')
+    advparser.add_argument("--onready", help="An optional shell command to execute after the model has been loaded.", metavar=('[shell command]'), type=str, default="",nargs=1)
+    advparser.add_argument("--benchmark", help="Do not start server, instead run benchmarks. If filename is provided, appends results to provided file.", metavar=('[filename]'), nargs='?', const="stdout", type=str, default=None)
+    advparser.add_argument("--multiuser", help="Runs in multiuser mode, which queues incoming requests instead of blocking them.", metavar=('limit'), nargs='?', const=1, type=int, default=0)
+    advparser.add_argument("--remotetunnel", help="Uses Cloudflare to create a remote tunnel, allowing you to access koboldcpp remotely over the internet even behind a firewall.", action='store_true')
+    advparser.add_argument("--highpriority", help="Experimental flag. If set, increases the process CPU priority, potentially speeding up generation. Use caution.", action='store_true')
+    advparser.add_argument("--foreground", help="Windows only. Sends the terminal to the foreground every time a new prompt is generated. This helps avoid some idle slowdown issues.", action='store_true')
+    advparser.add_argument("--preloadstory", help="Configures a prepared story json save file to be hosted on the server, which frontends (such as Kobold Lite) can access over the API.", default="")
+    advparser.add_argument("--quiet", help="Enable quiet mode, which hides generation inputs and outputs in the terminal. Quiet mode is automatically enabled when running --hordeconfig.", action='store_true')
+    advparser.add_argument("--ssl", help="Allows all content to be served over SSL instead. A valid UNENCRYPTED SSL cert and key .pem files must be provided", metavar=('[cert_pem]', '[key_pem]'), nargs='+')
+    advparser.add_argument("--nocertify", help="Allows insecure SSL connections. Use this if you have cert errors and need to bypass certificate restrictions.", action='store_true')
+    advparser.add_argument("--mmproj", help="Select a multimodal projector file for LLaVA.", default="")
+    advparser.add_argument("--password", help="Enter a password required to use this instance. This key will be required for all text endpoints. Image endpoints are not secured.", default=None)
+    advparser.add_argument("--ignoremissing", help="Ignores all missing non-essential files, just skipping them instead.", action='store_true')
+    advparser.add_argument("--chatcompletionsadapter", help="Select an optional ChatCompletions Adapter JSON file to force custom instruct tags.", default="")
+    advparser.add_argument("--flashattention", help="Enables flash attention (Experimental).", action='store_true')
+    advparser.add_argument("--forceversion", help="If the model file format detection fails (e.g. rogue modified model) you can set this to override the detected format (enter desired version, e.g. 401 for GPTNeoX-Type2).",metavar=('[version]'), type=int, default=0)
+
+    deprecatedgroup = parser.add_argument_group('Deprecated Commands, DO NOT USE!')
+    deprecatedgroup.add_argument("--smartcontext", help="Command is DEPRECATED and should NOT be used! Instead, use --noshift instead to toggle smartcontext off on old GGML models.", action='store_true')
+    deprecatedgroup.add_argument("--hordeconfig", help="Command is DEPRECATED and should NOT be used! Instead, use non-positional flags --hordemodelname --hordeworkername --hordekey --hordemaxctx --hordegenlen instead.", nargs='+')
+    deprecatedgroup.add_argument("--sdconfig", help="Command is DEPRECATED and should NOT be used! Instead, use non-positional flags --sdmodel --sdthreads --sdquant --sdclamped instead.", nargs='+')
+
+    hordeparsergroup = parser.add_argument_group('Horde Worker Commands')
+    hordeparsergroup.add_argument("--hordemodelname", metavar=('[name]'), help="Sets your AI Horde display model name.", default="")
+    hordeparsergroup.add_argument("--hordeworkername", metavar=('[name]'), help="Sets your AI Horde worker name.", default="")
+    hordeparsergroup.add_argument("--hordekey", metavar=('[apikey]'), help="Sets your AI Horde API key.", default="")
+    hordeparsergroup.add_argument("--hordemaxctx", metavar=('[amount]'), help="Sets the maximum context length your worker will accept from an AI Horde job.", type=int, default=0)
+    hordeparsergroup.add_argument("--hordegenlen", metavar=('[amount]'), help="Sets the maximum number of tokens your worker will generate from an AI horde job.", type=int, default=0)
+
+    sdparsergroup = parser.add_argument_group('Image Generation Commands')
+    sdparsergroup.add_argument("--sdmodel", metavar=('[filename]'), help="Specify a stable diffusion safetensors or gguf model to enable image generation.", default="")
+    sdparsergroup.add_argument("--sdthreads", metavar=('[threads]'), help="Use a different number of threads for image generation if specified. Otherwise, has the same value as --threads.", type=int, default=0)
+    sdparsergroup.add_argument("--sdquant", help="If specified, loads the model quantized to save memory.", action='store_true')
+    sdparsergroup.add_argument("--sdclamped", help="If specified, limit generation steps and resolution settings for shared use.", action='store_true')
 
     main(parser.parse_args(),start_server=True)

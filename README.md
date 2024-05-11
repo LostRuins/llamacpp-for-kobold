@@ -32,11 +32,11 @@ For more information, be sure to run the program with the `--help` flag, or [che
 ## OSX and Linux
 
 ### Linux Usage (Precompiled Binary, Recommended)
-On Linux, we provide a `koboldcpp-linux-x64` PyInstaller prebuilt binary on the **[releases](https://github.com/LostRuins/koboldcpp/releases/latest)** page for modern systems. Simply download and run the binary.
+On Linux, we provide a `koboldcpp-linux-x64-cuda1150` PyInstaller prebuilt binary on the **[releases](https://github.com/LostRuins/koboldcpp/releases/latest)** page for modern systems. Simply download and run the binary.
 
 Alternatively, you can also install koboldcpp to the current directory by running the following terminal command:
 ```
-curl -fLo koboldcpp https://github.com/LostRuins/koboldcpp/releases/latest/download/koboldcpp-linux-x64 && chmod +x koboldcpp
+curl -fLo koboldcpp https://github.com/LostRuins/koboldcpp/releases/latest/download/koboldcpp-linux-x64-cuda1150 && chmod +x koboldcpp
 ```
 After running this command you can launch Koboldcpp from the current directory using `./koboldcpp` in the terminal (for CLI usage, run with `--help`).
 
@@ -90,8 +90,8 @@ There are some community made AUR packages (Maintained by @AlpinDale) available:
 - Clone the repo `git clone https://github.com/LostRuins/koboldcpp.git`
 - Navigate to the koboldcpp folder `cd koboldcpp`
 - Build the project `make`
-- Grab a small GGUF model, such as `wget https://huggingface.co/TheBloke/phi-2-GGUF/resolve/main/phi-2.Q2_K.gguf`
-- Start the python server `python koboldcpp.py --model phi-2.Q2_K.gguf`
+- Grab a small GGUF model, such as `wget https://huggingface.co/concedo/KobbleTinyV2-1.1B-GGUF/resolve/main/KobbleTiny-Q4_K.gguf`
+- Start the python server `python koboldcpp.py --model KobbleTiny-Q4_K.gguf`
 - Connect to `http://localhost:5001` on your mobile browser
 - If you encounter any errors, make sure your packages are up-to-date with `pkg up`
 - GPU acceleration for Termux may be possible but I have not explored it. If you find a good cross-device solution, do share or PR it.

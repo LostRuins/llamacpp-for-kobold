@@ -203,6 +203,11 @@
                             "description": "KoboldCpp ONLY. If true, prints special tokens as text for GGUF models",
                             "type": "boolean"
                          },
+                         "bypass_eos": {
+                            "default": false,
+                            "description": "KoboldCpp ONLY. If true, allows EOS token to be generated, but does not stop generation. Not recommended unless you know what you are doing.",
+                            "type": "boolean"
+                         },
                          "banned_tokens": {
                             "description": "An array of string sequences to remove from model vocab. All matching tokens with matching substrings are removed.",
                             "items": {
@@ -511,7 +516,7 @@
                 },
                 "/api/v1/model": {
                    "get": {
-                      "description": "Gets the current model display name, set with hordeconfig.",
+                      "description": "Gets the current model display name.",
                       "responses": {
                          "200": {
                             "content": {
@@ -527,7 +532,7 @@
                             "description": "Successful request"
                          }
                       },
-                      "summary": "Retrieve the current model string from hordeconfig",
+                      "summary": "Retrieve the current model string",
                       "tags": [
                          "api/v1"
                       ]
@@ -1219,7 +1224,7 @@
                 }
              ]
           };
-    </script>
+   </script>
 
    <script>
       //self destruct into json if requested

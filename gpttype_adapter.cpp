@@ -92,7 +92,6 @@ static int current_llava_identifier = LLAVA_TOKEN_IDENTIFIER_A;
 static gpt_params * kcpp_params = nullptr;
 static int max_context_limit_at_load = 0;
 static int n_past = 0;
-static bool useSmartContext = false;
 static bool useContextShift = false;
 static int debugmode = 0; //-1 = hide all, 0 = normal, 1 = showall
 static std::string modelname;
@@ -787,7 +786,6 @@ ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in
     }
     kcpp_params->flash_attn = inputs.flash_attention;
     modelname = kcpp_params->model = inputs.model_filename;
-    useSmartContext = inputs.use_smartcontext;
     useContextShift = inputs.use_contextshift;
     debugmode = inputs.debugmode;
 
@@ -1941,7 +1939,7 @@ generation_outputs gpttype_generate(const generation_inputs inputs)
     }
     else
     {
-        bool triggersc = useSmartContext;
+        bool triggersc = useContextShift;
         if(useContextShift && (file_format == FileFormat::GGUF_GENERIC))
         {
             PurgeMissingTokens(llama_ctx_v4, current_context_tokens, embd_inp, inputs.max_length, nctx);
@@ -2205,7 +2203,7 @@ generation_outputs gpttype_generate(const generation_inputs inputs)
                 lowestLogit = LowestLogit(logits);
             }
 
-            if (!inputs.allow_eos_token)
+            if (!inputs.allow_eos_token && !inputs.bypass_eos_token)
             {
                 // set the logit of the eos token to very low to avoid sampling it
                 logitsPtr[eosID] = lowestLogit;
@@ -2274,7 +2272,7 @@ generation_outputs gpttype_generate(const generation_inputs inputs)
                 printf("]\n");
             }
 
-            if(inputs.allow_eos_token && (id==eosID || (id==eotID && id!=-1)))
+            if(!inputs.bypass_eos_token && inputs.allow_eos_token && (id==eosID || (id==eotID && id!=-1)))
             {
                 stopper_unused_tokens = remaining_tokens;
                 if(allow_regular_prints)
