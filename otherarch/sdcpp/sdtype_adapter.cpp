@@ -160,7 +160,7 @@ bool sdtype_load_model(const sd_load_model_inputs inputs) {
     if(inputs.taesd)
     {
         taesdpath = executable_path + "taesd.embd";
-        printf("With TAE SD VAE: %s\n",taesdpath);
+        printf("With TAE SD VAE: %s\n",taesdpath.c_str());
     }
     else if(inputs.vae_filename!="")
     {
