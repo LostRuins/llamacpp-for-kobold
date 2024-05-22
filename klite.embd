@@ -6980,7 +6980,8 @@ Current version: 138
 
 	var onInputboxOk = null;
 	var onInputboxCancel = null;
-	function inputBox(text,title,inputVal,inputPlaceholder,onDone,isHtml=false,isTextArea=false)
+	// Note: `isPassword` is ignored when `isTextArea` is true
+	function inputBox(text,title,inputVal,inputPlaceholder,onDone,isHtml=false,isTextArea=false,isPassword=false)
 	{
 		if (!text) { text = ""; }
 		if (!title) { title = "User Input"; }
@@ -7005,6 +7006,11 @@ Current version: 138
 			document.getElementById("inputboxcontainerinputarea").classList.add("hidden");
 			document.getElementById("inputboxcontainerinput").value = inputVal;
 			document.getElementById("inputboxcontainerinput").placeholder = escapeHtml(inputPlaceholder);
+			if(isPassword)
+			{
+				document.getElementById("inputboxcontainerinput").onfocus = function () { this.type = "text"; }
+				document.getElementById("inputboxcontainerinput").onblur = function () { this.type = "password"; }
+			}
 		}
 
 		onInputboxOk = function(){document.getElementById("inputboxcontainer").classList.add("hidden");onDone();};
@@ -7573,7 +7579,7 @@ Current version: 138
 												if (userinput != null && userinput!="") {
 													custom_kobold_key = document.getElementById("customkoboldkey").value = localmodekey = localsettings.saved_kai_key = userinput.trim();
 												}
-											},false);
+											},false, false, true);
 										}
 
 									}else{
