@@ -9084,6 +9084,10 @@ Current version: 145
 				st = "<|eot_id|><|start_header_id|>user<|end_header_id|>\\n\\n";
 				et = "<|eot_id|><|start_header_id|>assistant<|end_header_id|>\\n\\n";
 				break;
+            case "10": // Phi-3 Mini
+                st = "<|user|>\\n";
+                et = "<|end|>\\n<|assistant|>";
+                break;
 			default:
 				break;
 		}
@@ -16016,6 +16020,7 @@ Current version: 145
 								<option value="7">KoboldAI Format</option>
 								<option value="8">CommandR</option>
 								<option value="9">Llama 3 Chat</option>
+                                <option value="10">Phi-3 Mini</option>
 							</select>
 							<div class="settingsmall miniinput" style="width:100%;padding:2px">
 							<div class="justifyleft settingsmall">Sys. Prompt <span class="helpicon">?<span class="helptext">A system pre-prompt sent at the very start to guide the AI behavior. Usually NOT needed.</span></span></div>
