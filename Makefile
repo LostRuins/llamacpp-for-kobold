@@ -1,3 +1,6 @@
+# Add custom options to Makefile.local rather than editing this file.
+-include $(abspath $(lastword ${MAKEFILE_LIST})).local
+
 default: koboldcpp_default koboldcpp_failsafe koboldcpp_openblas koboldcpp_noavx2 koboldcpp_clblast koboldcpp_clblast_noavx2 koboldcpp_cublas koboldcpp_hipblas koboldcpp_vulkan koboldcpp_vulkan_noavx2
 tools: quantize_gpt2 quantize_gptj quantize_gguf quantize_neox quantize_mpt quantize_clip whispermain sdmain gguf-split
 dev: koboldcpp_openblas
