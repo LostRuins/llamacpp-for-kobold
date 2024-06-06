@@ -32,24 +32,24 @@ struct logit_bias {
 };
 struct load_model_inputs
 {
-    const int threads;
-    const int blasthreads;
-    const int max_context_length;
-    const bool low_vram;
-    const bool use_mmq;
-    const bool use_rowsplit;
-    const char * executable_path;
-    const char * model_filename;
-    const char * lora_filename;
-    const char * lora_base;
-    const char * mmproj_filename;
-    const bool use_mmap;
-    const bool use_mlock;
-    const bool use_smartcontext;
-    const bool use_contextshift;
+    const int threads = 0;
+    const int blasthreads = 0;
+    const int max_context_length = 0;
+    const bool low_vram = 0;
+    const bool use_mmq = 0;
+    const bool use_rowsplit = 0;
+    const char * executable_path = nullptr;
+    const char * model_filename = nullptr;
+    const char * lora_filename = nullptr;
+    const char * lora_base = nullptr;
+    const char * mmproj_filename = nullptr;
+    const bool use_mmap = false;
+    const bool use_mlock = false;
+    const bool use_smartcontext = false;
+    const bool use_contextshift = false;
     const int clblast_info = 0;
     const int cublas_info = 0;
-    const char * vulkan_info;
+    const char * vulkan_info = nullptr;
     const int blasbatchsize = 512;
     const int debugmode = 0;
     const int forceversion = 0;
@@ -57,47 +57,47 @@ struct load_model_inputs
     const float rope_freq_scale = 1.0f;
     const float rope_freq_base = 10000.0f;
     const bool flash_attention = false;
-    const float tensor_split[tensor_split_max];
+    const float tensor_split[tensor_split_max] = {};
     const int quant_k = 0;
     const int quant_v = 0;
 };
 struct generation_inputs
 {
-    const int seed;
-    const char * prompt;
-    const char * memory;
-    const char * images[images_max];
-    const int max_context_length;
-    const int max_length;
-    const float temperature;
-    const int top_k;
+    const int seed = 0;
+    const char * prompt = nullptr;
+    const char * memory = nullptr;
+    const char * images[images_max] = {};
+    const int max_context_length = 0;
+    const int max_length = 0;
+    const float temperature = 0.0f;
+    const int top_k = 0;
     const float top_a = 0.0f;
-    const float top_p;
+    const float top_p = 0.0f;
     const float min_p = 0.0f;
-    const float typical_p;
-    const float tfs;
-    const float rep_pen;
-    const int rep_pen_range;
+    const float typical_p = 0;
+    const float tfs = 0;
+    const float rep_pen = 0;
+    const int rep_pen_range = 0;
     const float rep_pen_slope = 1.0f;
     const float presence_penalty = 0.0f;
     const int mirostat = 0;
-    const float mirostat_eta;
-    const float mirostat_tau;
-    const samplers sampler_order[KCPP_SAMPLER_MAX];
-    const int sampler_len;
-    const bool allow_eos_token;
+    const float mirostat_eta = 0.0f;
+    const float mirostat_tau = 0.0f;
+    const samplers sampler_order[KCPP_SAMPLER_MAX] = {};
+    const int sampler_len = 0;
+    const bool allow_eos_token = false;
     const bool bypass_eos_token = false;
-    const bool render_special;
-    const char * stop_sequence[stop_token_max];
-    const bool stream_sse;
-    const char * grammar;
-    const bool grammar_retain_state;
+    const bool render_special = false;
+    const char * stop_sequence[stop_token_max] = {};
+    const bool stream_sse = false;
+    const char * grammar = nullptr;
+    const bool grammar_retain_state = false;
     const bool quiet = false;
     const float dynatemp_range = 0.0f;
     const float dynatemp_exponent = 1.0f;
     const float smoothing_factor = 0.0f;
-    const logit_bias logit_biases[logit_bias_max];
-    const char * banned_tokens[ban_token_max];
+    const logit_bias logit_biases[logit_bias_max] = {};
+    const char * banned_tokens[ban_token_max] = {};
 };
 struct generation_outputs
 {
@@ -112,31 +112,31 @@ struct token_count_outputs
 };
 struct sd_load_model_inputs
 {
-    const char * model_filename;
-    const char * executable_path;
+    const char * model_filename = nullptr;
+    const char * executable_path = nullptr;
     const int clblast_info = 0;
     const int cublas_info = 0;
-    const char * vulkan_info;
-    const int threads;
+    const char * vulkan_info = nullptr;
+    const int threads = 0;
     const int quant = 0;
     const bool taesd = false;
-    const char * vae_filename;
-    const char * lora_filename;
+    const char * vae_filename = nullptr;
+    const char * lora_filename = nullptr;
     const float lora_multiplier = 1.0f;
     const int debugmode = 0;
 };
 struct sd_generation_inputs
 {
-    const char * prompt;
-    const char * negative_prompt;
+    const char * prompt = nullptr;
+    const char * negative_prompt = nullptr;
     const char * init_images = "";
-    const float denoising_strength;
-    const float cfg_scale;
-    const int sample_steps;
-    const int width;
-    const int height;
-    const int seed;
-    const char * sample_method;
+    const float denoising_strength = 0.0f;
+    const float cfg_scale = 0.0f;
+    const int sample_steps = 0;
+    const int width = 0;
+    const int height = 0;
+    const int seed = 0;
+    const char * sample_method = nullptr;
     const int clip_skip = -1;
     const bool quiet = false;
 };
@@ -147,17 +147,17 @@ struct sd_generation_outputs
 };
 struct whisper_load_model_inputs
 {
-    const char * model_filename;
-    const char * executable_path;
+    const char * model_filename = nullptr;
+    const char * executable_path = nullptr;
     const int clblast_info = 0;
     const int cublas_info = 0;
-    const char * vulkan_info;
+    const char * vulkan_info = nullptr;
     const int debugmode = 0;
 };
 struct whisper_generation_inputs
 {
-    const char * prompt;
-    const char * audio_data;
+    const char * prompt = nullptr;
+    const char * audio_data = nullptr;
     const bool quiet = false;
 };
 struct whisper_generation_outputs
