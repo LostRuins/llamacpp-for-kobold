@@ -15,6 +15,7 @@
 #include <vector>
 #include <cstring>
 #include <mutex>
+#include <cinttypes>
 
 #define COMMON_SAMPLE_RATE 16000
 
@@ -50,7 +51,8 @@ static std::vector<float> resample_wav(const std::vector<float>& input, uint32_t
 
     if(whisperdebugmode==1)
     {
-        printf("\nResample wav from %d to %d (in size: %d, out size: %d)", input_rate,output_rate,input_size,output.size());
+        printf("\nResample wav from %" PRIu32 " to %" PRIu32 " (in size: %zu, out size: %zu)",
+	       input_rate, output_rate, input_size, static_cast<std::size_t>(output.size()));
     }
 
     // Perform simple linear interpolation resampling
