@@ -298,6 +298,7 @@ void print_tok_vec(std::vector<float> &embd)
                 fileformatmeta->model_architecture = GGUFArch::ARCH_MAMBA;
             }
         }
+        fileformatmeta->n_tensors = gguf_get_n_tensors(ctx);
         gguf_free(ctx);
     }
 
