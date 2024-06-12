@@ -64,6 +64,7 @@ struct FileFormatExtraMeta
     int fileversion = 0;
     GGUFArch model_architecture = GGUFArch::ARCH_DEFAULT;
     int n_expert_count = 0;
+    int32_t n_tensors;
 };
 
 enum ModelLoadResult
