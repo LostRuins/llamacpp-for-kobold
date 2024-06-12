@@ -5546,7 +5546,7 @@ Current version: 145
 							let nwi = {
 								"key": itm.key[0],
 								"keysecondary": (itm.keysecondary.length > 0 ? itm.keysecondary[0] : ""),
-								"keyanti": (itm.keyanti.length > 0 ? itm.keyanti[0] : ""),
+								"keyanti": (itm.keyanti && itm.keyanti.length > 0 ? itm.keyanti[0] : ""),
 								"content": itm.content,
 								"comment": itm.comment,
 								"folder": null,
