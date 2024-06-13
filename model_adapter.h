@@ -56,6 +56,7 @@ enum GGUFArch
     ARCH_FALCON = 1,
     ARCH_PHI = 2,
     ARCH_MAMBA = 3,
+    ARCH_SOLAR = 4,
 };
 
 struct FileFormatExtraMeta
@@ -64,7 +65,6 @@ struct FileFormatExtraMeta
     int fileversion = 0;
     GGUFArch model_architecture = GGUFArch::ARCH_DEFAULT;
     int n_expert_count = 0;
-    int32_t n_tensors;
 };
 
 enum ModelLoadResult

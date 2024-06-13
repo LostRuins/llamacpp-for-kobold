@@ -271,6 +271,9 @@ void print_tok_vec(std::vector<float> &embd)
 
         if(modelarch!="" && fileformatmeta!=nullptr)
         {
+            int n_tensors = gguf_get_n_tensors(ctx);
+            float freq_base_train = 0;
+
             std::string fkey = modelarch+".context_length";
             int keyidx = gguf_find_key(ctx, fkey.c_str());
             if (keyidx != -1) {
@@ -281,8 +284,14 @@ void print_tok_vec(std::vector<float> &embd)
             if (keyidx != -1) {
                 fileformatmeta->n_expert_count = gguf_get_val_u32(ctx, keyidx);
             }
+            fkey = modelarch+".rope.freq_base";
+            keyidx = gguf_find_key(ctx, fkey.c_str());
+            if (keyidx != -1) {
+                freq_base_train = gguf_get_val_f32(ctx, keyidx);
+            }
 
             int filever = gguf_get_version(ctx);
+
             fileformatmeta->fileversion = filever;
             fileformatmeta->model_architecture = GGUFArch::ARCH_DEFAULT;
             if(modelarch=="phi2")
@@ -297,8 +306,12 @@ void print_tok_vec(std::vector<float> &embd)
             {
                 fileformatmeta->model_architecture = GGUFArch::ARCH_MAMBA;
             }
+            else if(modelarch=="llama" && freq_base_train==10000.0f && n_tensors==435)
+            {
+                fileformatmeta->model_architecture = GGUFArch::ARCH_SOLAR;
+            }
         }
-        fileformatmeta->n_tensors = gguf_get_n_tensors(ctx);
+
         gguf_free(ctx);
     }
 
