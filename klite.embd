@@ -23,7 +23,7 @@ Current version: 145
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 
 	<!--PWA Manifest-->
-	<link rel="manifest" href="manifest.json" />
+	<meta name="manifest" content='{"name":"KoboldAI Lite","short_name":"KoboldAI Lite","description":"Progressive Web App for KoboldAI Lite","start_url":"./","scope":".","display":"standalone","background_color":"#303030","theme_color":"#337ab7","orientation":"portrait-primary","icons":[{"src":"niko.png","type":"image/png","sizes":"150x150"}]}'>
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<meta name="mobile-web-app-capable" content="yes">
 	<meta name="description" content="KoboldAI Lite">
