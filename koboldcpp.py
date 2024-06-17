@@ -3572,6 +3572,7 @@ def main(launch_args,start_server=True):
         genout = generate(benchprompt,memory="",images=[],max_length=benchlen,max_context_length=benchmaxctx,temperature=0.1,top_k=1,rep_pen=1,use_default_badwordsids=True)
         result = genout['text']
         result = (result[:5] if len(result)>5 else "")
+        resultok = (result=="11111")
         t_pp = float(handle.get_last_process_time())*float(benchmaxctx-benchlen)*0.001
         t_gen = float(handle.get_last_eval_time())*float(benchlen)*0.001
         s_pp = float(benchmaxctx-benchlen)/t_pp
@@ -3580,23 +3581,34 @@ def main(launch_args,start_server=True):
         print(f"\nBenchmark Completed - v{KcppVersion} Results:\n======")
         print(f"Timestamp: {datetimestamp}")
         print(f"Backend: {libname}")
-        print(f"Layers: {args.gpulayers}")
         print(f"Model: {benchmodel}")
+        print(f"NoAVX2: {args.noavx2}")        
+        print(f"Threads: {args.threads}")
+        print(f"HighPriority: {args.highpriority}")        
+        print(f"NoBlas: {args.noblas}")  
+        print(f"Cublas_Args: {args.usecublas}")       
+        print(f"Layers: {args.gpulayers}")
+        print(f"Tensor_Split: {args.tensor_split}")
+        print(f"BlasThreads: {args.blasthreads}")       
+        print(f"BlasBatchSize: {args.blasbatchsize}")
+        print(f"FlashAttention: {args.flashattention}")
+        print(f"KV_cache: {args.quantkv}")
         print(f"MaxCtx: {benchmaxctx}")
         print(f"GenAmount: {benchlen}\n-----")
-        print(f"ProcessingTime: {t_pp:.2f}s")
+        print(f"ProcessingTime: {t_pp:.3f}s")
         print(f"ProcessingSpeed: {s_pp:.2f}T/s")
-        print(f"GenerationTime: {t_gen:.2f}s")
+        print(f"GenerationTime: {t_gen:.3f}s")
         print(f"GenerationSpeed: {s_gen:.2f}T/s")
-        print(f"TotalTime: {(t_pp+t_gen):.2f}s")
+        print(f"TotalTime: {(t_pp+t_gen):.3f}s")
+        print(f"Coherent: {resultok}")
         print(f"Output: {result}\n-----")
         if save_to_file:
             try:
                 with open(args.benchmark, "a") as file:
                     file.seek(0, 2)
                     if file.tell() == 0: #empty file
-                        file.write(f"Timestamp,Backend,Layers,Model,MaxCtx,GenAmount,ProcessingTime,ProcessingSpeed,GenerationTime,GenerationSpeed,TotalTime,Output")
-                    file.write(f"\n{datetimestamp},{libname},{args.gpulayers},{benchmodel},{benchmaxctx},{benchlen},{t_pp:.2f},{s_pp:.2f},{t_gen:.2f},{s_gen:.2f},{(t_pp+t_gen):.2f},{result}")
+                        file.write(f"Timestamp,KCPP,Backend,Model,NoAVX2,Thrd,HighP,NoBlas,FlashA,Layers,BlasThrd,BBSize,KVC,MaxCtx,GenNum,PPTime,PPSpeed,TGTime,TGSpeed,TotalTime,Coher,Tensor1,Split2,Cublas1,Argument2,Argument3")
+                    file.write(f"\n{datetimestamp},{KcppVersion},{libname},{benchmodel},{args.noavx2},{args.threads},{args.highpriority},{args.noblas},{args.flashattention},{args.gpulayers},{args.blasthreads},{args.blasbatchsize},{args.quantkv},{benchmaxctx},{benchlen},{t_pp:.3f},{s_pp:.2f},{t_gen:.3f},{s_gen:.2f},{(t_pp+t_gen):.3f},{resultok},{args.tensor_split},,{args.usecublas},,")
             except Exception as e:
                 print(f"Error writing benchmark to file: {e}")
         global using_gui_launcher
