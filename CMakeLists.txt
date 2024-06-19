@@ -51,6 +51,8 @@ set(LLAMA_CUDA_PEER_MAX_BATCH_SIZE "128" CACHE STRING
                                              "llama: max. batch size for using peer access")
 option(LLAMA_HIPBLAS                         "llama: use hipBLAS"                               OFF)
 
+# Other
+option(LLAMA_OPENMP                          "llama: use OpenMP"                                OFF)
 
 #
 # Compile flags
@@ -283,6 +285,17 @@ if (LLAMA_LTO)
         set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
     else()
         message(WARNING "IPO is not supported: ${output}")
+    endif()
+endif()
+
+if (LLAMA_OPENMP)
+    find_package(OpenMP)
+    if (OpenMP_FOUND)
+        message(STATUS "OpenMP found")
+        add_compile_definitions(GGML_USE_OPENMP)
+        set(LLAMA_EXTRA_LIBS ${LLAMA_EXTRA_LIBS} OpenMP::OpenMP_C OpenMP::OpenMP_CXX)
+    else()
+        message(WARNING "OpenMP not found")
     endif()
 endif()
 
