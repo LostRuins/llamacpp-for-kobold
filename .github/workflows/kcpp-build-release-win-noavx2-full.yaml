@@ -1,4 +1,4 @@
-name: Koboldcpp Windows Full Binaries
+name: Koboldcpp Windows Full AVX1 Binaries
 
 on: workflow_dispatch
 env:
