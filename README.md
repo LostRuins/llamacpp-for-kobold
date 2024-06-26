@@ -1,5 +1,7 @@
 # How to use AVX1 CUDA!
 ![Preview](media/preview5.png)
+
+
 select standard CUBLAS! (same for cmd btw)
 do not update with the launcher option, it will download the normal one without AVX1 CUDA!
 
