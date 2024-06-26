@@ -1,3 +1,10 @@
+# How to use AVX1 CUDA!
+![Preview](media/preview5.png)
+select standard CUBLAS! (same for cmd btw)
+do not update with the launcher option, it will download the normal one without AVX1 CUDA!
+
+
+
 # koboldcpp
 
 KoboldCpp is an easy-to-use AI text-generation software for GGML and GGUF models. It's a single self contained distributable from Concedo, that builds off llama.cpp, and adds a versatile Kobold API endpoint, additional format support, Stable Diffusion image generation, backward compatibility, as well as a fancy UI with persistent stories, editing tools, save formats, memory, world info, author's note, characters, scenarios and everything KoboldAI and KoboldAI Lite have to offer.
