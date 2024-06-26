@@ -2,7 +2,7 @@
 ![Preview](media/preview5.png)
 
 
-select standard CUBLAS! (same for cmd btw)
+select standard CUBLAS! (same for cmd btw) and
 do not update with the launcher option, it will download the normal one without AVX1 CUDA!
 
 
