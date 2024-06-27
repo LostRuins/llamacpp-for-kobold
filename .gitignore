@@ -125,6 +125,8 @@ tests/test-tokenizer-1-bpe
 /koboldcpp_vulkan.dll
 /cublas64_11.dll
 /cublasLt64_11.dll
+/cublas64_12.dll
+/cublasLt64_12.dll
 /rocblas/
 rocblas.dll
 hipblas.dll
