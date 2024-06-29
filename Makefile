@@ -42,8 +42,8 @@ endif
 #
 
 # keep standard at C11 and C++11
-CFLAGS   = -I.            -I./include -I./include/CL -I./otherarch -I./otherarch/tools -I./otherarch/sdcpp -I./otherarch/sdcpp/thirdparty -I./include/vulkan -O3 -fno-finite-math-only -DNDEBUG -std=c11   -fPIC -DLOG_DISABLE_LOGS -D_GNU_SOURCE -DGGML_USE_LLAMAFILE
-CXXFLAGS = -I. -I./common -I./include -I./include/CL -I./otherarch -I./otherarch/tools -I./otherarch/sdcpp -I./otherarch/sdcpp/thirdparty -I./include/vulkan -O3 -fno-finite-math-only -DNDEBUG -std=c++11 -fPIC -DLOG_DISABLE_LOGS -D_GNU_SOURCE -DGGML_USE_LLAMAFILE
+CFLAGS   = -I. -Iggml/include -Iggml/src -Iinclude -Isrc -I./include -I./include/CL -I./otherarch -I./otherarch/tools -I./otherarch/sdcpp -I./otherarch/sdcpp/thirdparty -I./include/vulkan -O3 -fno-finite-math-only -DNDEBUG -std=c11   -fPIC -DLOG_DISABLE_LOGS -D_GNU_SOURCE -DGGML_USE_LLAMAFILE
+CXXFLAGS = -I. -Iggml/include -Iggml/src -Iinclude -Isrc -I./common -I./include -I./include/CL -I./otherarch -I./otherarch/tools -I./otherarch/sdcpp -I./otherarch/sdcpp/thirdparty -I./include/vulkan -O3 -fno-finite-math-only -DNDEBUG -std=c++11 -fPIC -DLOG_DISABLE_LOGS -D_GNU_SOURCE -DGGML_USE_LLAMAFILE
 LDFLAGS  =
 FASTCFLAGS = $(subst -O3,-Ofast,$(CFLAGS))
 FASTCXXFLAGS = $(subst -O3,-Ofast,$(CXXFLAGS))
@@ -150,17 +150,17 @@ ifndef LLAMA_NO_ACCELERATE
 endif
 
 # it is recommended to use the CMAKE file to build for cublas if you can - will likely work better
-OBJS_CUDA_TEMP_INST = $(patsubst %.cu,%.o,$(wildcard ggml-cuda/template-instances/fattn-wmma*.cu))
-OBJS_CUDA_TEMP_INST += $(patsubst %.cu,%.o,$(wildcard ggml-cuda/template-instances/mmq*.cu))
-OBJS_CUDA_TEMP_INST += $(patsubst %.cu,%.o,$(wildcard ggml-cuda/template-instances/fattn-vec*q4_0-q4_0.cu))
-OBJS_CUDA_TEMP_INST += $(patsubst %.cu,%.o,$(wildcard ggml-cuda/template-instances/fattn-vec*q8_0-q8_0.cu))
-OBJS_CUDA_TEMP_INST += $(patsubst %.cu,%.o,$(wildcard ggml-cuda/template-instances/fattn-vec*f16-f16.cu))
+OBJS_CUDA_TEMP_INST = $(patsubst %.cu,%.o,$(wildcard ggml/src/ggml-cuda/template-instances/fattn-wmma*.cu))
+OBJS_CUDA_TEMP_INST += $(patsubst %.cu,%.o,$(wildcard ggml/src/ggml-cuda/template-instances/mmq*.cu))
+OBJS_CUDA_TEMP_INST += $(patsubst %.cu,%.o,$(wildcard ggml/src/ggml-cuda/template-instances/fattn-vec*q4_0-q4_0.cu))
+OBJS_CUDA_TEMP_INST += $(patsubst %.cu,%.o,$(wildcard ggml/src/ggml-cuda/template-instances/fattn-vec*q8_0-q8_0.cu))
+OBJS_CUDA_TEMP_INST += $(patsubst %.cu,%.o,$(wildcard ggml/src/ggml-cuda/template-instances/fattn-vec*f16-f16.cu))
 
 ifdef LLAMA_CUBLAS
 	CUBLAS_FLAGS = -DGGML_USE_CUDA -DSD_USE_CUBLAS -I/usr/local/cuda/include -I/opt/cuda/include -I$(CUDA_PATH)/targets/x86_64-linux/include
 	CUBLASLD_FLAGS = -lcuda -lcublas -lcudart -lcublasLt -lpthread -ldl -lrt -L/usr/local/cuda/lib64 -L/opt/cuda/lib64 -L$(CUDA_PATH)/targets/x86_64-linux/lib -L$(CUDA_PATH)/lib64/stubs -L/usr/local/cuda/targets/aarch64-linux/lib -L/usr/local/cuda/targets/sbsa-linux/lib -L/usr/lib/wsl/lib
 	CUBLAS_OBJS = ggml-cuda.o ggml_v3-cuda.o ggml_v2-cuda.o ggml_v2-cuda-legacy.o
-	CUBLAS_OBJS += $(patsubst %.cu,%.o,$(wildcard ggml-cuda/*.cu))
+	CUBLAS_OBJS += $(patsubst %.cu,%.o,$(wildcard ggml/src/ggml-cuda/*.cu))
 	CUBLAS_OBJS += $(OBJS_CUDA_TEMP_INST)
 	NVCC      = nvcc
 	NVCCFLAGS = --forward-unknown-to-host-compiler -use_fast_math
@@ -209,18 +209,14 @@ ifdef LLAMA_CUDA_KQUANTS_ITER
 else
 	NVCCFLAGS += -DK_QUANTS_PER_ITERATION=2
 endif
-ifdef LLAMA_CUDA_MMQ_Y
-	NVCCFLAGS += -DGGML_CUDA_MMQ_Y=$(LLAMA_CUDA_MMQ_Y)
-else
-	NVCCFLAGS += -DGGML_CUDA_MMQ_Y=64
-endif
+
 ifdef LLAMA_CUDA_CCBIN
 	NVCCFLAGS += -ccbin $(LLAMA_CUDA_CCBIN)
 endif
 
-ggml-cuda/%.o: ggml-cuda/%.cu ggml.h ggml-common.h ggml-cuda/common.cuh
+ggml/src/ggml-cuda/%.o: ggml/src/ggml-cuda/%.cu ggml/include/ggml.h ggml/src/ggml-common.h ggml/src/ggml-cuda/common.cuh
 	$(NVCC) $(NVCCFLAGS) $(subst -Ofast,-O3,$(CXXFLAGS)) $(CUBLAS_FLAGS) $(CUBLAS_CXXFLAGS) -Wno-pedantic -c $< -o $@
-ggml-cuda.o: ggml-cuda.cu ggml-cuda.h ggml.h ggml-backend.h ggml-backend-impl.h ggml-common.h $(wildcard ggml-cuda/*.cuh)
+ggml-cuda.o: ggml/src/ggml-cuda.cu ggml/include/ggml-cuda.h ggml/include/ggml.h ggml/include/ggml-backend.h ggml/src/ggml-backend-impl.h ggml/src/ggml-common.h $(wildcard ggml/src/ggml-cuda/*.cuh)
 	$(NVCC) $(NVCCFLAGS) $(subst -Ofast,-O3,$(CXXFLAGS)) $(CUBLAS_FLAGS) $(CUBLAS_CXXFLAGS) -Wno-pedantic -c $< -o $@
 ggml_v2-cuda.o: otherarch/ggml_v2-cuda.cu otherarch/ggml_v2-cuda.h
 	$(NVCC) $(NVCCFLAGS) $(subst -Ofast,-O3,$(CXXFLAGS)) $(CUBLAS_FLAGS) $(CUBLAS_CXXFLAGS) -Wno-pedantic -c $< -o $@
@@ -248,7 +244,7 @@ ifdef LLAMA_HIPBLAS
 	HIPFLAGS   += -DGGML_USE_HIPBLAS -DGGML_USE_CUDA -DSD_USE_CUBLAS $(shell $(ROCM_PATH)/bin/hipconfig -C)
 	HIPLDFLAGS    += -L$(ROCM_PATH)/lib -Wl,-rpath=$(ROCM_PATH)/lib -lhipblas -lamdhip64 -lrocblas
 	HIP_OBJS      += ggml-cuda.o ggml_v3-cuda.o ggml_v2-cuda.o ggml_v2-cuda-legacy.o
-	HIP_OBJS      += $(patsubst %.cu,%.o,$(wildcard ggml-cuda/*.cu))
+	HIP_OBJS      += $(patsubst %.cu,%.o,$(wildcard ggml/src/ggml-cuda/*.cu))
 	HIP_OBJS      += $(OBJS_CUDA_TEMP_INST)
 
 	HIPFLAGS2    += $(addprefix --offload-arch=,$(GPU_TARGETS))
@@ -256,9 +252,9 @@ ifdef LLAMA_HIPBLAS
 	HIPFLAGS2    += -DGGML_CUDA_MMV_Y=$(LLAMA_CUDA_MMV_Y)
 	HIPFLAGS2    += -DK_QUANTS_PER_ITERATION=$(LLAMA_CUDA_KQUANTS_ITER)
 
-ggml-cuda/%.o: ggml-cuda/%.cu ggml.h ggml-common.h ggml-cuda/common.cuh
+ggml/src/ggml-cuda/%.o: ggml/src/ggml-cuda/%.cu ggml/include/ggml.h ggml/src/ggml-common.h ggml/src/ggml-cuda/common.cuh
 	$(HCXX) $(CXXFLAGS) $(HIPFLAGS) $(HIPFLAGS2) -x hip -c -o $@ $<
-ggml-cuda.o: ggml-cuda.cu ggml-cuda.h ggml.h ggml-backend.h ggml-backend-impl.h ggml-common.h $(wildcard ggml-cuda/*.cuh)
+ggml-cuda.o: ggml/src/ggml-cuda.cu ggml/include/ggml-cuda.h ggml/include/ggml.h ggml/include/ggml-backend.h ggml/src/ggml-backend-impl.h ggml/src/ggml-common.h $(wildcard ggml/src/ggml-cuda/*.cuh)
 	$(HCXX) $(CXXFLAGS) $(HIPFLAGS) $(HIPFLAGS2) -x hip -c -o $@ $<
 ggml_v2-cuda.o: otherarch/ggml_v2-cuda.cu otherarch/ggml_v2-cuda.h
 	$(HCXX) $(CXXFLAGS) $(HIPFLAGS) $(HIPFLAGS2) -x hip -c -o $@ $<
@@ -277,7 +273,7 @@ ifdef LLAMA_METAL
 
 ggml-metal.o: ggml-metal.m ggml-metal.h
 	@echo "== Preparing merged Metal file =="
-	@sed -e '/#include "ggml-common.h"/r ggml-common.h' -e '/#include "ggml-common.h"/d' < ggml-metal.metal > ggml-metal-merged.metal
+	@sed -e '/#include "ggml-common.h"/r ggml/src/ggml-common.h' -e '/#include "ggml-common.h"/d' < ggml/src/ggml-metal.metal > ggml/src/ggml-metal-merged.metal
 	$(CC) $(CFLAGS) -c $< -o $@
 endif # LLAMA_METAL
 
@@ -396,57 +392,57 @@ $(info )
 # Build library
 #
 
-ggml.o: ggml.c ggml.h ggml-cuda.h ggml-common.h
+ggml.o: ggml/src/ggml.c ggml/include/ggml.h
 	$(CC)  $(FASTCFLAGS) $(FULLCFLAGS) -c $< -o $@
-ggml_v4_openblas.o: ggml.c ggml.h ggml-cuda.h ggml-common.h
+ggml_v4_openblas.o: ggml/src/ggml.c ggml/include/ggml.h
 	$(CC)  $(FASTCFLAGS) $(FULLCFLAGS) $(OPENBLAS_FLAGS) -c $< -o $@
-ggml_v4_failsafe.o: ggml.c ggml.h ggml-cuda.h ggml-common.h
+ggml_v4_failsafe.o: ggml/src/ggml.c ggml/include/ggml.h
 	$(CC)  $(FASTCFLAGS) $(NONECFLAGS) -c $< -o $@
-ggml_v4_noavx2.o: ggml.c ggml.h ggml-cuda.h ggml-common.h
+ggml_v4_noavx2.o: ggml/src/ggml.c ggml/include/ggml.h
 	$(CC)  $(FASTCFLAGS) $(SIMPLECFLAGS) -c $< -o $@
-ggml_v4_clblast.o: ggml.c ggml.h ggml-cuda.h ggml-common.h
+ggml_v4_clblast.o: ggml/src/ggml.c ggml/include/ggml.h
 	$(CC)  $(FASTCFLAGS) $(FULLCFLAGS) $(CLBLAST_FLAGS) -c $< -o $@
-ggml_v4_cublas.o: ggml.c ggml.h ggml-cuda.h ggml-common.h
+ggml_v4_cublas.o: ggml/src/ggml.c ggml/include/ggml.h
 	$(CC)  $(FASTCFLAGS) $(FULLCFLAGS) $(CUBLAS_FLAGS) $(HIPFLAGS) -c $< -o $@
-ggml_v4_clblast_noavx2.o: ggml.c ggml.h ggml-cuda.h ggml-common.h
+ggml_v4_clblast_noavx2.o: ggml/src/ggml.c ggml/include/ggml.h
 	$(CC)  $(FASTCFLAGS) $(SIMPLECFLAGS) $(CLBLAST_FLAGS) -c $< -o $@
-ggml_v4_vulkan.o: ggml.c ggml.h ggml-cuda.h ggml-common.h
+ggml_v4_vulkan.o: ggml/src/ggml.c ggml/include/ggml.h
 	$(CC)  $(FASTCFLAGS) $(FULLCFLAGS) $(VULKAN_FLAGS) -c $< -o $@
-ggml_v4_vulkan_noavx2.o: ggml.c ggml.h ggml-cuda.h ggml-common.h
+ggml_v4_vulkan_noavx2.o: ggml/src/ggml.c ggml/include/ggml.h
 	$(CC)  $(FASTCFLAGS) $(SIMPLECFLAGS) $(VULKAN_FLAGS) -c $< -o $@
 
 #quants
-ggml-quants.o: ggml-quants.c ggml.h ggml-quants.h ggml-cuda.h ggml-common.h
+ggml-quants.o: ggml/src/ggml-quants.c ggml/include/ggml.h ggml/src/ggml-quants.h ggml/src/ggml-common.h
 	$(CC)  $(CFLAGS) $(FULLCFLAGS) -c $< -o $@
-ggml-quants_noavx2.o: ggml-quants.c ggml.h ggml-quants.h ggml-cuda.h ggml-common.h
+ggml-quants_noavx2.o: ggml/src/ggml-quants.c ggml/include/ggml.h ggml/src/ggml-quants.h ggml/src/ggml-common.h
 	$(CC)  $(CFLAGS) $(SIMPLECFLAGS) -c $< -o $@
-ggml-quants_failsafe.o: ggml-quants.c ggml.h ggml-quants.h ggml-cuda.h ggml-common.h
+ggml-quants_failsafe.o: ggml/src/ggml-quants.c ggml/include/ggml.h ggml/src/ggml-quants.h ggml/src/ggml-common.h
 	$(CC)  $(CFLAGS) $(NONECFLAGS) -c $< -o $@
 
 #sgemm
-sgemm.o: sgemm.cpp sgemm.h ggml.h
+sgemm.o: ggml/src/sgemm.cpp ggml/src/sgemm.h ggml/include/ggml.h
 	$(CXX) $(CXXFLAGS) $(FULLCFLAGS) -c $< -o $@
-sgemm_noavx2.o: sgemm.cpp sgemm.h ggml.h
+sgemm_noavx2.o: ggml/src/sgemm.cpp ggml/src/sgemm.h ggml/include/ggml.h
 	$(CXX) $(CXXFLAGS) $(SIMPLECFLAGS) -c $< -o $@
-sgemm_failsafe.o: sgemm.cpp sgemm.h ggml.h
+sgemm_failsafe.o: ggml/src/sgemm.cpp ggml/src/sgemm.h ggml/include/ggml.h
 	$(CXX) $(CXXFLAGS) $(NONECFLAGS) -c $< -o $@
 
 #there's no intrinsics or special gpu ops used here, so we can have a universal object
-ggml-alloc.o: ggml-alloc.c ggml.h ggml-alloc.h
+ggml-alloc.o: ggml/src/ggml-alloc.c ggml/include/ggml.h ggml/include/ggml-alloc.h
 	$(CC)  $(CFLAGS) -c $< -o $@
 llava.o: examples/llava/llava.cpp examples/llava/llava.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
-unicode.o: unicode.cpp unicode.h
+unicode.o: src/unicode.cpp src/unicode.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
-unicode-data.o: unicode-data.cpp unicode-data.h
+unicode-data.o: src/unicode-data.cpp src/unicode-data.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 #these have special gpu defines
-ggml-backend_default.o: ggml-backend.c ggml.h ggml-backend.h
+ggml-backend_default.o: ggml/src/ggml-backend.c ggml/include/ggml.h ggml/include/ggml-backend.h
 	$(CC)  $(CFLAGS) -c $< -o $@
-ggml-backend_vulkan.o: ggml-backend.c ggml.h ggml-backend.h
+ggml-backend_vulkan.o: ggml/src/ggml-backend.c ggml/include/ggml.h ggml/include/ggml-backend.h
 	$(CC)  $(CFLAGS) $(VULKAN_FLAGS) -c $< -o $@
-ggml-backend_cublas.o: ggml-backend.c ggml.h ggml-backend.h
+ggml-backend_cublas.o: ggml/src/ggml-backend.c ggml/include/ggml.h ggml/include/ggml-backend.h
 	$(CC)  $(CFLAGS) $(CUBLAS_FLAGS) -c $< -o $@
 llavaclip_default.o: examples/llava/clip.cpp examples/llava/clip.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
@@ -454,7 +450,7 @@ llavaclip_cublas.o: examples/llava/clip.cpp examples/llava/clip.h
 	$(CXX) $(CXXFLAGS) $(CUBLAS_FLAGS) -c $< -o $@
 
 #this is only used for openblas and accelerate
-ggml-blas.o: ggml-blas.cpp ggml-blas.h
+ggml-blas.o: ggml/src/ggml-blas.cpp ggml/include/ggml-blas.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 #version 3 libs
@@ -506,11 +502,11 @@ ggml_v3-opencl.o: otherarch/ggml_v3-opencl.cpp otherarch/ggml_v3-opencl.h
 	$(CXX) $(CXXFLAGS) $(CLBLAST_FLAGS) -c $< -o $@
 
 #vulkan
-ggml-vulkan.o: ggml-vulkan.cpp ggml-vulkan.h
+ggml-vulkan.o: ggml/src/ggml-vulkan.cpp ggml/include/ggml-vulkan.h
 	$(CXX) $(CXXFLAGS) $(VULKAN_FLAGS) -c $< -o $@
 
 # intermediate objects
-llama.o: llama.cpp ggml.h ggml-alloc.h ggml-backend.h ggml-cuda.h ggml-metal.h llama.h otherarch/llama-util.h
+llama.o: src/llama.cpp ggml/include/ggml.h ggml/include/ggml-alloc.h ggml/include/ggml-backend.h ggml/include/ggml-cuda.h ggml/include/ggml-metal.h include/llama.h otherarch/llama-util.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 common.o: common/common.cpp common/common.h common/log.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
@@ -536,7 +532,7 @@ whispercpp_cublas.o: otherarch/whispercpp/whisper_adapter.cpp
 	$(CXX) $(CXXFLAGS) $(CUBLAS_FLAGS) $(HIPFLAGS) -c $< -o $@
 
 # idiotic "for easier compilation"
-GPTTYPE_ADAPTER = gpttype_adapter.cpp otherarch/llama_v2.cpp otherarch/llama_v3.cpp llama.cpp otherarch/utils.cpp otherarch/gptj_v1.cpp otherarch/gptj_v2.cpp otherarch/gptj_v3.cpp otherarch/gpt2_v1.cpp otherarch/gpt2_v2.cpp otherarch/gpt2_v3.cpp otherarch/rwkv_v2.cpp otherarch/rwkv_v3.cpp otherarch/neox_v2.cpp otherarch/neox_v3.cpp otherarch/mpt_v3.cpp ggml.h ggml-cuda.h llama.h otherarch/llama-util.h
+GPTTYPE_ADAPTER = gpttype_adapter.cpp otherarch/llama_v2.cpp otherarch/llama_v3.cpp src/llama.cpp otherarch/utils.cpp otherarch/gptj_v1.cpp otherarch/gptj_v2.cpp otherarch/gptj_v3.cpp otherarch/gpt2_v1.cpp otherarch/gpt2_v2.cpp otherarch/gpt2_v3.cpp otherarch/rwkv_v2.cpp otherarch/rwkv_v3.cpp otherarch/neox_v2.cpp otherarch/neox_v3.cpp otherarch/mpt_v3.cpp ggml/include/ggml.h ggml/include/ggml-cuda.h include/llama.h otherarch/llama-util.h
 gpttype_adapter_failsafe.o: $(GPTTYPE_ADAPTER)
 	$(CXX) $(CXXFLAGS) $(FAILSAFE_FLAGS) -c $< -o $@
 gpttype_adapter.o: $(GPTTYPE_ADAPTER)
@@ -556,8 +552,8 @@ gpttype_adapter_vulkan_noavx2.o: $(GPTTYPE_ADAPTER)
 
 clean:
 	rm -vf *.o main sdmain whispermain quantize_gguf quantize_clip quantize_gpt2 quantize_gptj quantize_neox quantize_mpt quantize-stats perplexity embedding benchmark-matmult save-load-state gguf imatrix imatrix.exe gguf.exe main.exe quantize_clip.exe quantize_gguf.exe quantize_gptj.exe quantize_gpt2.exe quantize_neox.exe quantize_mpt.exe koboldcpp_default.dll koboldcpp_openblas.dll koboldcpp_failsafe.dll koboldcpp_noavx2.dll koboldcpp_clblast.dll koboldcpp_clblast_noavx2.dll koboldcpp_cublas.dll koboldcpp_hipblas.dll koboldcpp_vulkan.dll koboldcpp_vulkan_noavx2.dll koboldcpp_default.so koboldcpp_openblas.so koboldcpp_failsafe.so koboldcpp_noavx2.so koboldcpp_clblast.so koboldcpp_clblast_noavx2.so koboldcpp_cublas.so koboldcpp_hipblas.so koboldcpp_vulkan.so koboldcpp_vulkan_noavx2.so
-	rm -vrf ggml-cuda/*.o
-	rm -vrf ggml-cuda/template-instances/*.o
+	rm -vrf ggml/src/ggml-cuda/*.o
+	rm -vrf ggml/src/ggml-cuda/template-instances/*.o
 
 # useful tools
 main: examples/main/main.cpp build-info.h ggml.o llama.o console.o llavaclip_default.o llava.o ggml-backend_default.o $(OBJS_FULL) $(OBJS)

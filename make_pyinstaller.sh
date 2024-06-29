@@ -1,6 +1,7 @@
 #!/bin/bash
 
 pyinstaller --noconfirm --onefile --clean --console --collect-all customtkinter --collect-all psutil --icon "./niko.ico" \
+--add-data "./kcpp_adapters:./kcpp_adapters" \
 --add-data "./klite.embd:." \
 --add-data "./kcpp_docs.embd:." \
 --add-data "./kcpp_sdui.embd:." \

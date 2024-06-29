@@ -52,11 +52,12 @@ enum FileFormat
 
 enum GGUFArch
 {
-    ARCH_DEFAULT = 0, //used for llama and other generic gguf
+    ARCH_DEFAULT = 0, //used for llama3 and other generic gguf
     ARCH_FALCON = 1,
     ARCH_PHI = 2,
     ARCH_MAMBA = 3,
     ARCH_SOLAR = 4,
+    ARCH_MISTRAL_LLAMA_1_AND_2 = 5,
 };
 
 struct FileFormatExtraMeta

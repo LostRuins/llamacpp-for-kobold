@@ -587,9 +587,25 @@ def sd_load_model(model_filename,vae_filename,lora_filename):
     return ret
 
 def sd_generate(genparams):
-    global maxctx, args, currentusergenkey, totalgens, pendingabortkey
+    global maxctx, args, currentusergenkey, totalgens, pendingabortkey, chatcompl_adapter
+
+    default_adapter = {} if chatcompl_adapter is None else chatcompl_adapter
+    adapter_obj = genparams.get('adapter', default_adapter)
+    forced_negprompt = adapter_obj.get("add_sd_negative_prompt", "")
+    forced_posprompt = adapter_obj.get("add_sd_prompt", "")
+
     prompt = genparams.get("prompt", "high quality")
     negative_prompt = genparams.get("negative_prompt", "")
+    if forced_negprompt!="":
+        if negative_prompt!="":
+            negative_prompt += ", " + forced_negprompt
+        else:
+            negative_prompt = forced_negprompt
+    if forced_posprompt!="":
+        if prompt!="":
+            prompt += ", " + forced_posprompt
+        else:
+            prompt = forced_posprompt
     init_images_arr = genparams.get("init_images", [])
     init_images = ("" if (not init_images_arr or len(init_images_arr)==0 or not init_images_arr[0]) else init_images_arr[0])
     denoising_strength = genparams.get("denoising_strength", 0.6)
@@ -681,7 +697,7 @@ def utfprint(str):
         print(str)
     except UnicodeEncodeError:
         # Replace or omit the problematic character
-        utf_string = str.encode('ascii', 'ignore').decode('ascii')
+        utf_string = str.encode('ascii', 'ignore').decode('ascii',"ignore")
         utf_string = utf_string.replace('\a', '') #remove bell characters
         print(utf_string)
 
@@ -866,7 +882,7 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                         if detected_upload_filename and len(detected_upload_filename)>0:
                             utfprint(f"Detected uploaded file: {detected_upload_filename[0]}")
                             file_data = fpart.split(b'\r\n\r\n')[1].rsplit(b'\r\n', 1)[0]
-                            file_data_base64 = base64.b64encode(file_data).decode('utf-8')
+                            file_data_base64 = base64.b64encode(file_data).decode('utf-8',"ignore")
                             base64_string = f"data:audio/wav;base64,{file_data_base64}"
                             return base64_string
             print("Uploaded file not found.")
@@ -2079,7 +2095,6 @@ def show_new_gui():
                 gui_layers_zeroed = gpulayers_var.get()=="" or gpulayers_var.get()=="0"
                 if (gui_layers_untouched or gui_layers_zeroed) and layerlimit>0:
                     gpulayers_var.set(str(layerlimit))
-                    mmq_var.set(0 if layerlimit>=200 else 1)
                     gui_layers_untouched = old_gui_layers_untouched
                     if gui_layers_zeroed:
                         gui_layers_untouched = True
@@ -2329,7 +2344,14 @@ def show_new_gui():
     noqkvlabel = makelabel(tokens_tab,"Requirments Not Met",31,0,"Requires FlashAttention ENABLED and ContextShift DISABLED.")
     noqkvlabel.configure(text_color="#ff5555")
     qkvslider,qkvlabel,qkvtitle = makeslider(tokens_tab, "Quantize KV Cache:", quantkv_text, quantkv_var, 0, 2, 30, set=0,tooltip="Enable quantization of KV cache.\nRequires FlashAttention and disables ContextShift.")
-    makefileentry(tokens_tab, "ChatCompletions Adapter:", "Select ChatCompletions Adapter File", chatcompletionsadapter_var, 32,tooltiptxt="Select an optional ChatCompletions Adapter JSON file to force custom instruct tags.")
+    makefileentry(tokens_tab, "ChatCompletions Adapter:", "Select ChatCompletions Adapter File", chatcompletionsadapter_var, 32, filetypes=[("JSON Adapter", "*.json")], tooltiptxt="Select an optional ChatCompletions Adapter JSON file to force custom instruct tags.")
+    def pickpremadetemplate():
+        initialDir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'kcpp_adapters')
+        initialDir = initialDir if os.path.isdir(initialDir) else None
+        fnam = askopenfilename(title="Pick Premade ChatCompletions Adapter",filetypes=[("JSON Adapter", "*.json")], initialdir=initialDir)
+        if fnam:
+            chatcompletionsadapter_var.set(fnam)
+    ctk.CTkButton(tokens_tab, 64, text="Pick Premade", command=pickpremadetemplate).grid(row=33, column=1, padx=62, stick="nw")
     togglerope(1,1,1)
     toggleflashattn(1,1,1)
     togglectxshift(1,1,1)
@@ -2796,12 +2818,12 @@ def make_url_request(url, data, method='POST', headers={}):
             request = urllib.request.Request(url, headers=headers, method=method)
         response_data = ""
         with urllib.request.urlopen(request,context=ssl_context) as response:
-            response_data = response.read().decode('utf-8')
+            response_data = response.read().decode('utf-8',"ignore")
             json_response = json.loads(response_data)
             return json_response
     except urllib.error.HTTPError as e:
         try:
-            errmsg = e.read().decode('utf-8')
+            errmsg = e.read().decode('utf-8',"ignore")
             print_with_time(f"Error: {e} - {errmsg}")
         except Exception as e:
             print_with_time(f"Error: {e}")

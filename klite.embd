@@ -7,7 +7,7 @@ Just copy this single static HTML file anywhere and open it in a browser, or fro
 Please go to https://github.com/LostRuins/lite.koboldai.net for updates on KoboldAI Lite.
 If you are submitting a pull request for Lite, PLEASE use the above repo, not the KoboldCpp one.
 KoboldAI Lite is under the AGPL v3.0 License unless otherwise exempted. Please do not remove this line.
-Current version: 147
+Current version: 148
 -Concedo
 -->
 
@@ -3734,7 +3734,9 @@ Current version: 147
 	var last_known_filename = "saved_story.json";
 	var localmodeport = 5001;
 	var localmodehost = "localhost";
+	var localprotocol = "http://";
 	var sublocalpathname = "";
+	var reattempt_local_port80 = false;
 	var localmodekey = "";
 	var kobold_endpoint_version = ""; //used to track problematic versions to avoid sending extra fields
 	var koboldcpp_version = ""; //detect if we are using koboldcpp
@@ -3999,6 +4001,9 @@ Current version: 147
 			if(!window.location.port && window.location.protocol.includes('https') && !is_using_web_lite()) {
 				localmodeport = 443;
 			}
+			if(!window.location.port && window.location.protocol.includes('http') && !window.location.protocol.includes('https') && !is_using_web_lite()) {
+				reattempt_local_port80 = true; //make an attempt to connect via port 80 on failure too.
+			}
 			if (inputport) {
 				localmodeport = parseInt(inputport);
 			}
@@ -4034,6 +4039,14 @@ Current version: 147
 				localmodekey = inputkey;
 			}
 
+			//remove all unwanted options from the endpoint dropdown in case it is used
+			var cep = document.getElementById("customapidropdown");
+            var cepoptions = cep.options;
+            for (var i = cepoptions.length - 1; i >= 0; i--) {
+                if (cepoptions[i].value !== "1" && cepoptions[i].value !== "2") {
+                    cep.remove(i);
+                }
+            }
 		}
 
 		const fromfile = ( window.location.protocol == 'file:' );
@@ -4283,16 +4296,16 @@ Current version: 147
 	{
 		if (localflag) {
 			document.getElementById("customapidropdown").value = 1;
-			let protocol = "http://";
+			localprotocol = "http://";
 			if(window.location.protocol.includes('https') && !is_using_web_lite())
 			{
-				protocol = "https://";
+				localprotocol = "https://";
 			}
 			if(localmodekey)
 			{
 				document.getElementById("customkoboldkey").value = localmodekey;
 			}
-			document.getElementById("customkoboldendpoint").value = protocol + localmodehost + ":" + localmodeport + sublocalpathname;
+			document.getElementById("customkoboldendpoint").value = localprotocol + localmodehost + ":" + localmodeport + sublocalpathname;
 			connect_custom_endpoint();
 			document.getElementById("lastreq").innerHTML = document.getElementById("lastreq2").innerHTML =
 			`<span class=color_gray>You're using KoboldAI Lite Embedded.</span>`;
@@ -4917,6 +4930,7 @@ Current version: 147
 		else
 		{
 			cstoryjson = share_plaintext();
+			cstoryjson = replaceAll(cstoryjson,"\n","<br>",false);
 			console.log("Export Len: " + cstoryjson.length);
 			document.getElementById("sharecontainertitle").innerText = "Share Story as Plaintext";
 			document.getElementById("sharestorytext").innerHTML = "<p>"+cstoryjson+"</p>";
@@ -7468,7 +7482,11 @@ Current version: 147
 				document.getElementById("openrouterdesc").classList.add("hidden");
 				document.getElementById("custom_oai_endpoint").classList.remove("hidden");
 				document.getElementById("custom_oai_key").value = localsettings.saved_oai_key;
-				document.getElementById("custom_oai_endpoint").value = (localsettings.saved_oai_addr?localsettings.saved_oai_addr:default_oai_base);
+				if (localflag) {
+					document.getElementById("custom_oai_endpoint").value = localprotocol + localmodehost + ":" + localmodeport + "/v1";
+				} else {
+					document.getElementById("custom_oai_endpoint").value = (localsettings.saved_oai_addr ? localsettings.saved_oai_addr : default_oai_base);
+				}
 			}
 			else
 			{
@@ -7801,9 +7819,15 @@ Current version: 147
 								sublocalpathname = ""; //one more try
 								attempt_connect(false);
 							}
+							else if(is_local && reattempt_local_port80)
+							{
+								reattempt_local_port80 = false;
+								localmodeport = 80;
+								attempt_connect(false);
+							}
 							else
 							{
-								msgbox("Failed to connect to Custom Kobold Endpoint!\n\nPlease check if KoboldAI is running at the url: " + desiredkoboldendpoint + "");
+								msgbox("Failed to connect to Custom Kobold Endpoint!<br><br>Please check if KoboldAI is running at the url: " + desiredkoboldendpoint + "<br><br>You can also <a href='#' class='color_blueurl' onclick='hide_popups();display_endpoint_container();'>try a different URL or API type</a>.","Error Encountered",true);
 								selected_models = [];
 								selected_workers = [];
 								custom_kobold_endpoint = "";
@@ -10950,6 +10974,17 @@ Current version: 147
 			let st = get_instruct_starttag(true);
 			let et = get_instruct_endtag(true);
 			seqs = [st, et];
+			if(localsettings.inject_chatnames_instruct)
+			{
+				if(localsettings.chatname!="")
+				{
+					seqs.push(localsettings.chatname + "\:");
+				}
+				if(localsettings.chatopponent!="" && !localsettings.chatopponent.includes("||$||"))
+				{
+					seqs.push(localsettings.chatopponent + "\:");
+				}
+			}
 		}
 		if (extrastopseq != "") {
 			let rep = replaceAll(extrastopseq, "\\n", "\n");
@@ -12343,6 +12378,32 @@ Current version: 147
 			{
 				splitresponse = gentxt.split(et);
 				gentxt = splitresponse[0];
+			}
+
+			if(localsettings.inject_chatnames_instruct)
+			{
+				let st2 = localsettings.chatname + "\:";
+				let et2 = localsettings.chatopponent + "\:";
+				if(localsettings.chatname!="")
+				{
+					found = gentxt.indexOf(st2);
+					splitresponse = [];
+					if (found != -1) //if found, truncate to it
+					{
+						splitresponse = gentxt.split(st2);
+						gentxt = splitresponse[0];
+					}
+				}
+				if(localsettings.chatopponent!="" && !localsettings.chatopponent.includes("||$||"))
+				{
+					found = gentxt.indexOf(et2);
+					splitresponse = [];
+					if (found != -1) //if found, truncate to it
+					{
+						splitresponse = gentxt.split(et2);
+						gentxt = splitresponse[0];
+					}
+				}
 			}
 		}
 

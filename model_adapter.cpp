@@ -306,10 +306,16 @@ void print_tok_vec(std::vector<float> &embd)
             {
                 fileformatmeta->model_architecture = GGUFArch::ARCH_MAMBA;
             }
-            else if(modelarch=="llama" && freq_base_train==10000.0f && n_tensors==435)
+            else if(modelarch=="llama" && freq_base_train==10000.0f && (n_tensors==435 || n_tensors==611))
             {
                 fileformatmeta->model_architecture = GGUFArch::ARCH_SOLAR;
             }
+            else if(modelarch=="llama" && freq_base_train==10000.0f)
+            {
+                fileformatmeta->model_architecture = GGUFArch::ARCH_MISTRAL_LLAMA_1_AND_2;
+            }
+            printf("Arch Category: %d\n",fileformatmeta->model_architecture);
+
         }
 
         gguf_free(ctx);

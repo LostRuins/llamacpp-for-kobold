@@ -18,7 +18,7 @@
 //concat source files into one file for compilation purposes
 #include "llama_v2.cpp"
 #include "llama_v3.cpp"
-#include "llama.cpp"
+#include "src/llama.cpp"
 #include "utils.cpp"
 #include "gptj_v1.cpp"
 #include "gptj_v2.cpp"
@@ -789,16 +789,59 @@ static int GetBatchSize(int desiredBlasBatchSize,FileFormat in_file_format)
 }
 
 //this function applies automatic scaling to rope freq base when the desired context exceeds trained context
-static float CalcGradientAIRopeFreqBase(float original_rope_base, int n_ctx_train, int n_ctx_desired, bool is_solar)
+static float CalcGradientAIRopeFreqBase(float original_rope_base, int n_ctx_train, int n_ctx_desired, GGUFArch model_arch)
 {
     if(n_ctx_desired <= n_ctx_train || n_ctx_desired <= 2048)
     {
         return original_rope_base;
     }
-    float ctx_multiplier = (is_solar?8.0f:1.0f);
-	float chi_ctx_train_value = (n_ctx_train * ctx_multiplier) / 6.28318;
-    float chi_ctx_value = (n_ctx_desired * ctx_multiplier) / 6.28318;
-    return powf(original_rope_base, logf(chi_ctx_value) / logf(chi_ctx_train_value));
+	else
+	{
+        float ctx_multiplier = (model_arch==GGUFArch::ARCH_SOLAR?8.0f:1.0f);
+        float chi_ctx_train_value = (n_ctx_train * ctx_multiplier) / 6.28318;
+        float chi_ctx_value = (n_ctx_desired * ctx_multiplier) / 6.28318;
+        float gradient_ai_rope_freq_base_value = powf(original_rope_base, log10f(chi_ctx_value) / log10f(chi_ctx_train_value));
+
+        if(debugmode==1)
+        {
+            printf("Trained max context length (value:%.d).\n", n_ctx_train);
+            printf("Desired context length (value:%.d).\n", n_ctx_desired);
+            printf("Solar context multiplier (value:%.3f).\n", ctx_multiplier);
+            printf("Chi context train (value:%.3f).\n", chi_ctx_train_value);
+            printf("Chi chosen context (value:%.3f).\n", chi_ctx_value);
+            printf("Log Chi context train (value:%.3f).\n", log10f(chi_ctx_train_value));
+            printf("Log Chi chosen context (value:%.3f).\n", log10f(chi_ctx_value));
+            printf("RoPE Frequency Base value (value:%.3f).\n", original_rope_base);
+            printf("RoPE base calculated via Gradient AI formula. (value:%.1f).\n", gradient_ai_rope_freq_base_value);
+        }
+
+	    if(model_arch==GGUFArch::ARCH_SOLAR)
+        {
+            float extended_rope_positive_offset_value = 1 + ((log10f(chi_ctx_value) - log10f(chi_ctx_train_value)) / ((log10f(chi_ctx_value) * log10f(chi_ctx_train_value)) - (log10f(chi_ctx_value) + log10f(chi_ctx_train_value))));
+            float rope_freq_base_with_positive_offset = gradient_ai_rope_freq_base_value * extended_rope_positive_offset_value;
+            if(debugmode==1)
+            {
+                printf("Extended RoPE Positive Offset (multiplicator) for Solar based models. (value:%.3f).\n", extended_rope_positive_offset_value);
+                printf("RoPE base calculated via Gradient AI formula for Solar based models. (value:%.1f).\n", rope_freq_base_with_positive_offset);
+            }
+            return rope_freq_base_with_positive_offset;
+        }
+	    // else if(model_arch==GGUFArch::ARCH_MISTRAL_LLAMA_1_AND_2)
+        // {
+        //     float extended_rope_negative_offset_value = 1 + ((log10f(chi_ctx_value) - log10f(chi_ctx_train_value)) / (3.14159265358979323846 * 3.14159265358979323846));
+        //     float rope_freq_base_with_negative_offset = gradient_ai_rope_freq_base_value / extended_rope_negative_offset_value;
+        //     if(debugmode==1)
+        //     {
+        //         printf("Extended RoPE Negative Offset (divisor) for Llama 1 and 2 based models. (value:%.3f).\n", extended_rope_negative_offset_value);
+        //         printf("RoPE base calculated via Gradient AI formula for Llama 1 and 2 based models. (value:%.1f).\n", rope_freq_base_with_negative_offset);
+        //     }
+        //     return rope_freq_base_with_negative_offset;
+        // }
+        else
+        {
+	        return gradient_ai_rope_freq_base_value;
+        }
+    }
 }
 
 ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in_file_format, FileFormatExtraMeta in_file_format_meta)
@@ -850,10 +893,11 @@ ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in
     else
     {
         //Set freq base for all, including non GGUF. If we are using GGUF, this will be overwritten with more accurate values later.
-        rope_freq_base = CalcGradientAIRopeFreqBase(10000.0f,2048,kcpp_params->n_ctx,false);
+        rope_freq_base = CalcGradientAIRopeFreqBase(10000.0f,2048,kcpp_params->n_ctx, GGUFArch::ARCH_DEFAULT);
         if(file_format==FileFormat::GGUF_GENERIC)
         {
-            printf("Using automatic RoPE scaling. If the model has customized RoPE settings, they will be used directly instead!\n");
+            printf("Using automatic RoPE scaling for GGUF. If the model has custom RoPE settings, they'll be used directly instead!\n");
+            printf("It means that the RoPE values written above will be replaced by the RoPE values indicated after loading.\n");
         }
         else
         {
@@ -1099,7 +1143,7 @@ ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in
             else
             {
 				//Calculate rope_freq_base using the gradientAI formula, solar requires ctx *8 for correct scaling
-                rope_freq_base = CalcGradientAIRopeFreqBase(llamamodel->hparams.rope_freq_base_train, file_format_meta.n_ctx_train, kcpp_params->n_ctx, file_format_meta.model_architecture==GGUFArch::ARCH_SOLAR);
+                rope_freq_base = CalcGradientAIRopeFreqBase(llamamodel->hparams.rope_freq_base_train, file_format_meta.n_ctx_train, kcpp_params->n_ctx, file_format_meta.model_architecture);
                 llama_ctx_params.rope_freq_base = rope_freq_base;
                 llama_ctx_params.rope_freq_scale = rope_freq_scale;
                 printf("Automatic RoPE Scaling: Using (scale:%.3f, base:%.1f).\n", rope_freq_scale, rope_freq_base);

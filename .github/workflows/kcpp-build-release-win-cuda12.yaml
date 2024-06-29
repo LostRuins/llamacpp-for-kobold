@@ -14,11 +14,11 @@ jobs:
         with:
           ref: ${{ github.head_ref || github.ref_name }}
 
-      - uses: Jimver/cuda-toolkit@v0.2.11
+      - uses: Jimver/cuda-toolkit@v0.2.15
         id: cuda-toolkit
         with:
           cuda: '12.1.0'
-        
+
       - name: Build
         id: cmake_build
         run: |
