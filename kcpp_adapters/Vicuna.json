@@ -1,0 +1,8 @@
+{
+"system_start":"\nSYSTEM: ",
+"system_end":"",
+"user_start":"\nUSER: ",
+"user_end":"",
+"assistant_start":"\nASSISTANT: ",
+"assistant_end":""
+}
