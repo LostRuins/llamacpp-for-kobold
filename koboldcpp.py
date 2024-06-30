@@ -1773,7 +1773,7 @@ def show_new_gui():
     lib_option_pairs = [
         (lib_openblas, "DO NOT USE"),
         (lib_clblast, "DO NOT USE"),
-        (lib_cublas, "Use CuBLAS NoAVX2"),
+        (lib_cublas, "Use CuBLAS"),
         (lib_hipblas, "DO NOT USE"),
         (lib_vulkan, "DO NOT USE"),
         (lib_default, "DO NOT USE"),
