@@ -271,7 +271,7 @@ ifdef LLAMA_METAL
 	LDFLAGS  += -framework Foundation -framework Metal -framework MetalKit -framework MetalPerformanceShaders
 	OBJS     += ggml-metal.o
 
-ggml-metal.o: ggml-metal.m ggml-metal.h
+ggml-metal.o: ggml/src/ggml-metal.m ggml/include/ggml-metal.h
 	@echo "== Preparing merged Metal file =="
 	@sed -e '/#include "ggml-common.h"/r ggml/src/ggml-common.h' -e '/#include "ggml-common.h"/d' < ggml/src/ggml-metal.metal > ggml/src/ggml-metal-merged.metal
 	$(CC) $(CFLAGS) -c $< -o $@
