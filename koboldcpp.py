@@ -3654,7 +3654,7 @@ if __name__ == '__main__':
             return f
         return range_checker
 
-    print("***\nWelcome to KoboldCpp - Version " + KcppVersion) # just update version manually
+    print("***\nWelcome to Moritz's NoAVX2 Build, this is KoboldCpp - Version " + KcppVersion) # just update version manually
     # print("Python version: " + sys.version)
     parser = argparse.ArgumentParser(description='KoboldCpp Server')
     modelgroup = parser.add_mutually_exclusive_group() #we want to be backwards compatible with the unnamed positional args
