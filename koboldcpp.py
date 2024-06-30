@@ -1681,7 +1681,7 @@ def show_new_gui():
     ctk.set_appearance_mode("dark")
     root = ctk.CTk()
     root.geometry(str(windowwidth) + "x" + str(windowheight))
-    root.title("KoboldCpp v"+KcppVersion)
+    root.title("Moritz's KoboldCpp v" + KcppVersion + " NoAVX2 CUDA build")
 
     gtooltip_box = None
     gtooltip_label = None
@@ -1771,16 +1771,16 @@ def show_new_gui():
 
     tabcontent = {}
     lib_option_pairs = [
-        (lib_openblas, "Use OpenBLAS"),
-        (lib_clblast, "Use CLBlast"),
+        (lib_openblas, "DO NOT USE"),
+        (lib_clblast, "DO NOT USE"),
         (lib_cublas, "Use CuBLAS"),
-        (lib_hipblas, "Use hipBLAS (ROCm)"),
-        (lib_vulkan, "Use Vulkan"),
-        (lib_default, "Use No BLAS"),
-        (lib_clblast_noavx2, "CLBlast NoAVX2 (Old CPU)"),
-        (lib_vulkan_noavx2, "Vulkan NoAVX2 (Old CPU)"),
-        (lib_noavx2, "NoAVX2 Mode (Old CPU)"),
-        (lib_failsafe, "Failsafe Mode (Old CPU)")]
+        (lib_hipblas, "DO NOT USE"),
+        (lib_vulkan, "DO NOT USE"),
+        (lib_default, "DO NOT USE"),
+        (lib_clblast_noavx2, "DO NOT USE"),
+        (lib_vulkan_noavx2, "DO NOT USE"),
+        (lib_noavx2, "DO NOT USE"),
+        (lib_failsafe, "DO NOT USE")]
     openblas_option, clblast_option, cublas_option, hipblas_option, vulkan_option, default_option, clblast_noavx2_option, vulkan_noavx2_option, noavx2_option, failsafe_option = (opt if file_exists(lib) or (os.name == 'nt' and file_exists(opt + ".dll")) else None for lib, opt in lib_option_pairs)
     # slider data
     blasbatchsize_values = ["-1", "32", "64", "128", "256", "512", "1024", "2048"]
