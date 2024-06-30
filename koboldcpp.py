@@ -1681,7 +1681,7 @@ def show_new_gui():
     ctk.set_appearance_mode("dark")
     root = ctk.CTk()
     root.geometry(str(windowwidth) + "x" + str(windowheight))
-    root.title("KoboldCpp v"+KcppVersion)
+    root.title("KoboldCpp v" + KcppVersion + " NOAVX2 CUDA BUILD")
 
     gtooltip_box = None
     gtooltip_label = None
