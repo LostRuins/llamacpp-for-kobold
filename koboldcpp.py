@@ -1921,7 +1921,7 @@ def show_new_gui():
 
     def makelabel(parent, text, row, column=0, tooltiptxt="", columnspan=1, padx=8):
         temp = ctk.CTkLabel(parent, text=text)
-        temp.grid(row=row, column=column, padx=padx, pady=1, stick="nw", columnspan=columnspan)
+        temp.grid(row=row, column=column, padx=8, pady=1, stick="nw", columnspan=columnspan)
         if tooltiptxt!="":
             temp.bind("<Enter>", lambda event: show_tooltip(event, tooltiptxt))
             temp.bind("<Leave>", hide_tooltip)
@@ -1944,9 +1944,9 @@ def show_new_gui():
         label = makelabel(parent, text, row,0,tooltip)
         entry = ctk.CTkEntry(parent, width=width, textvariable=var) #you cannot set placeholder text for SHARED variables
         if singleline:
-            entry.grid(row=row, column=0, padx=padx, stick="nw")
+            entry.grid(row=row, column=0, padx=8, stick="nw")
         else:
-            entry.grid(row=row, column=1, padx=padx, stick="nw")
+            entry.grid(row=row, column=1, padx=8, stick="nw")
         return entry, label
 
 
