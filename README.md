@@ -54,6 +54,51 @@ when you can't use the precompiled binary directly, we provide an automated buil
 ./koboldcpp.sh dist # Generate your own precompiled binary (Due to the nature of Linux compiling these will only work on distributions equal or newer than your own.)
 ```
 
+### Nix & NixOS
+
+Make sure to have `nixpkgs.config.allowUnfree`, `hardware.opengl.enable` *(`hardware.graphics.enable` if you're using unstable channel)* and `nixpkgs.config.cudaSupport` set to `true`
+
+KoboldCpp is available on Nixpkgs and can be installed by just adding `koboldcpp` to your `environment.systemPackages`. For example:
+
+```nix
+environment.systemPackages = with pkgs; [
+    koboldcpp
+];
+```
+
+Some stuff to note are:
+
+- Vulkan support is enabled by default on both Linux and macOS.
+- CUDA is enabled by default if `config.cudaSupport` is set to `true`.
+- OpenBLAS and CLBlast are enabled by default on Linux.
+- Metal is enabled by default on macOS. *(Note: OpenBLAS is disabled by default on macOS because Accelerate is faster.)*
+- ROCm support isn't available yet.
+- NOAVX2 and Failsafe aren't available yet.
+
+If you don't have or do not wish to set `nixpkgs.config.cudaSupport` to `true` you can individually add CUDA support to KoboldCpp only, like this:
+
+```nix
+environment.systemPackages = with pkgs; [
+    (koboldcpp.override {
+        cublasSupport = true;
+    })
+];
+```
+
+Similarly, you can override any other options (like OpenBlast, CLBLast, Vulkan, etc.) using the same idea. You can take a look at the [Nix package](https://github.com/NixOS/nixpkgs/blob/nixos-unstable/pkgs/by-name/ko/koboldcpp/package.nix) to see all available options that can be overwritten (the ones that have `?` on them)
+
+To learn more about overriding packages, please checkout the [17th Nix Pill - Nixpkgs Overriding Packages](https://nixos.org/guides/nix-pills/17-nixpkgs-overriding-packages)
+
+If the version on nixpkgs is outdated *(usually if you want to use a new version right after it was released)*, you can use the `steam-run` nix package to run the latest binary from [Releases](https://github.com/LostRuins/koboldcpp/releases/latest)
+
+```bash
+# Without CUDA support
+nix-shell -p steam-run --run "steam-run ./koboldcpp-linux-x64" --impure
+
+# With CUDA support
+nix-shell --expr 'with import <nixpkgs> { config = { allowUnfree = true; cudaSupport = true; }; }; steam-run' --run "steam-run ./koboldcpp-linux-x64" --impure
+```
+
 ## OSX and Linux Manual Compiling
 - Otherwise, you will have to compile your binaries from source. A makefile is provided, simply run `make`.
 - If you want you can also link your own install of OpenBLAS manually with `make LLAMA_OPENBLAS=1`
