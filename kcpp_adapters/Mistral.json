@@ -1,0 +1,8 @@
+{
+"system_start":"",
+"system_end":"",
+"user_start":"[INST] ",
+"user_end":" [/INST]\n",
+"assistant_start":"",
+"assistant_end":"\n"
+}
