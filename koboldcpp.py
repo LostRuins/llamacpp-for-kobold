@@ -804,8 +804,10 @@ last_non_horde_req_time = time.time()
 currfinishreason = "null"
 using_gui_launcher = False
 using_outdated_flags = False
+using_openai_tools = False
 
 def transform_genparams(genparams, api_format):
+    global using_openai_tools
     #api format 1=basic,2=kai,3=oai,4=oai-chat,5=interrogate
     #alias all nonstandard alternative names for rep pen.
     rp1 = genparams.get('repeat_penalty', 1.0)
@@ -851,6 +853,7 @@ def transform_genparams(genparams, api_format):
             assistant_message_end = adapter_obj.get("assistant_end", "")
             images_added = []
 
+
             for message in messages_array:
                 if message['role'] == "system":
                     messages_string += system_message_start
@@ -878,6 +881,59 @@ def transform_genparams(genparams, api_format):
                 elif message['role'] == "assistant":
                     messages_string += assistant_message_end
 
+            # Check if user is passing a openai tools array, if so add to end of prompt before assistant prompt
+            tools_array = genparams.get('tools', [])
+            if tools_array:
+                tools_string = json.dumps(tools_array, indent=2) + "Respond only in JSON." #TBD: add Tools notation like \n### Tools: \n or just stick the tools at the end of the prompt? And formatting?
+                messages_string += user_message_end + tools_string
+                using_openai_tools = True
+                # Use grammar to try to constrain output to openai tools format: https://platform.openai.com/docs/api-reference/chat/create
+                open_ai_tools_grammar = r"""
+root ::= array
+
+array ::= "[" object "]"
+
+object ::= "{" pairid "," pairtype "," pairfunction "}"
+
+pairid ::= " \"id\" : " string
+
+pairtype ::= " \"type\" : " "\"function\""
+
+pairfunction ::= " \"function\" : " functionobject
+
+functionobject ::= "{" pairname "," pairarguments "}"
+
+pairname ::= " \"name\" : " string
+
+pairarguments ::= " \"arguments\" : " "{" arguments "}"
+
+arguments ::= pair ( "," pair)*
+
+pair ::= string ":" value
+
+value ::= string | number | "true" | "false" | "null"
+
+number ::= int frac? exp?
+
+int ::= "-"? ("0" | [1-9] [0-9]*)
+
+frac ::= "." [0-9]+
+
+exp ::= ("e" | "E") ("+" | "-")? [0-9]+
+
+string ::=
+  "\"" (
+    [^"\\] |
+    "\\" (["\\/bfnrt"] | "u" hex hex hex hex) # escapes
+  )* "\""
+
+hex ::= [0-9a-fA-F]
+"""
+
+                genparams["grammar"] = open_ai_tools_grammar
+            else:
+                using_openai_tools = False
+
             messages_string += assistant_message_start
             genparams["prompt"] = messages_string
             if len(images_added)>0:
@@ -888,6 +944,7 @@ def transform_genparams(genparams, api_format):
                 genparams["stop_sequence"].append(user_message_start.strip())
                 genparams["stop_sequence"].append(assistant_message_start.strip())
             genparams["trim_stop"] = True
+
 
     elif api_format==5:
         firstimg = genparams.get('image', "")
@@ -935,13 +992,12 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
             return None
 
     async def generate_text(self, genparams, api_format, stream_flag):
-        global friendlymodelname, chatcompl_adapter, currfinishreason
+        global friendlymodelname, chatcompl_adapter, currfinishreason, using_openai_tools
         is_quiet = args.quiet
         currfinishreason = "null"
-
-        def run_blocking(): #api format 1=basic,2=kai,3=oai,4=oai-chat
-
-            #flag instance as non-idle for a while
+        
+        def run_blocking():  # api format 1=basic,2=kai,3=oai,4=oai-chat
+            # flag instance as non-idle for a while
             washordereq = genparams.get('genkey', '').startswith('HORDEREQ_')
             if not washordereq:
                 global last_non_horde_req_time
@@ -984,10 +1040,10 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                 render_special=genparams.get('render_special', False),
                 banned_tokens=genparams.get('banned_tokens', []),
                 bypass_eos_token=genparams.get('bypass_eos', False),
-                )
+            )
 
-        genout = {"text":"","status":-1,"stopreason":-1}
-        if stream_flag:
+        genout = {"text": "", "status": -1, "stopreason": -1}
+        if stream_flag and not using_openai_tools:
             loop = asyncio.get_event_loop()
             executor = ThreadPoolExecutor()
             genout = await loop.run_in_executor(executor, run_blocking)
@@ -995,9 +1051,9 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
             genout = run_blocking()
 
         recvtxt = genout['text']
-        currfinishreason = ("length" if (genout['stopreason']!=1) else "stop")
+        currfinishreason = ("length" if (genout['stopreason'] != 1) else "stop")
 
-        #flag instance as non-idle for a while
+        # flag instance as non-idle for a while
         washordereq = genparams.get('genkey', '').startswith('HORDEREQ_')
         if not washordereq:
             global last_non_horde_req_time
@@ -1006,26 +1062,33 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
         if (args.debugmode != -1 and not is_quiet) or args.debugmode >= 1:
             utfprint("\nOutput: " + recvtxt)
 
-        if api_format==1:
-            res = {"data": {"seqs":[recvtxt]}}
-        elif api_format==3:
+        if api_format == 1:
+            res = {"data": {"seqs": [recvtxt]}}
+        elif api_format == 3:
             res = {"id": "cmpl-1", "object": "text_completion", "created": 1, "model": friendlymodelname,
-            "usage": {"prompt_tokens": 100,"completion_tokens": 100,"total_tokens": 200},
-            "choices": [{"text": recvtxt, "index": 0, "finish_reason": currfinishreason}]}
-        elif api_format==4:
+                   "usage": {"prompt_tokens": 100, "completion_tokens": 100, "total_tokens": 200},
+                   "choices": [{"text": recvtxt, "index": 0, "finish_reason": currfinishreason}]}
+        elif api_format == 4:
+            tool_calls = []
+            if using_openai_tools:
+                try:
+                    tool_calls = json.loads(recvtxt)
+                    recvtxt = None
+                except json.JSONDecodeError as e:
+                    print(f"Error parsing tool calls: {e}, omitting tool calls from response, and just passing generated content as message content")
+
             res = {"id": "chatcmpl-1", "object": "chat.completion", "created": 1, "model": friendlymodelname,
-            "usage": {"prompt_tokens": 100,"completion_tokens": 100,"total_tokens": 200},
-            "choices": [{"index": 0, "message":{"role": "assistant", "content": recvtxt,}, "finish_reason": currfinishreason}]}
-        elif api_format==5:
+                   "usage": {"prompt_tokens": 100, "completion_tokens": 100, "total_tokens": 200},
+                   "choices": [{"index": 0, "message": {"role": "assistant", "content": recvtxt, "tool_calls": tool_calls}, "finish_reason": currfinishreason}]}
+        elif api_format == 5:
             res = {"caption": end_trim_to_sentence(recvtxt)}
         else:
-            res = {"results": [{"text": recvtxt, "finish_reason":currfinishreason}]}
+            res = {"results": [{"text": recvtxt, "finish_reason": currfinishreason}]}
 
         try:
             return res
         except Exception as e:
             print(f"Generate: Error while generating: {e}")
-
 
     async def send_oai_sse_event(self, data):
         if data=="[DONE]":
