@@ -16,11 +16,12 @@ import base64
 import json, sys, http.server, time, asyncio, socket, threading
 from concurrent.futures import ThreadPoolExecutor
 
-sampler_order_max = 7
+sampler_order_max = 8
 stop_token_max = 16
 ban_token_max = 16
 tensor_split_max = 16
 logit_bias_max = 16
+dry_seq_break_max = 16
 images_max = 4
 bias_min_value = -100.0
 bias_max_value = 100.0
@@ -84,6 +85,10 @@ class generation_inputs(ctypes.Structure):
                 ("mirostat", ctypes.c_int),
                 ("mirostat_tau", ctypes.c_float),
                 ("mirostat_eta", ctypes.c_float),
+                ("dry_multiplier", ctypes.c_float),
+                ("dry_base", ctypes.c_float),
+                ("dry_allowed_length", ctypes.c_int),
+                ("dry_sequence_breakers", ctypes.c_char_p * dry_seq_break_max),
                 ("sampler_order", ctypes.c_int * sampler_order_max),
                 ("sampler_len", ctypes.c_int),
                 ("allow_eos_token", ctypes.c_bool),
@@ -485,7 +490,7 @@ def load_model(model_filename):
     ret = handle.load_model(inputs)
     return ret
 
-def generate(prompt, memory="", images=[], max_length=32, max_context_length=512, temperature=0.7, top_k=100, top_a=0.0, top_p=0.92, min_p=0.0, typical_p=1.0, tfs=1.0, rep_pen=1.0, rep_pen_range=128, rep_pen_slope=1.0, presence_penalty=0.0, mirostat=0, mirostat_tau=5.0, mirostat_eta=0.1, sampler_order=[6,0,1,3,4,2,5], seed=-1, stop_sequence=[], use_default_badwordsids=False, stream_sse=False, grammar='', grammar_retain_state=False, genkey='', trimstop=False, quiet=False, dynatemp_range=0.0, dynatemp_exponent=1.0, smoothing_factor=0.0, logit_biases={}, render_special=False, banned_tokens=[], bypass_eos_token=False):
+def generate(prompt, memory="", images=[], max_length=32, max_context_length=512, temperature=0.7, top_k=100, top_a=0.0, top_p=0.92, min_p=0.0, typical_p=1.0, tfs=1.0, rep_pen=1.0, rep_pen_range=128, rep_pen_slope=1.0, presence_penalty=0.0, mirostat=0, mirostat_tau=5.0, mirostat_eta=0.1, dry_multiplier=0.0, dry_base=1.75, dry_allowed_length=2, dry_sequence_breakers=['\n', ':', '"', '*'], sampler_order=[6,7,0,1,3,4,2,5], seed=-1, stop_sequence=[], use_default_badwordsids=False, stream_sse=False, grammar='', grammar_retain_state=False, genkey='', trimstop=False, quiet=False, dynatemp_range=0.0, dynatemp_exponent=1.0, smoothing_factor=0.0, logit_biases={}, render_special=False, banned_tokens=[], bypass_eos_token=False):
     global maxctx, args, currentusergenkey, totalgens, pendingabortkey
     inputs = generation_inputs()
     inputs.prompt = prompt.encode("UTF-8")
@@ -533,6 +538,14 @@ def generate(prompt, memory="", images=[], max_length=32, max_context_length=512
         inputs.mirostat_eta = mirostat_eta
     else:
         inputs.mirostat = inputs.mirostat_tau = inputs.mirostat_eta = 0
+    inputs.dry_multiplier = dry_multiplier
+    inputs.dry_base = dry_base
+    inputs.dry_allowed_length = dry_allowed_length
+    for n in range(dry_seq_break_max):
+        if n < len(dry_sequence_breakers):
+            inputs.dry_sequence_breakers[n] = dry_sequence_breakers[n].encode("UTF-8")
+        else:
+            inputs.dry_sequence_breakers[n] = "".encode("UTF-8")
     if sampler_order and 0 < len(sampler_order) <= sampler_order_max:
         try:
             for i, sampler in enumerate(sampler_order):
@@ -540,7 +553,7 @@ def generate(prompt, memory="", images=[], max_length=32, max_context_length=512
             inputs.sampler_len = len(sampler_order)
             global showsamplerwarning
             if showsamplerwarning and inputs.mirostat==0 and inputs.sampler_len>0 and (inputs.sampler_order[0]!=6 or inputs.sampler_order[inputs.sampler_len-1]!=5):
-                print("\n(Note: Non-default sampler_order detected. Recommended sampler values are [6,0,1,3,4,2,5]. This message will only show once per session.)")
+                print("\n(Note: Non-default sampler_order detected. Recommended sampler values are [6,7,0,1,3,4,2,5]. This message will only show once per session.)")
                 showsamplerwarning = False
         except TypeError as e:
             print("ERROR: sampler_order must be a list of integers: " + str(e))
@@ -966,7 +979,11 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                 mirostat=genparams.get('mirostat', 0),
                 mirostat_tau=genparams.get('mirostat_tau', 5.0),
                 mirostat_eta=genparams.get('mirostat_eta', 0.1),
-                sampler_order=genparams.get('sampler_order', [6,0,1,3,4,2,5]),
+                dry_multiplier=genparams.get('dry_multiplier', 0.8),
+                dry_base=genparams.get('dry_base', 1.75),
+                dry_allowed_length=genparams.get('dry_allowed_length', 2),
+                dry_sequence_breakers=genparams.get('dry_sequence_breakers', []),
+                sampler_order=genparams.get('sampler_order', [6,7,0,1,3,4,2,5]),
                 seed=tryparseint(genparams.get('sampler_seed', -1)),
                 stop_sequence=genparams.get('stop_sequence', []),
                 use_default_badwordsids=genparams.get('use_default_badwordsids', False),

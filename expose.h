@@ -5,6 +5,7 @@ const int stop_token_max = 16;
 const int ban_token_max = 16;
 const int tensor_split_max = 16;
 const int logit_bias_max = 16;
+const int dry_seq_break_max = 16;
 const int images_max = 4;
 
 // match kobold's sampler list and order
@@ -17,6 +18,7 @@ enum samplers
     KCPP_SAMPLER_TYP=4,
     KCPP_SAMPLER_TEMP=5,
     KCPP_SAMPLER_REP_PEN=6,
+    KCPP_SAMPLER_DRY=7,
     KCPP_SAMPLER_MAX
 };
 enum stop_reason
@@ -83,6 +85,10 @@ struct generation_inputs
     const int mirostat = 0;
     const float mirostat_eta = 0.0f;
     const float mirostat_tau = 0.0f;
+    const float dry_multiplier = 0.0f;
+    const float dry_base = 0.0f;
+    const int dry_allowed_length = 0.0f;
+    const char * dry_sequence_breakers[dry_seq_break_max] = {};
     const samplers sampler_order[KCPP_SAMPLER_MAX] = {};
     const int sampler_len = 0;
     const bool allow_eos_token = false;

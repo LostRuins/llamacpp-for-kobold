@@ -40,6 +40,9 @@ typedef struct llama_sampling_params {
     int32_t     mirostat              = 0;                  // 0 = disabled, 1 = mirostat, 2 = mirostat 2.0
     float       mirostat_tau          = 5.00f;              // target entropy
     float       mirostat_eta          = 0.10f;              // learning rate
+    float       dry_multiplier        = 0.0f;               // DRY penalty scale, 0.0 = disabled
+    float       dry_base              = 1.75f;              // DRY exponent base, 0.0 = disabled
+    int32_t     dry_allowed_length    = 2;                  // DRY penalizes repeated sequences longer than this
     bool        penalize_nl           = false;              // consider newlines as a repeatable token
     uint32_t    seed                  = LLAMA_DEFAULT_SEED; // the seed used to initialize llama_sampling_context
 
