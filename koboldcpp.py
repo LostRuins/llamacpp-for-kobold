@@ -851,6 +851,8 @@ def transform_genparams(genparams, api_format):
             user_message_end = adapter_obj.get("user_end", "")
             assistant_message_start = adapter_obj.get("assistant_start", "\n### Response:\n")
             assistant_message_end = adapter_obj.get("assistant_end", "")
+            tools_message_start = adapter_obj.get("tools_start", "")
+            tools_message_end = adapter_obj.get("tools_end", "")
             images_added = []
 
 
@@ -861,6 +863,8 @@ def transform_genparams(genparams, api_format):
                     messages_string += user_message_start
                 elif message['role'] == "assistant":
                     messages_string += assistant_message_start
+                elif message['role'] == "tool":
+                    messages_string += tools_message_start
 
                 # content can be a string or an array of objects
                 curr_content = message['content']
@@ -880,13 +884,22 @@ def transform_genparams(genparams, api_format):
                     messages_string += user_message_end
                 elif message['role'] == "assistant":
                     messages_string += assistant_message_end
+                elif message['role'] == "tool":
+                    messages_string += tools_message_end
 
-            # Check if user is passing a openai tools array, if so add to end of prompt before assistant prompt
+            # Check if user is passing a openai tools array, if so add to end of prompt before assistant prompt unless tool_choice has been set to None
             tools_array = genparams.get('tools', [])
-            if tools_array:
-                tools_string = json.dumps(tools_array, indent=2) + "Respond only in JSON." #TBD: add Tools notation like \n### Tools: \n or just stick the tools at the end of the prompt? And formatting?
+            if tools_array and not genparams.get('tool_choice') == None:
+                tools_string = json.dumps(tools_array, indent=2) + "Respond only in JSON." #TBD: add Tools notation like \n### Tools: \n or just stick the tools at the end of the prompt? And formatting? Add the "Respond only in JSON?" or not?
                 messages_string += user_message_end + tools_string
                 using_openai_tools = True
+                specified_function = None
+                if isinstance(genparams.get('tool_choice'), dict):
+                     try:
+                        specified_function = genparams.get('tool_choice').get('function').get('name')
+                     except:
+                        # In case of any issues, just revert back to no specified function
+                        specified_function = None
                 # Use grammar to try to constrain output to openai tools format: https://platform.openai.com/docs/api-reference/chat/create
                 open_ai_tools_grammar = r"""
 root ::= array
@@ -929,8 +942,52 @@ string ::=
 
 hex ::= [0-9a-fA-F]
 """
+                open_ai_tools_grammar_forced_tool_choice = fr"""
+root ::= array
 
-                genparams["grammar"] = open_ai_tools_grammar
+array ::= "[" object "]"
+
+object ::= "{" pairid "," pairtype "," pairfunction "}"
+
+pairid ::= " \"id\" : " string
+
+pairtype ::= " \"type\" : " "\"function\""
+
+pairfunction ::= " \"function\" : " functionobject
+
+functionobject ::= "{" pairname "," pairarguments "}"
+
+pairname ::= " \"name\" : " "\"{specified_function}\""
+
+pairarguments ::= " \"arguments\" : " "{" arguments "}"
+
+arguments ::= pair ( "," pair)*
+
+pair ::= string ":" value
+
+value ::= string | number | "true" | "false" | "null"
+
+number ::= int frac? exp?
+
+int ::= "-"? ("0" | [1-9] [0-9]*)
+
+frac ::= "." [0-9]+
+
+exp ::= ("e" | "E") ("+" | "-")? [0-9]+
+
+string ::=
+  "\"" (
+    [^"\\] |
+    "\\" (["\\/bfnrt"] | "u" hex hex hex hex) # escapes
+  )* "\""
+
+hex ::= [0-9a-fA-F]
+"""
+
+                if specified_function:
+                    genparams["grammar"] = open_ai_tools_grammar_forced_tool_choice
+                else:
+                    genparams["grammar"] = open_ai_tools_grammar
             else:
                 using_openai_tools = False
 
