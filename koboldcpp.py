@@ -855,8 +855,9 @@ def transform_genparams(genparams, api_format):
             tools_message_end = adapter_obj.get("tools_end", "")
             images_added = []
 
-
+            message_index = 0
             for message in messages_array:
+                message_index += 1
                 if message['role'] == "system":
                     messages_string += system_message_start
                 elif message['role'] == "user":
@@ -877,31 +878,23 @@ def transform_genparams(genparams, api_format):
                         elif item['type']=="image_url":
                             if item['image_url'] and item['image_url']['url'] and item['image_url']['url'].startswith("data:image"):
                                 images_added.append(item['image_url']['url'].split(",", 1)[1])
-
-                if message['role'] == "system":
-                    messages_string += system_message_end
-                elif message['role'] == "user":
-                    messages_string += user_message_end
-                elif message['role'] == "assistant":
-                    messages_string += assistant_message_end
-                elif message['role'] == "tool":
-                    messages_string += tools_message_end
-
-            # Check if user is passing a openai tools array, if so add to end of prompt before assistant prompt unless tool_choice has been set to None
-            tools_array = genparams.get('tools', [])
-            if tools_array and not genparams.get('tool_choice') == None:
-                tools_string = json.dumps(tools_array, indent=2) + "Respond only in JSON." #TBD: add Tools notation like \n### Tools: \n or just stick the tools at the end of the prompt? And formatting? Add the "Respond only in JSON?" or not?
-                messages_string += user_message_end + tools_string
-                using_openai_tools = True
-                specified_function = None
-                if isinstance(genparams.get('tool_choice'), dict):
-                     try:
-                        specified_function = genparams.get('tool_choice').get('function').get('name')
-                     except:
-                        # In case of any issues, just revert back to no specified function
+                # If last message, add any tools calls after message content and before message end token if any
+                if message['role'] == "user" and message_index == len(messages_array):
+                    # Check if user is passing a openai tools array, if so add to end of prompt before assistant prompt unless tool_choice has been set to None
+                    tools_array = genparams.get('tools', [])
+                    if tools_array and not genparams.get('tool_choice') == None:
+                        tools_string = json.dumps(tools_array, indent=2)
+                        messages_string += tools_string
+                        using_openai_tools = True
                         specified_function = None
-                # Use grammar to try to constrain output to openai tools format: https://platform.openai.com/docs/api-reference/chat/create
-                open_ai_tools_grammar = r"""
+                        if isinstance(genparams.get('tool_choice'), dict):
+                             try:
+                                specified_function = genparams.get('tool_choice').get('function').get('name')
+                             except:
+                                # In case of any issues, just revert back to no specified function
+                                specified_function = None
+                        # Use grammar to try to constrain output to openai tools format: https://platform.openai.com/docs/api-reference/chat/create
+                        open_ai_tools_grammar = r"""
 root ::= array
 
 array ::= "[" object "]"
@@ -942,7 +935,7 @@ string ::=
 
 hex ::= [0-9a-fA-F]
 """
-                open_ai_tools_grammar_forced_tool_choice = fr"""
+                        open_ai_tools_grammar_forced_tool_choice = fr"""
 root ::= array
 
 array ::= "[" object "]"
@@ -984,12 +977,22 @@ string ::=
 hex ::= [0-9a-fA-F]
 """
 
-                if specified_function:
-                    genparams["grammar"] = open_ai_tools_grammar_forced_tool_choice
-                else:
-                    genparams["grammar"] = open_ai_tools_grammar
-            else:
-                using_openai_tools = False
+                        if specified_function:
+                            genparams["grammar"] = open_ai_tools_grammar_forced_tool_choice
+                        else:
+                            genparams["grammar"] = open_ai_tools_grammar
+                        # Set temperature low automatically if function calling
+                        genparams["temperature"] = 0.3
+                    else:
+                        using_openai_tools = False
+                if message['role'] == "system":
+                    messages_string += system_message_end
+                elif message['role'] == "user":
+                    messages_string += user_message_end
+                elif message['role'] == "assistant":
+                    messages_string += assistant_message_end
+                elif message['role'] == "tool":
+                    messages_string += tools_message_end
 
             messages_string += assistant_message_start
             genparams["prompt"] = messages_string
@@ -1052,6 +1055,7 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
         global friendlymodelname, chatcompl_adapter, currfinishreason, using_openai_tools
         is_quiet = args.quiet
         currfinishreason = "null"
+        
         
         def run_blocking():  # api format 1=basic,2=kai,3=oai,4=oai-chat
             # flag instance as non-idle for a while
