@@ -806,6 +806,41 @@ using_gui_launcher = False
 using_outdated_flags = False
 using_openai_tools = False
 
+# Used to parse json for openai tool calls
+def extract_json_from_string(input_string):
+    parsed_json = None
+
+    # First check if model exported perfect json
+    try:
+        parsed_json = json.loads(input_string)
+        return parsed_json
+    except:
+        pass
+
+    # Next check if all we need is to add brackets to make it perfect json
+    try:
+        parsed_json = json.loads(f"[{input_string}]")
+        return parsed_json
+    except:
+        pass
+
+    # Now use regular expression to match JSON objects or arrays in case part is valid json and part is not
+    json_pattern = r'(\{.*?\}|\[.*?\])'  # was json_pattern = r'(\{.*\}|\[.*\])'  
+
+    # Find all potential JSON parts
+    potential_jsons = re.findall(json_pattern, input_string, re.DOTALL)
+
+    for potential_json in potential_jsons:
+        try:
+            # Attempt to parse the potential JSON part
+            parsed_json = json.loads(potential_json)
+            return parsed_json
+        except json.JSONDecodeError:
+            # If not valid JSON, continue to the next match
+            continue
+
+    return []
+
 def transform_genparams(genparams, api_format):
     global using_openai_tools
     #api format 1=basic,2=kai,3=oai,4=oai-chat,5=interrogate
@@ -883,106 +918,23 @@ def transform_genparams(genparams, api_format):
                     # Check if user is passing a openai tools array, if so add to end of prompt before assistant prompt unless tool_choice has been set to None
                     tools_array = genparams.get('tools', [])
                     if tools_array and not genparams.get('tool_choice') == None:
-                        tools_string = json.dumps(tools_array, indent=2)
+                        response_array = [{"id": "insert an id for the response", "type": "function", "function": {"name": "insert the name of the function you want to call", "arguments": {"first property key": "first property value", "second property key": "second property value"}}}]
+                        json_formatting_instruction = " Use this style of JSON object formatting to give your answer if you think the user is asking you to perform an action: " + json.dumps(response_array, indent=0)
+                        tools_string = json.dumps(tools_array, indent=0)
                         messages_string += tools_string
                         using_openai_tools = True
                         specified_function = None
                         if isinstance(genparams.get('tool_choice'), dict):
                              try:
                                 specified_function = genparams.get('tool_choice').get('function').get('name')
+                                json_formatting_instruction = f"The user is asking you to use the style of this JSON object formatting to complete the parameters for the specific function named {specified_function} in the following format: " + json.dumps([{"id": "insert an id for the response", "type": "function", "function": {"name": f"{specified_function}", "arguments": {"first property key": "first property value", "second property key": "second property value"}}}], indent=0)
                              except:
                                 # In case of any issues, just revert back to no specified function
                                 specified_function = None
-                        # Use grammar to try to constrain output to openai tools format: https://platform.openai.com/docs/api-reference/chat/create
-                        open_ai_tools_grammar = r"""
-root ::= array
+                        messages_string += json_formatting_instruction
 
-array ::= "[" object "]"
-
-object ::= "{" pairid "," pairtype "," pairfunction "}"
-
-pairid ::= " \"id\" : " string
-
-pairtype ::= " \"type\" : " "\"function\""
-
-pairfunction ::= " \"function\" : " functionobject
-
-functionobject ::= "{" pairname "," pairarguments "}"
-
-pairname ::= " \"name\" : " string
-
-pairarguments ::= " \"arguments\" : " "{" arguments "}"
-
-arguments ::= pair ( "," pair)*
-
-pair ::= string ":" value
-
-value ::= string | number | "true" | "false" | "null"
-
-number ::= int frac? exp?
-
-int ::= "-"? ("0" | [1-9] [0-9]*)
-
-frac ::= "." [0-9]+
-
-exp ::= ("e" | "E") ("+" | "-")? [0-9]+
-
-string ::=
-  "\"" (
-    [^"\\] |
-    "\\" (["\\/bfnrt"] | "u" hex hex hex hex) # escapes
-  )* "\""
-
-hex ::= [0-9a-fA-F]
-"""
-                        open_ai_tools_grammar_forced_tool_choice = fr"""
-root ::= array
-
-array ::= "[" object "]"
-
-object ::= "{" pairid "," pairtype "," pairfunction "}"
-
-pairid ::= " \"id\" : " string
-
-pairtype ::= " \"type\" : " "\"function\""
-
-pairfunction ::= " \"function\" : " functionobject
-
-functionobject ::= "{" pairname "," pairarguments "}"
-
-pairname ::= " \"name\" : " "\"{specified_function}\""
-
-pairarguments ::= " \"arguments\" : " "{" arguments "}"
-
-arguments ::= pair ( "," pair)*
-
-pair ::= string ":" value
-
-value ::= string | number | "true" | "false" | "null"
-
-number ::= int frac? exp?
-
-int ::= "-"? ("0" | [1-9] [0-9]*)
-
-frac ::= "." [0-9]+
-
-exp ::= ("e" | "E") ("+" | "-")? [0-9]+
-
-string ::=
-  "\"" (
-    [^"\\] |
-    "\\" (["\\/bfnrt"] | "u" hex hex hex hex) # escapes
-  )* "\""
-
-hex ::= [0-9a-fA-F]
-"""
-
-                        if specified_function:
-                            genparams["grammar"] = open_ai_tools_grammar_forced_tool_choice
-                        else:
-                            genparams["grammar"] = open_ai_tools_grammar
                         # Set temperature low automatically if function calling
-                        genparams["temperature"] = 0.3
+                        genparams["temperature"] = 0.2
                     else:
                         using_openai_tools = False
                 if message['role'] == "system":
@@ -1133,10 +1085,11 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
             tool_calls = []
             if using_openai_tools:
                 try:
-                    tool_calls = json.loads(recvtxt)
-                    recvtxt = None
-                except json.JSONDecodeError as e:
-                    print(f"Error parsing tool calls: {e}, omitting tool calls from response, and just passing generated content as message content")
+                    tool_calls = extract_json_from_string(recvtxt)
+                    if tool_calls:
+                        recvtxt = None
+                except Exception as e:
+                    print(f"Error parsing or finding tool calls: {e}, omitting tool calls from response, and just passing generated content as message content")
 
             res = {"id": "chatcmpl-1", "object": "chat.completion", "created": 1, "model": friendlymodelname,
                    "usage": {"prompt_tokens": 100, "completion_tokens": 100, "total_tokens": 200},
