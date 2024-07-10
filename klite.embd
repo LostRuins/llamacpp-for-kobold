@@ -7,11 +7,12 @@ Just copy this single static HTML file anywhere and open it in a browser, or fro
 Please go to https://github.com/LostRuins/lite.koboldai.net for updates on KoboldAI Lite.
 If you are submitting a pull request for Lite, PLEASE use the above repo, not the KoboldCpp one.
 KoboldAI Lite is under the AGPL v3.0 License unless otherwise exempted. Please do not remove this line.
-Current version: 148
+Current version indicated by LITEVER below.
 -Concedo
 -->
 
 <script>
+	const LITEVER = 149;
 	const urlParams = new URLSearchParams(window.location.search);
 	const localflag = true;
 	const STORAGE_PREFIX = (localflag?"e_":"")+"kaihordewebui_";
@@ -44,6 +45,7 @@ Current version: 148
 	</style>
 	<style>
 		:root{
+			--img_nikosquare:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAADxQTFRFS2Si+X5+pmBfHyApLjZSS2SjP057Vzw5EA4Sf1ZT+9Sv1WpqnYx/7qaYw7vUAAAAS2Sj9PPzgnrLS2SjAzrF9gAAABR0Uk5T///////w////////////AKj//yMlHqVpAAAD3klEQVR4nKWXi7KjIAyGFSgxEjhV3/9d90+8onZPd810prWSDwi50fyoTNP7/X79g2D4NJlqo+rvV/Mf8npPM2B6/4+6ihKaB/pGaH4e6IPw00y3+48xhBC3J32Id+NeUzN9UPfer4RoD/eIqbnuwLS7zncLAfqdPvvDmvY9XAE6vuuImEAw8fNT1/kr4Qqw+YhdIocfJl0glxyTvyG8m7MNY1B9diAkmgGUODnH7Km7AF53AGEjUJtWYdUPzn0LyC6AQO0qCUCi1PKXAM5tCwXeAC0ROf36AqA2VACmbQ8yP9DVimeA6lPKkLaW3EPylXAARBXV701OhOVPI6hcAXH1mTyP7e8AMyEc4mQDzP7XrfOfl5D7ndAdfXID6NwMyXACEpEbgPTCLJn1hEGoAep/OKheQiCEEhj1HgBQX1ZxQMPLlyVsABwejkp8EGEQAkxRA4RgIRYhTxme1fkKoBZwAHjLA+b/cgLQ8gZ4gZ+tVtgAnboaa+Lg0IwRhBqAmX0cI0WFqHN3FUAXAOPpzIWhPzZYQgUAu4ljiaKTaKwtZtwAIdv8XkocR9+UYM5/BMTRxzJKsWEu+RPAAsBxKSWWgTHS18cofiwhlCJD4cApUb0CNWKA/5dhwAqKD2UIXAEoFgUMkIJTCCcjzkGE890BQhXA685WQNqD6ujKWDRhhI7EdKUCtKSGxd8ASEr+6sqNApKPeD/iFEpT6nAUcAMgMmBzqwVPgJCd80X3AIlDDcjSzH8PJbD7AGiT020WjfcCN0jI5WwJGk5axP4eikeyvQd4HE5i7I4xEpWANKg0m2p0OUIcQKJnd7uCaABMRebOSOoB1WUVYACzaGSs012NaI5gAC0GcPWD9iLI6/qVdGeXY7R6xu1M0FAhG7s865ctw97Zoz85kuXi5T2EbaZatLileQA+VifrYGrT7ruL+lbZ0orYcXQJpry/tl+26l1s8sOy+BxMqKjr23nf7mhFnktbOgJOGQmnVG0ZVve06VvDUFmEztGIhHAy2YHA+qsCuFNS1T0Edf41AOZ1b7uwH1tYYFA4p3U1owiOOu+AsyxrQ3AIXwrLXtryL4BPpW0rrvMaPgHSx+K6l3cj3Oin1lH6S3nfd+KDa51lAjJhE6ddz7XRu29xUH51O95SgNOahDTB3PPvLc7cZPWYEVlVlp5AkGtJK/63XZoq0jBsvUrPeNDvr/tE1SnD3qxIEVuNfAsY0J9w4Ux2ZKizHPLHFdw127r7HIS2ZpvFTHHbbN+3+2Qm29p9NvXv2v3twkHHCwd9vnA8vvI8vnQ9vvY9v3g+vvo+v3w/u/7/AZoAPJwrbZ1IAAAAAElFTkSuQmCC");
 			--img_sword:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgBAMAAACBVGfHAAAAAXNSR0IB2cksfwAAAAlwSFlzAAAA7AAAAOwBeShxvQAAAB5QTFRFAAAA/rUT5uvzztXjq1kW5+r14ufw/8YF/8QHr1kWOCO8XQAAAAp0Uk5TAPr+/fwgpBqRPkYi9G8AAAC6SURBVHicjZCxDoIwEIZv0cLmryTiWl/AhOBOcgubcWAmDs5lglEWdWTwgT1MkGvj4A1N+/Xr3Z8S6VpcrXeurN1799baTIOzCMdQyANBg4+QHQIhq2fhMgqqZ/WfcAqE/LfQPR2REgzwoKUSIiB1uoMA3PWIEUCPMD1arHUG08YFvAz0Ymz0T8XMBWpPYMbWE7hs4L49+4R5aGalAbiU/OkEeiAZBGACst1RAFbjqp/IgA63CUQ6gtQbfGErFF7/nE4AAAAASUVORK5CYII=");
 			--img_paper:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgBAMAAACBVGfHAAAAAXNSR0IB2cksfwAAAAlwSFlzAAAAnQAAAJ0Bj3LnbgAAAB5QTFRF+OmvAAAA89Ze14Rw2cCY1k8/8eGhmEQ/+uqj87Jse3RL9AAAAAp0Uk5T/wD49//9of8rH/vnQeUAAAEOSURBVHicXdG9asMwFAXggx1COmoJ8VgNptkKcmqyGaKSB0i127RkLiTgNV2CVxMo9G177rVSm2ow0se5Vz/Gbdub6YBz2//w0sV59s0wbs5X806X1j4JFN4Bx45La9eE7OM1PANIBHKCuW7CAYgkkIWgEaWeYN5DjHA0AthIZF8ILAgrpBJJ21N1hyGCXXvGA2EJibxJQaVwgUQKlNIkj5AePNKyrWAJtYS952dH6AlpJaQViW3AXc/shlnZFoRHAhd6hpkjrLGEl7lShFKuphXgA0B23WtF+UmwCjy1VijUw70H4iPeH0KaIMl/DKZjIf/lWo/QCJjVSAMYUoSvCH80gjHdEZibCQjJJuYXZ+xAP6Rjil4AAAAASUVORK5CYII=");
 			--img_chat:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAAXNSR0IB2cksfwAAAAlwSFlzAAAA7AAAAOwBeShxvQAAADxQTFRFkcPmAAAAkcPmstXukL/ltNbueJGic4aTibLQkcPmvtzwpM7qmazZkcPm5vL5ps/ruNnw0uf1udD/////pH/0JgAAABR0Uk5T/wBl/xH0////Qrz8Bltj6diDAgFfSBG4AAAAzklEQVR4nL3TQQ6EIAwF0BYLSBFl9P53HUFhVKru5i/QpC+2CRWQOOpLIo9YAqQ9tJmqAJbqAFyBFuugK+hk0P0b9Mb05/MCjLUGwOZzexeBuQe9senjdmth2xbykEoFR89gJfQClHsD4eGyMlDAMmCkHYziPvixAhzjvlO+K9FxXShXAOKcB/VMJTPWegaYgP/gLwOVegVTqishO9i2+Bbw/h+Eth7g0LkOdog7AWoBnQDS5RvpuvGcZcjZ4JIWBuXkbvgAkMILWOdx6fEFbukIF0RE9j4AAAAASUVORK5CYII=");
@@ -55,6 +57,18 @@ Current version: 148
 			--img_mic:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAkAgMAAACcbnALAAAAAXNSR0IB2cksfwAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAAxQTFRFAQEB/f39W1tbsrKyhr4L4QAAAAR0Uk5TBv+O8t7TK14AAACVSURBVHicY2BAAatgDK7/C6As3dAKKGtqaByEwXQ1NLyBtizuJiCr6QGQxXsIyGouQGU5AVmNIBZ3EpDVCVLHXTA1NIwXxGKO2Boap3oAZFycduiLrWADpzfta7oGtsP0AQN3DMRrdau2QjzHFBoaCnEBw9bQKKh/maY1wIJjGgM6i+n/9f8Yrt///x9Ui9aqFQzIAACxbkd5KhPnwgAAAABJRU5ErkJggg==");
 			--img_mic_live:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAkAgMAAACcbnALAAAAAXNSR0IB2cksfwAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAAxQTFRFAAAAHvoBSldJTaRCcSDH5wAAAAR0Uk5TBv1875jbENYAAACVSURBVHicY2BAAatgDO7/D6As3dAKKGtqaBiEwXQ1NLyBtizuJiCrCeQG3kNAVnMBkMUKZgWAWE5AViOIxZ0EZHWC1HEWAFm8CUAWc8TW0DjVAyDj4oCu3wo28HrX/0XXwXaYPtDgj4F4LXzVVYjnmENDQw9APLc3tA7qX6brDbDgmMaAzsLq+v///0O1rFoFD0owAADWKEefP5UQnwAAAABJRU5ErkJggg==");
 			--img_mic_off:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAkAgMAAACcbnALAAAAAXNSR0IB2cksfwAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAAxQTFRFAQEBoKCgW1tbmpqa1zTSqAAAAAR0Uk5TBfGLNb6PCuwAAADJSURBVHicXdCxDoIwEAbgi4YBjeEpGHRnNzqbOHgtMSRldOQFCFAnHwBmR8M7mPASfZSOJN7RMmCnL7n/mrsDWLx+xgbfEA2sGFNIjqwWBRjWChGfOHh9M3CSpvBSU5E1SnCStvDyRVIpvaStaieF46RQl9LqnBScrMLmyjqb0esirVNolcEX57amRBGwIiqKmAdN1B4fLX9oKt1pQVijzSG8kXZZLPo25VjBe3AsGWjLOw8Q0TBdPZ+jg3/NHQvRhXzLof8sDvsDMJVHBpRtjD4AAAAASUVORK5CYII=");
+			--img_chat_cust_btn:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgBAMAAACBVGfHAAAAAXNSR0IB2cksfwAAAAlwSFlzAAAA7AAAAOwBeShxvQAAAB5QTFRF////AAAA////////////////////////////////+ZDkTwAAAAp0Uk5T/wAM8dK2SHAtiuAmg50AAADMSURBVHicbZFNEoIwDIUztjjjMvUH3VlH0SXeAPECegPLDeQGsHHLcGJNWxqmmAVJPyZvkjzAKMB+LxpRtQzOeYl4FPUANjnIKitAGA868LHwIB8ANA4UMQgtwrc8IqBijVN4Q0ngQ5pJlVGjrBFS++uN6AoDa0oJDtpPWFGaE3hRdYMlpRmBPVXXKZi0OFHNolu7Wo+4s8MbQNXxYElLo6c8eu+WC/cQOlpfxvfwQLGG/g/sTeUd2AYyqvmNE4xyVqZspTMbDyP3R/EFHDwlDSXkmSQAAAAASUVORK5CYII=');
+			--img_chat_abort_btn:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgBAMAAACBVGfHAAAAAXNSR0IB2cksfwAAAAlwSFlzAAAA7AAAAOwBeShxvQAAAB5QTFRF////AAAA////////////////////////////////+ZDkTwAAAAp0Uk5T/wAGyhCtf+a2XPn1V7sAAADISURBVHicRdE7DoJQEEbhkxh8lJcYewqtLWgsDRswrEArWytqwgpM3LDM/DNAAcnJR3JnLuU3NCWe+n0rnGDKcIYXX6iC1A848AH6BbDzIGJgDvYWMUBFRxAHtByv9p0CbO4UJ/smQKEECTCHIKOABZEAFkQCeEhiwEMSAwoiDhTqUWdZwlm/TBl0yCCsQIQViJBj5tDkHmLoOcSYuRdyD7kXcg9x3J7nMoWTrV+DpnCie2l1UZ2HZwKRLZcFOOmp39U9w/ExNH9CeSgHcv95sAAAAABJRU5ErkJggg==');
+			--img_chat_send_btn:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgBAMAAACBVGfHAAAAAXNSR0IB2cksfwAAAAlwSFlzAAABigAAAYoBM5cwWAAAAB5QTFRFAAAA////////////////////////////////////JHyblQAAAAp0Uk5TAP9vDPYrvduISRPAj7AAAAB4SURBVHichdK7CcAgFIVhVzgg2scFbLKDpZAZQkibFUIWiGTfQArh/hax/EDv4+jcvCVnzq3QDExSqQAdGaA1A/wJUGwAhQpQyYBeqoP2DPAXQDEBFBbAV8qAnj/gFT7KskNjbJ3DcXwuiCsclswYGJSNcggb3+EFzkgkYRPincoAAAAASUVORK5CYII=');
+			--img_corpo_send_btn:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAAXNSR0IB2cksfwAAAAlwSFlzAAE69gABOvYBOrFXOgAAADxQTFRFAAAA////////////////////////////////////////////////////////////////////////////2EloEwAAABR0Uk5TAP+Ns8QMEdZ1KgY6hEGpWfHSYnJ1JXggAAAAjklEQVR4nO3SyxaAEBCA4VG6KNLl/d81xUwMWbZqFo7T/y0cAkjHzFCbfhNCdpU+CFETvr8L7G/i6WUR95JIey545wL7SksqsI/ttTYNF9TBA+Biw46AhO+GOgEU6gYz9QcE4QFItz0gBbdYwhm6XYe/IAJgtJ2y+45BcX7wGdAXsBUwuZdf8jeMRyn24QQTAQPJbL/N8QAAAABJRU5ErkJggg==');
+			--img_corpo_abort_btn:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgBAMAAACBVGfHAAAAAXNSR0IB2cksfwAAAAlwSFlzAAABFAAAARQB+zng/wAAABtQTFRFAAAA////////////////////////////////600+wgAAAAl0Uk5TAAMbfdr6//TxAeIJjAAAAFJJREFUeJxjZEADjGQJCCkpCUDYd+7dBwkoJz+AyjKdOgcSsNCDq5etBQm4KcAF/s0BCZR9QJg4EySQhmTHrGEvgOF9jADCCEKMQMaIBlRAhgAAIUIkIRvVXjIAAAAASUVORK5CYII=');
+			--img_corpo_edit:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAAXNSR0IB2cksfwAAAAlwSFlzAAAAnQAAAJ0Bj3LnbgAAADxQTFRFAAAAmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZa/DskgAAABR0Uk5TAP7x64ADDhfktXFmeJMyotNKwj87K0aQAAAA70lEQVR4nLWT3Y6FMAiEC6W2aH/U8/7vurTVNWvRq7NzYYhfgGGMxvyPNg4YeHvkxUJVIB07QsC97AhBn0EWbMo+JwR+mG/JS5F3CMr8GQE419IXwIFPc/X3PKFy5L7DKx4an6fqknJ93q7wnfc7OAAWhS+uXSpOAZMb5y9HzcLphS9yS/nLXby4W3DodxHP/cZonA7/J4/TwG184ZKZjf7af9S/ootPGjcsmbxxs8K6XVnc9tfXAbg1taxp4OaD0FL3Navb/d2jRGCc31LQuXi0aU68jvkdkkZbP+/wfU91GFbW++VK+cvoM5r/ln4AY8EH0Qkc978AAAAASUVORK5CYII=');
+			--img_corpo_retry:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAAXNSR0IB2cksfwAAAAlwSFlzAAAA7AAAAOwBeShxvQAAADZQTFRFAAAAmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYB0vbbgAAABJ0Uk5TAP+OCnz5/ZjdwtU8JsqwVWW2UONGYgAAAOZJREFUeJy9U4sOgyAMBFosguj8/59dAXmOuWRZdokJXI8+8BDit9geiI/tXdR5LSO0d7PDRjYwL2lwYXoxJ9Fu4hIFrCuUOIXM6toDhVoKpcRynglf5QIsE/yp3B4n3fuSZ2wlC7g/PzZlG4Hj+tBFARU1grXmEoVpS2i5wFxwpHx8L0MDXCLguLbKzq72H3Amz3bEjnCYJFxfoo5rprWPwyJ1Wqm5gAoTBTSWAP7lrhHYsUVbuVTi7OM7m2qrguiP1jBe9nbCkEVTb7kqD+a8TLsTndm0AzZ7b3vx8eGkNLdP70s8ASe+BWpoHN76AAAAAElFTkSuQmCC');
+			--img_corpo_delete:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAAXNSR0IB2cksfwAAAAlwSFlzAAAA7AAAAOwBeShxvQAAADxQTFRFAAAAmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZa/DskgAAABR0Uk5TAP8ZE8/k2cbhH56BdA9kAixGQ1txX8NpAAAAuElEQVR4nL2TyRbDIAhFAxqTOiQd/v9fmzikgNhd60qQd8F3dJr+s54+JpkzMdzb/gEAzvBznI9kq/DHHhZWgfbMhRqFM2CMrAfYWrsVOKPowSWRWJHpaVMsDItUrwyVGYqeMVQ9Zeh6whjoCWOgpwxd/7k/zDg4v1rY2zd9ZigV7f5lDtdVXP7VQskg/qHGYP4rDOF/xzDSf8nw/ZMrDF9DO3q0S42i4n9mxBrsm/JxUvSvXSZ/s96e2ATDYcXDVgAAAABJRU5ErkJggg==');
+			--img_corpo_theme:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAAXNSR0IB2cksfwAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAEtQTFRFAAAAmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZCNPppgAAABl0Uk5TAP9EmbvlZocD/vsGPIjPfaJbLtdJl+Y6R35RHH0AAACySURBVHictZPJFoMgDEV5WoqA89D6/19aLIg1yaq1d4OPc48Jk1IX4JsHIrrxLAYaHBgWAxrP9K8amsUAkKttnyReIlhUaaKClYQJXRHpMEnCYPOy7CAJquhvkb7gLXEEYTRlxIyiMLvcg5slocVyjyxolXIfq3bvkcwcfrn5vCipKHR17vmbha9531ZRIDvPBXJ2XCCnz4V/XDmNOk2ka3+KAXN+KSQGvNH7WzOexd95AaOkBtmsQk/EAAAAAElFTkSuQmCC');
+			--img_gear:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAAXNSR0IB2cksfwAAAAlwSFlzAAAA7AAAAOwBeShxvQAAADxQTFRFiYmJAAAAiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJ1owGHwAAABR0Uk5T/wAOBObNRLP0Fih22YC+ZVE1n4prfQ+hAAAA7UlEQVR4nJWT2xaEIAhFEbxk2v3//3WsmUCLVmt4It15kCNgXgIkpZ4uSQNgsuDinkUHNuEVmC2UyDPinPfM+hYY4BZbA3R3APoacG/Aet+35h8ArSKxCEBB2QeHP6CfuMTgI3qm8xR3YJJ/0lc28UI3F2Dkz3C2VxTHAmT+OrtrPC/lAkgT2SAUDR2IDSAteJCoiqRbkaEAixg10MV7uxydRF4JHqPnI8NCpxdVsyRWErNIMavD2m7FLde8h/EFQO1N1hJR2YdYS/BFszsPG5oajD/u4cpLxu1o0WVw6tEzqbOJp1MbXkPa8D7FB+prBiyq3W6BAAAAAElFTkSuQmCC');
+			--img_corpo_left:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAMAAADXqc3KAAAAAXNSR0IB2cksfwAAAAlwSFlzAAAAnQAAAJ0Bj3LnbgAAADxQTFRFAAAAmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZa/DskgAAABR0Uk5TAP0C1vSFKA1oFwjrPK3DS6DRtVwhct1aAAAAhUlEQVR4nKWRyRIDIQhEaXfFZdT//9eY68CkkgrH1w3VANF/ZYK3Pv4gHM6wQeGXA/uscD48mBuP9YKz0l9qY8yUFb/Kn/wUuoPdUXAKDPQqN6OYLLBqkUp+K63KWSbuqfeYnCZcG8q0kqbDHEq0Mk7ovrWefZQlz35Sj8VNnJE+vPabegE7dATMPe9UFwAAAABJRU5ErkJggg==');
+			--img_corpo_right:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAMAAADXqc3KAAAAAXNSR0IB2cksfwAAAAlwSFlzAAAAnQAAAJ0Bj3LnbgAAADxQTFRFAAAAmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZa/DskgAAABR0Uk5TAP0C1oUoDfRoFwjqPK3DS6DRtVyphxJ2AAAAg0lEQVR4nJ2RSxLEIAhERVRE/ES9/13H2QYyVRmW/eyiW5z7b1LAEP0bEBHEJBwE6DKIj4eIRY4HCa6atIfzBGm1PJBHD5metBGoR6NO7QCiQakLALNa4mv76my+nzvdO5bRCGbmm+7TOFFnVlHL7ifo0BXiOvrWuuMma+jP+HHBN/MBKVwEvjDYz2QAAAAASUVORK5CYII=');
 		}
 
 		body {
@@ -67,6 +81,15 @@ Current version: 148
 		.invert_colors
 		{
 			filter: invert(1);
+		}
+
+		.unselectable {
+			-webkit-touch-callout: none !important;
+			-webkit-user-select: none !important;
+			-khtml-user-select: none !important;
+			-moz-user-select: none !important;
+			-ms-user-select: none !important;
+			user-select: none !important;
 		}
 
 		.maincontainer {
@@ -188,22 +211,16 @@ Current version: 148
 			background-color: #295071;
 		}
 
-		#formatmenu {
-			display: none;
-			background-color: #4d4d4d;
-			padding: 10px;
-		}
-
-		body.connected #formatmenu,
-		#formatmenu.always-available {
-			background-color: #295071;
-		}
-
 		#connectstatusdiv {
-			display: flex;
-			text-align: right;
+			text-align: center;
 			font-size: 14px;
-			width:120px;
+			font-weight: bold;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+    		align-items: center;
+			width: 100px;
+			color:#cccccc
 		}
 
 		#gamescreen {
@@ -244,10 +261,6 @@ Current version: 148
 				padding: 4px 4px;
 				font-size: 12px;
 			}
-		}
-
-		#messagefield {
-			margin-left: 20px;
 		}
 
 		#inputrow.show_mode {
@@ -400,17 +413,6 @@ Current version: 148
 			font-size: 12pt;
 		}
 
-		#popuplistheader {
-			padding-left: 10px;
-			display: grid;
-			grid-template-columns: 28% 10% 60%;
-			color: #737373;
-		}
-
-		#popupcontent {
-			height: 325px;
-			overflow-y: scroll;
-		}
 
 		#popupfooter {
 			width: 100%;
@@ -435,12 +437,6 @@ Current version: 148
 			padding-top: 10px;
 			max-height: 100%;
 			width: 100%;
-		}
-
-		#aidgpopup {
-			width: 350px;
-			background-color: #262626;
-			margin-top: 100px;
 		}
 
 		.workerpopup {
@@ -598,23 +594,6 @@ Current version: 148
 			font-size: 12px;
 		}
 
-		.chunkhov:hover {
-			color: #c0fc51;
-			cursor: pointer;
-		}
-
-		.chunkhov:hover>action {
-			color: #00fa00;
-		}
-
-		.colorfade,
-		.colorfade * {
-			-moz-transition: color 1s ease-in, text-shadow 1s ease-in;
-			-o-transition: color 1s ease-in, text-shadow 1s ease-in;
-			-webkit-transition: color 1s ease-in, text-shadow 1s ease-in;
-			transition: color 1s ease-in, text-shadow 1s ease-in;
-		}
-
 		.color_blueurl {
 			color: #d3e7ff;
 		}
@@ -630,6 +609,9 @@ Current version: 148
 		}
 		.color_green {
 			color: #3bf723;
+		}
+		.color_offwhite {
+			color: #bedae9;
 		}
 		.color_darkgreen {
 			color: #63975c;
@@ -817,26 +799,12 @@ Current version: 148
 			background-color: #98bcdb;
 		}
 
-		.edit-flash,
-		.edit-flash * {
-			color: #3bf723 !important;
-		}
-
-		.status-flash,
-		.status-flash {
-			color: #fce94f !important;
-			text-shadow: 0 0 50px #fce94f, 0 0 50px #fce94f, 0 0 10px #fce94f, 0 0 10px #fce94f, 0 0 10px #fce94f, 0 0 10px #fce94f, 0 0 10px #fce94f;
-		}
-
 		.flex {
 			display: flex;
 			align-items: center;
 		}
 
-		.flex-row-container {
-			display: flex;
-			flex-flow: wrap;
-		}
+
 
 		.flex-row {
 			display: flex;
@@ -848,7 +816,6 @@ Current version: 148
 		.flex-push-right {
 			margin-left: auto;
 		}
-
 
 
 		.btnicon-save
@@ -886,14 +853,6 @@ Current version: 148
 			display: none;
 		}
 
-		.heightfull {
-			height: 100%;
-		}
-
-		.heighthalf {
-			height: 50%;
-		}
-
 		.helpicon {
 			display: inline-block;
 			font-family: sans-serif;
@@ -913,38 +872,11 @@ Current version: 148
 			text-decoration: none;
 		}
 
-		.statusicon {
-			display: inline-block;
-			font-weight: bold;
-			text-align: center;
-			padding-left: 8px;
-			padding-right: 8px;
-			font-size: 30px !important;
-			font-weight: bold;
-			text-align: center;
-			font-size: 1.4ex;
-			line-height: 1.8ex;
-			text-decoration: none;
-			color: #9e9e9e;
-		}
-
-		body.connected .statusicon,
-		.statusicon.always-available {
-			color: #68a2d4;
-		}
-
-		.statusicon.active {
-			color: #3bf723 !important;
-		}
-
-		.helpicon:hover,
-		.statusicon:hover {
+		.helpicon:hover {
 			cursor: pointer;
 		}
 
-		.helpicon:hover .helptext,
-		.statusicon:hover .statustext,
-		.statusicon.statustoggled .statustext {
+		.helpicon:hover .helptext {
 			display: inline-block;
 			width: 280px;
 			background-color: #1f2931;
@@ -958,64 +890,13 @@ Current version: 148
 			border: 1px solid #337ab7;
 		}
 
-		.statusicon:hover .statustext.statustext-wide,
-		.statusicon.statustoggled .statustext.statustext-wide {
-			width: 350px;
-		}
 
-		.statusiconlabel {
-			pointer-events: none;
-			color: #757575;
-			text-align: center;
-			font-weight: bold;
-			font-size: 13px;
-		}
-
-		body.connected .statusiconlabel,
-		.statusiconlabel.always-available {
-			color: #337ab7;
-		}
-
-		#usiconlabel {
-			transform: translate(-3px, 10px);
-			-moz-transform: translate(-3px, 10px);
-			-webkit-transform: translate(-3px, 10px);
-			-ms-transform: translate(-3px, 10px);
-			-o-transform: translate(-3px, 10px);
-		}
-
-		.status-container {
-			z-index: 1;
-			text-shadow: none !important;
-		}
-
-		.helptext,
-		.statustext {
+		.helptext {
 			display: none;
 			font-family: sans-serif;
 			position: absolute;
 			z-index: 1;
 			text-shadow: none !important;
-		}
-
-		.statustext {
-			transform: translate(-105%, 30px);
-			-moz-transform: translate(-105%, 30px);
-			-webkit-transform: translate(-105%, 30px);
-			-ms-transform: translate(-105%, 30px);
-			-o-transform: translate(-105%, 30px);
-		}
-
-		.statusheader {
-			padding-bottom: 10px;
-		}
-
-		#stat-usactive {
-			text-align: left;
-			height: 270px;
-			overflow-y: scroll;
-			position: relative;
-			padding-left: 20px;
 		}
 
 		.justifyleft {
@@ -1033,15 +914,6 @@ Current version: 148
 		.layer-bottom {
 			grid-area: 1/1;
 			z-index: 0;
-		}
-
-		.layer-top {
-			grid-area: 1/1;
-			z-index: 2;
-		}
-
-		.icon-container {
-			position: relative;
 		}
 
 		hr {
@@ -1246,11 +1118,6 @@ Current version: 148
 			color: #ffffff;
 		}
 
-		.spacer {
-			display: inline-block;
-			width: 50px;
-		}
-
 		.inlinelabel {
 			color: #ffffff;
 			display: flex;
@@ -1266,13 +1133,6 @@ Current version: 148
 			margin: 4px;
 		}
 
-
-
-		@media only screen and (max-width: 768px) {
-			.SideMenu.open {
-				width: 100%;
-			}
-		}
 
 		.tokens-in-box {
 			position: relative;
@@ -1311,7 +1171,6 @@ Current version: 148
 		{
 			border: 1px solid;
 		}
-
 
 		.saveloadpopup {
 			width: 660px;
@@ -1728,15 +1587,11 @@ Current version: 148
 			}
 		}
 
-		/* #pickedmodel
-		{
-			height: 120px;
-		} */
 
 		@media screen and (hover: hover) and (any-pointer: fine) /* no custom scrollbars on mobile */
 		{
 			::-webkit-scrollbar {
-			width: 5px;
+			width: 8px;
 			}
 			::-webkit-scrollbar-track {
 			background: transparent;
@@ -1859,14 +1714,11 @@ Current version: 148
 	{
 		width: 100%;
 		resize: none;
-		/* overflow-y:scroll; */
 		overflow-x:hidden;
 		background: #00000000 none repeat scroll 0 0;
 		border: medium none;
 		color: #bebebe;
 		font-size: 15px;
-		/* min-height: 36px; */
-		/* width: 100%; */
 		outline:none;
 	}
 	.cht_inp_bg.shorter
@@ -1937,8 +1789,7 @@ Current version: 148
 		background-size: 50% !important;
 		background-repeat: no-repeat !important;
  		background-position: center !important;
-		background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgBAMAAACBVGfHAAAAAXNSR0IB2cksfwAAAAlwSFlzAAABigAAAYoBM5cwWAAAAB5QTFRFAAAA////////////////////////////////////JHyblQAAAAp0Uk5TAP9vDPYrvduISRPAj7AAAAB4SURBVHichdK7CcAgFIVhVzgg2scFbLKDpZAZQkibFUIWiGTfQArh/hax/EDv4+jcvCVnzq3QDExSqQAdGaA1A/wJUGwAhQpQyYBeqoP2DPAXQDEBFBbAV8qAnj/gFT7KskNjbJ3DcXwuiCsclswYGJSNcggb3+EFzkgkYRPincoAAAAASUVORK5CYII=') !important;
-
+		background-image: var(--img_chat_send_btn) !important;
 	}
 	.chat_msg_send_btn:hover {
 		background: #3f94df none repeat scroll 0 0;
@@ -1972,7 +1823,7 @@ Current version: 148
 		background-size: 50% !important;
 		background-repeat: no-repeat !important;
  		background-position: center !important;
-		background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgBAMAAACBVGfHAAAAAXNSR0IB2cksfwAAAAlwSFlzAAAA7AAAAOwBeShxvQAAAB5QTFRF////AAAA////////////////////////////////+ZDkTwAAAAp0Uk5T/wAGyhCtf+a2XPn1V7sAAADISURBVHicRdE7DoJQEEbhkxh8lJcYewqtLWgsDRswrEArWytqwgpM3LDM/DNAAcnJR3JnLuU3NCWe+n0rnGDKcIYXX6iC1A848AH6BbDzIGJgDvYWMUBFRxAHtByv9p0CbO4UJ/smQKEECTCHIKOABZEAFkQCeEhiwEMSAwoiDhTqUWdZwlm/TBl0yCCsQIQViJBj5tDkHmLoOcSYuRdyD7kXcg9x3J7nMoWTrV+DpnCie2l1UZ2HZwKRLZcFOOmp39U9w/ExNH9CeSgHcv95sAAAAABJRU5ErkJggg==') !important;
+		background-image: var(--img_chat_abort_btn) !important;
 	}
 	.chat_msg_send_btn_abort:hover {
 		background: #df3f3f none repeat scroll 0 0;
@@ -1996,7 +1847,7 @@ Current version: 148
 		background-size: 64% !important;
 		background-repeat: no-repeat !important;
   		background-position: center !important;
-		background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgBAMAAACBVGfHAAAAAXNSR0IB2cksfwAAAAlwSFlzAAAA7AAAAOwBeShxvQAAAB5QTFRF////AAAA////////////////////////////////+ZDkTwAAAAp0Uk5T/wAM8dK2SHAtiuAmg50AAADMSURBVHicbZFNEoIwDIUztjjjMvUH3VlH0SXeAPECegPLDeQGsHHLcGJNWxqmmAVJPyZvkjzAKMB+LxpRtQzOeYl4FPUANjnIKitAGA868LHwIB8ANA4UMQgtwrc8IqBijVN4Q0ngQ5pJlVGjrBFS++uN6AoDa0oJDtpPWFGaE3hRdYMlpRmBPVXXKZi0OFHNolu7Wo+4s8MbQNXxYElLo6c8eu+WC/cQOlpfxvfwQLGG/g/sTeUd2AYyqvmNE4xyVqZspTMbDyP3R/EFHDwlDSXkmSQAAAAASUVORK5CYII=') !important ;
+		background-image: var(--img_chat_cust_btn) !important ;
 
 	}
 	.chat_msg_cust_btn:hover {
@@ -2027,7 +1878,7 @@ Current version: 148
 		}
 	}
 	@media print {
-		#inputrow, #actionmenu, #actionmenu2,#topmenu,.lastreq,.cht_inp_hold_outer
+		#inputrow, #actionmenu, #actionmenu2,#topmenu,.lastreq,.corpolastreq,.cht_inp_hold_outer
 		{
 			display: none;
 		}
@@ -2054,6 +1905,329 @@ Current version: 148
 	{
 		height: calc(98vh - 248px);
 	}
+
+	.corpostyle
+	{
+		background-color: #ffffff;
+		overflow-x: hidden;
+		max-height: 100%;
+		width: 100%;
+		word-wrap: break-word;
+		font-size: 20px;
+		font-family: Inter, sans-serif;
+		tab-size: 4;
+		line-height: 35px;
+		color: rgb(55, 65, 81);
+		display: flex;
+	}
+
+	body.darkmode .corpostyle {
+		background-color: #222222;
+		color: #ececec;
+	}
+
+	.corpo_edit_outer
+	{
+		display: inline-block;
+		background: #f4f4f4aa none repeat scroll 0 0;
+		margin-top: 6px;
+		margin-bottom: 6px;
+		border-radius: 16px;
+		padding-left: 12px;
+		padding-right: 12px;
+		padding-top: 8px;
+		width:100%;
+        border: 1px solid #bbbbbbaa;
+		position: relative;
+	}
+	.corpo_edit_inner
+	{
+		width: 100%;
+		resize: none;
+		overflow-x:hidden;
+		background: #00000000 none repeat scroll 0 0;
+		border: medium none;
+		color: #0d0d0d;
+		font-size: 20px;
+		font-weight: 400;
+		outline:none;
+		line-height: 28px;
+	}
+
+	.corpo_chat_outer
+	{
+		width: calc(100% - 24px);
+		max-width: 860px;
+		background: #f4f4f4aa none repeat scroll 0 0;
+		margin-top: 6px;
+		margin-bottom: 4px;
+		margin-left: auto;
+		margin-right: auto;
+		border-radius: 16px;
+		padding-left: 12px;
+		padding-right: 52px;
+		padding-top: 8px;
+        border: 1px solid #bbbbbbaa;
+		position: relative;
+	}
+	.corpo_chat_inner
+	{
+		width: 100%;
+		resize: none;
+		overflow-x:hidden;
+		background: #00000000 none repeat scroll 0 0;
+		border: medium none;
+		color: #0d0d0d;
+		font-size: 20px;
+		font-weight: 400;
+		outline:none;
+		line-height: 28px;
+	}
+	.corpo_chat_send_btn {
+		background: #000000 none repeat scroll 0 0;
+		border:none;
+		border-radius: 50%;
+		color: #fff;
+		cursor: pointer;
+		font-size: 15px;
+		height: 33px;
+		position: absolute;
+		right: 12px;
+		bottom: 10px;
+		width: 33px;
+		background-size: 50% !important;
+		background-repeat: no-repeat !important;
+ 		background-position: center !important;
+		background-image: var(--img_corpo_send_btn) !important;
+	}
+	.corpo_chat_send_btn:hover {
+		background: #555555 none repeat scroll 0 0;
+	}
+	.corpo_chat_send_btn:disabled {
+		background: #838383 none repeat scroll 0 0;
+	}
+	.corpo_chat_send_btn_abort {
+		background: #000000 none repeat scroll 0 0;
+		border:none;
+		border-radius: 50%;
+		color: #fff;
+		cursor: pointer;
+		font-size: 15px;
+		height: 33px;
+		position: absolute;
+		right: 12px;
+		bottom: 12px;
+		width: 33px;
+		background-size: 50% !important;
+		background-repeat: no-repeat !important;
+ 		background-position: center !important;
+		background-image: var(--img_corpo_abort_btn) !important;
+	}
+	.corpo_btn_text
+	{
+		display: inline-block;
+		padding-top: 8px;
+		vertical-align: top;
+		color:#666666;
+		font-size: 17px;
+	}
+	.corpo_hover_btn {
+		background: #ffffff00 none repeat scroll 0 0;
+		border:none;
+		border-radius: 20%;
+		cursor: pointer;
+		height: 32px;
+		width: 32px;
+		background-size: 60% !important;
+		background-repeat: no-repeat !important;
+ 		background-position: center !important;
+	}
+	.corpo_hover_btn:hover {
+		background: #eeeeee none repeat scroll 0 0;
+	}
+	body.darkmode .corpo_hover_btn:hover {
+		background: #454545 none repeat scroll 0 0;
+	}
+
+	.corpoleftpanel
+	{
+		width:240px;
+		background-color: #f4f4f4;
+		padding-left: 8px;
+		padding-right: 8px;
+		transition: transform 0.3s ease;
+		height: calc(100vh - 68px);
+		z-index: 1;
+	}
+	body.darkmode .corpoleftpanel
+	{
+		background-color: #161616;
+	}
+
+	.corpoleftpanelitems
+	{
+		display: flex;
+		flex-direction: column;
+		padding: 2px;
+	}
+	.corpo_leftpanel_btn
+	{
+		padding: 6px;
+		margin: 4px;
+		background: #f4f4f400;
+		border:none;
+		border-radius: 8px;
+		cursor: pointer;
+		font-size: 17px;
+		background-repeat: no-repeat;
+    	background-position: 8px;
+		background-size: 24px;
+		overflow: hidden;
+    	text-overflow: ellipsis;
+		display: inline-block;
+		white-space: nowrap;
+	}
+	.corpo_leftpanel_btn:hover {
+		background: #dddddd;
+		background-repeat: no-repeat;
+    	background-position: 8px;
+		background-size: 24px;
+	}
+	body.darkmode .corpo_leftpanel_btn:hover
+	{
+		background: #454545;
+		background-repeat: no-repeat;
+    	background-position: 8px;
+		background-size: 24px;
+	}
+	.corporightpanel
+	{
+		width: 100%;
+		height: calc(100vh - 68px);
+		display: flex;
+    	flex-direction: column;
+		padding-left: 2px;
+		padding-right: 2px;
+	}
+	.corpo_leftpanel_close
+	{
+		display: none;
+		border: none;
+		font-size: 28px;
+		padding: 8px;
+		padding-left: 0px;
+		float: right;
+	}
+	.corpo_leftpanel_open
+	{
+		display: none;
+		background: #f0f0f0;
+		border:none;
+	}
+	.corpo_leftpanel_open:hover
+	{
+		background: #dddddd;
+	}
+	.corpo_arrow_right {
+		display: inline-block;
+		width: 0;
+		height: 0;
+		border-top: 16px solid transparent;
+		border-bottom: 16px solid transparent;
+		border-left: 10px solid #aaaaaa;
+	}
+	@media (max-width: 768px) {
+
+		.corpoleftpanel {
+			position: fixed;
+			left: 0;
+			top: 0;
+			height: 100%;
+			transform: translateX(-100%);
+		}
+
+		.corpoleftpanel.open {
+			transform: translateX(0);
+		}
+
+		.corpo_leftpanel_close {
+			display: block;
+		}
+
+		.corpo_leftpanel_open {
+			display: block;
+		}
+	}
+	.corpowelcome
+	{
+		font-size: 26px;
+		font-weight: 550;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		height: 60vh;
+		flex-direction: column;
+		text-align: center;
+	}
+	.corpomainbtm
+	{
+		padding-left: 2px;
+		padding-right: 2px;
+		margin-top: auto;
+	}
+	.corpostylemain
+	{
+		overflow-y: auto;
+		padding-left: 2px;
+		padding-right: 2px;
+	}
+	.corpostyleinner
+	{
+		max-width: 860px;
+		margin-left: auto;
+    	margin-right: auto;
+		padding-left: 8px;
+		padding-right: 8px;
+	}
+	.corpostyleitem
+	{
+		padding-left: 10px;
+		padding-right: 10px;
+		padding-top: 10px;
+		padding-bottom: 10px;
+		display: flex;
+	}
+	.corpoavatar
+	{
+		height:34px;
+		width:auto;
+		padding:4px;
+		margin-right:6px;
+		border-radius:50%;
+	}
+	.corpostyleitemheading
+	{
+		color: rgb(33, 33, 33);
+		font-weight: 600;
+	}
+	body.darkmode .corpostyleitemheading
+	{
+		color: rgb(230,230,230);
+	}
+	.corpostyleitemcontent
+	{
+		white-space: pre-wrap;
+	}
+	.corpolastreq
+	{
+		text-align:center;
+		font-size:14px;
+		line-height:1.1;
+		margin:4px;
+		margin-bottom:6px;
+		margin-left:12px;
+	}
+
 
 	/**
 	* ==============================================
@@ -2130,25 +2304,27 @@ Current version: 148
 	</style>
 
 	<script>
-		const niko_square = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAADxQTFRFS2Si+X5+pmBfHyApLjZSS2SjP057Vzw5EA4Sf1ZT+9Sv1WpqnYx/7qaYw7vUAAAAS2Sj9PPzgnrLS2SjAzrF9gAAABR0Uk5T///////w////////////AKj//yMlHqVpAAAD3klEQVR4nKWXi7KjIAyGFSgxEjhV3/9d90+8onZPd810prWSDwi50fyoTNP7/X79g2D4NJlqo+rvV/Mf8npPM2B6/4+6ihKaB/pGaH4e6IPw00y3+48xhBC3J32Id+NeUzN9UPfer4RoD/eIqbnuwLS7zncLAfqdPvvDmvY9XAE6vuuImEAw8fNT1/kr4Qqw+YhdIocfJl0glxyTvyG8m7MNY1B9diAkmgGUODnH7Km7AF53AGEjUJtWYdUPzn0LyC6AQO0qCUCi1PKXAM5tCwXeAC0ROf36AqA2VACmbQ8yP9DVimeA6lPKkLaW3EPylXAARBXV701OhOVPI6hcAXH1mTyP7e8AMyEc4mQDzP7XrfOfl5D7ndAdfXID6NwMyXACEpEbgPTCLJn1hEGoAep/OKheQiCEEhj1HgBQX1ZxQMPLlyVsABwejkp8EGEQAkxRA4RgIRYhTxme1fkKoBZwAHjLA+b/cgLQ8gZ4gZ+tVtgAnboaa+Lg0IwRhBqAmX0cI0WFqHN3FUAXAOPpzIWhPzZYQgUAu4ljiaKTaKwtZtwAIdv8XkocR9+UYM5/BMTRxzJKsWEu+RPAAsBxKSWWgTHS18cofiwhlCJD4cApUb0CNWKA/5dhwAqKD2UIXAEoFgUMkIJTCCcjzkGE890BQhXA685WQNqD6ujKWDRhhI7EdKUCtKSGxd8ASEr+6sqNApKPeD/iFEpT6nAUcAMgMmBzqwVPgJCd80X3AIlDDcjSzH8PJbD7AGiT020WjfcCN0jI5WwJGk5axP4eikeyvQd4HE5i7I4xEpWANKg0m2p0OUIcQKJnd7uCaABMRebOSOoB1WUVYACzaGSs012NaI5gAC0GcPWD9iLI6/qVdGeXY7R6xu1M0FAhG7s865ctw97Zoz85kuXi5T2EbaZatLileQA+VifrYGrT7ruL+lbZ0orYcXQJpry/tl+26l1s8sOy+BxMqKjr23nf7mhFnktbOgJOGQmnVG0ZVve06VvDUFmEztGIhHAy2YHA+qsCuFNS1T0Edf41AOZ1b7uwH1tYYFA4p3U1owiOOu+AsyxrQ3AIXwrLXtryL4BPpW0rrvMaPgHSx+K6l3cj3Oin1lH6S3nfd+KDa51lAjJhE6ddz7XRu29xUH51O95SgNOahDTB3PPvLc7cZPWYEVlVlp5AkGtJK/63XZoq0jBsvUrPeNDvr/tE1SnD3qxIEVuNfAsY0J9w4Ux2ZKizHPLHFdw127r7HIS2ZpvFTHHbbN+3+2Qm29p9NvXv2v3twkHHCwd9vnA8vvI8vnQ9vvY9v3g+vvo+v3w/u/7/AZoAPJwrbZ1IAAAAAElFTkSuQmCC";
+		const rootStyles = getComputedStyle(document.documentElement);
+		const niko_square = rootStyles.getPropertyValue('--img_nikosquare').match(/url\("(.*)"\)/)[1];
 		const human_square = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgBAMAAACBVGfHAAAAAXNSR0IB2cksfwAAAAlwSFlzAAACTwAAAk8B95E4kAAAAB5QTFRFFIqj/v//V6u9ksnUFIqjx+PpcbjHFIqjFIqjAAAAcfUgXwAAAAp0Uk5T/////9z//5IQAKod7AcAAACKSURBVHicY5hRwoAE3DsZWhhQgAdDAaoAO4MDqgALA/lAOQmVzyooaIAiYCgoKIYiICgoKIouIIhfBYYZGLYwKBuh8oHcVAUkfqKgaKCgMILPJggGCFMUIQIIewIhAnCXMAlCgQKqEQhDmGECAegCBmiGws1gYFICA2SnIgEHVC4LZlRiRDZ6cgAAfnASgWRzByEAAAAASUVORK5CYII=";
 		const favicon_busy = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgBAMAAACBVGfHAAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAB5QTFRFAAAA459F8vrrV2hQWm5T2M2oeo9zWWtS6P3k1evQZQ2NdgAAAAp0Uk5TAP//7xr/5HYRi6G3mX8AAAEASURBVHicjZGxagMxDIY9GNr1hryAwaGd1frWQEQ8x+HuAXJEpbOPmG4ZkwcopG9byXYuCaHQf5I+0K9ftlKi0zl9/RzUVcdX+ny5Bc/fRGd1C05Ex0uDaaHUE31IOXKpPaDGPdGI2rfIIMLoEwC0CbkU4FIEIhog7QsgAuqM7QegYRSnFbhgWHNwyKZKr6S3TTA9oKzV8d0IaIIVCx6BXQEzs3mTEQ+hgCb0bQZuAhYELMUig9kDMH8BaZr/gWLqnVkXUNdysAsowRC2tlqU6HLcuk7k4/SSszOZzq/ncrYhW+Rnzg9AZUL2RLfrOoK0qIC/RtTi9JPaR4B07e/0C6jPUVuNXWqeAAAAAElFTkSuQmCC";
 		const favivon_normal = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAEtQTFRFAAAA+XJ0l09PsVdXcTw842hqw2hmTi4vMCQlb2eUgWtl+tGpBAMDEw4NPCkoFw8PJBgXt5WBVkxW4Nvf7Lia3Z+MpJnAZ05HnJOTYIS/NAAAABl0Uk5TAv////v//vT9//3/Nna08qf+///////a/hkcROQAAAGUSURBVHiclZLRcoQgDEULBAKoIKjI/39pL4i7nbUPbcYZwJyES5Kvr3/YvIx1nn9zL4G4EwuTXX7xs4QFGEklOT6SBENERguhsWHFD2AVRhL8IEgawY8b5L4fYtg+TSl8+NMEu4G2P34Q67r6I+37dLyBfU/4PY/sInG2MR8vIHG01h9mHfq1hUUQtwYcLEcp+ltmwqutdy5HMwAfc8ExKtVSLEZZW13Jxb4Azq7UHFnFrtGItLliS1UDYOfctm3JhEtlEH5zzpZNDsC63AB1VysY3gqC3C2ytsNW6Q3IjCt91Qr9QK8MiFL4nUEpEyNLYmodxYo3RquVHWUmbbRu0QCbKWwNfil5zYeENrRRqtZrGEQYqdtW8FWHLl4bgZDLFLZdbS/UzP2AEGTufkt3xWSvwzJeh4GxHWD5qlgXOZ/n2ULuC/od4Pk8x9xhCekD0Bqd/DmXgbpEumRgrMPn1K6ecs4pJc/V0nE+x35KtfTJTJufpvPTD2DyNZ3e4wP3zDCHevg+yYvf09PfkHuK7/Vv9g2CjBTdqv3bFgAAAABJRU5ErkJggg==";
 		const compressed_scenario_db = ["XQAAAQCkKgAAAAAAAAA9iIqG1FTp3Td41VnWyuXTp3Lb95KmIEizGvJcmkqrV2FY5cKEeSxCwbqBRjHVjL7PUH9wCoW89dPxjDNZvgp6okMOelpy7_1P6GV-mfJV4jz42_DXqYfET4aYlAT13M95gkcA14f0NLvI_p6B9CyG8EbkhRxsk3uyf_KgTV5kwqzAcr5C4JQ_pJr77GnYCHQI8h6F765-lcqrvw1Xu1GHhcN3lj7s9PhMvLnmGPZbQMrTo5sqPJDzYO6lytxmNSHSXMICpN2kFJB6kqyL5lBxNAH3Au_F_JIC85GqwLXWEy8wZms5KmAdp1s3EA1yabPGqqF0G5RxBp3aXzm7h6QUJPy1qSr6JJAo4fi2gCPaLkdn2pKqNDR1Ww8FA6AVHOyMgCTmmrQxWVYgXY9TdhHKcRcrIsoHNXEeWSqMGJNQ8lzVfc26teZdBdPLhqcClG8wUThPtyobTMz8Fgom88nTv7VT-mZhwH9Nc4ghoCL8dMR0Skf-EYDZ0Uvz03_GTn5OB8yuX6FmsD1XQJv_CKBAUHeDKd7n_bC7WOnlAINHPX9Bh5TnwjeLYO-UAL2ClMJTFzR-k2cjVHGQnLB7hZ48L1nToRG1gSVN7dP3Zysw7riwIxnfG4MMNXtEbHyxrCvz2zRTUEqbHLrwIzdJRpJ5s5XfTlY1CPZkQCwxbA6rrUt27D6a-YDKavbg0hubpViPRYbnEDXr9gL-7in4f_K2cOZdQ26Q--hk0xzEtgBNFI6inHA2nA4LofUpWjl835qg6CUyz9EzQkw0cDgPVjYXehC9oC_3H0U2O9YC-Ah8VpdPdCHUFuaQr7oXgePUub_Be1XQyCA5TaqrJxVxUG2hZA4rOVJHZ_AahfiJN7z6QcVEp-8xf-wHcv1lpWjjNdXFWDqVQZkdOaKf63dtjP35SmC5eCw2_BNX_t-db_FCCAhm2Vn2WI3q4k00p4l_ocCrJIdRID6muBVZQXCzxcRf5m8kcGwrTB-XVS-XSSPZInaBxZjgimOl5bLwJvdMC-HNYtU-yUDjXvDjPraZ_7ZV_-knU1GbHf1BpI9-rNbl_3bbA7KbmL7Q_goV1Clvi6gLYgjbXGQMTFjQEoodZX3fK_bDhVsrA1fWMJMWwfY3ua-j8HNuyRDfhPBpbTK0Gvz5-GWbIRF3v4zwR9HzIjz2frY7luy3ApQ6QJw7K6ITvD80u5VLfpHYReVCLpgs-lvPStklgnGXj3j5vuaH9f-wFohB19vwzRnthvgdplXPQ9jMy3ieb80sELS0WiGD-E2L_HhNXUcpTdeBp3HQFK4QubJOiIeKuZDVR7PxvtwBj26m-pLXLzKc6WqQlt07TsRo_72SlAaZodyyFRXf8636HCAyEHcVEhR6uZ1lDu00BHvsyVe6BdG7zvjNdmLluA0qBJQ9FO3ipHezadlwCPnEBDQAAZRgHKUvRCJNOQH_jcqFLLtmDADXoLvcK8_lN0LEeisA4B1LH0X2x0Q6NqLgngh9M1y_cBEBaazMa_UIZwoL6eZGU0QhlpvysBi1wKDybNcF_uKrIxdQwn8L_QRFHtDn39-hw-GDs_6zbnRlwrBEwrMtAQfc62FLSzGUMAzww-aTGvUuQvP-D9m0r-eDbSATlSsrIYobVUDUdDWsMDUsjKfYOW_Rp0GMjk40BQxcdzjNjLCYaTEN5cMhsWyfTbhIHDP7-wfbvJG7Al7Z-nH2Pa-QXPte687xVanKT0d3Er07vOV9HoI09mtuhxE4g0VaLm4TMqxSMRBX3EB60W1U2sX9sHjAgmwfpUNXRNj03QeJe4cg0pndf-hhKkTsfNQMU_N6-Zt8IrM2xtzFfvKB4BpFyWmaYu_X7bGwgSZjzrBNE10fx001fMr2fmrVy_sj7mW7WhlWXa3N5eMe4pqkA4EawmGzhuIwAqZNmtvnL_N2nt4T4ZyqkAAyXMMKb60UJAXkqLjUisD1bnNt1qD9otg8mGNzQxlaY5Bfm7286vNmjyxGY4UVrn0RV0DSFFb5_NYEW5y5YYxiabWABr8k0ezTM8R_qQ7NxdUOj0qhBKOqGyzyuVgKNnB6-ZzpKVGbB7RYJXwfEtkKNuUc3UWmbwxcsCTuW4TOScqJUh4dA5vlgLjB3-Q79yEMRYB8n6jetkR4z25RkYRXvTxkHIVQd2qr8BchdUcmHsZvG_tXI0-bxx_f_TGyfgi8ol7L5SRfWfOtYHCXSVHOCwnDj7GN4rIrwt3qWRcPkdTMw1RguDZW0eTpCpZyCJH_z3xVfpVh5lgf7Nu4tH-CpFRrOaJc79K1lSuIZs8yvjh5dbYAH4rKQ28OOFRu2MmU7Ko8Of4CECcJMhohFtVW6nTCB48-Pl8owiGM5_2uBJOJRAsyu3fHHbKqKvZ-0kYmN9ypyTAxQjgDiCOE3J1txPiqRRRRSaFZgLPNacdyjGO2y2SpWwzYudx8tEq3tBDAPBCXwWqwefcG__iN5OMRgCIAvr-9qfl2iSaVR5LZ-kBluVoW27o0hIUtgdry03bmUN50ob4hwCz8xVoupcHjI3Cy0nLpgiGixjo4afafQPE_TXJf-NixlWN-cH2a4ZzU6Qc5KKzIciwnt6Hx-iRQzB_uK-pBDjC8boVXolOsFyaqWsoLgkghTo2qCFZuxP2GKzS9wQ5sBWxTMEPGryHxaylpXXmUjlBJ-j9p4vJN9YxjQEbyuTVYy0PxmtDbyh6g_n3Lr09ttCg40hqfWBhCT9P4-uFoAjozUciHQFBfI8t04dKZnobLbVq-f_HJGzUZu5zHRHsPI939tJxODDJxiflfHLwxXjQS2cq9Vj-kvn1pgXAN5unYh8Y7-nqepxc0KkO2v8mU-r8fYFmUFJdZu6HR23P2y7ndsozZEKdUAVay36pmW_gvVQuSA_jzLwXn3Ee2y-A7G-w96bTe82gJG95PsSOt2L6AcuF8mqWL_EVBjIZJMN63T__0UHh9VPDCRTUITwn35t7Z0aGYHnssPVAxXLh7y2LhCaIN0u6lnbiDlKAdKc1-4qYbr1sHORC8tjSG8cjWLkgBcNkFo7rqhKQSNtU1H44aT8ceG08a8cSpze8aC6dMVaz6DxEaFIZ-aRqfqO0QV6ty2-6hrcRVedypt1Twd7UEkXZM5Erjb-_8jq4RzshqXVzKEqPfIYpmtHqkmeJq8BLfc1GT9UGrmPpYO4-K8LM-u7aOpcxcagPn2S3McsWI3a8CWkU9t4g9WEPNH-5s8VqF-3rSmgi5kk40Y7HjEyA-6clhNhl9lbP6hIbf9TKHO9fWwzTz8NieUPNZZPgrBrULggzHXPrfJIxl8eLSrKuD8n2Pbumu2k4ljMV_WIq9qCJ1wPofdIoWHWiz7oV2snLve1CFPUCdAhLkHQ8KpO6xvSi6mKY9WsOhOLxKm92vsWLv-rfM2CW4XUja5arRpGynr7cF9CDuEGWIxkPjOF_5x8ZXg2x1TJcrgvLDO_S4u2zKl2tQGRW4NHU1zF9h_3SQkpbwWH5KOPisP6c8vb5rg_rZ5laFedxQQSpguSq5el9-ddzvlr4C8Q22eDQvwUEO_P6c6VZN5A2QWBGZsJoaZ4gZ8UArmGLxSihBj_5oOdDdUcbUOhGUIWrtYrs4PJKxpnHDFUZaYwIbtnLyAoORKYvq8LgAH0SP57KeeYkZzUGP1f0jkDzAmwV4ZHE0pnZhEo3XkXVuIHc6MXZ-RniZaS_vaoY3Bq6XHrKoWZdLiCoU6aqPc-ZpPnvXmnKHyLLs4e96M1wGKIyT28_VCR6EDRJPxbZ9Ig1kN8TIHCF3tE8y2It5hkz1-zNYT6uw3SDkFSdrV_DRiAVqUhxrQdUPhpD92zVgsWdJR0TZLU7CBLlOuBVwyfmtHMUBL6dIvYie47Kr47nOJ5i2ka8EZGZf-Y8aD6xv6hpBbybU_5oGfYLRG4MiNRhML4u90tQ3hBxBbGYK8sWOzui2UEx0ynB_a8jz8eEs7u_9ylTD1v1f-gC8JYQMNAZIm46pvl2s1X07B8Gf7Laj4aozcWqg8DgC_8aLypoTffyxjWw4Fpd8LWn1fRPsFOdeV0UrS7FNtUakvYq_qxphGu5mNuINIJIMJzgI3giGnyCbr2IrsJ1ITmEGnggLQYes1t3j44v1quvVwQXqHX6HhSnoJlN2IlT5DuZ2kx6-pb68nK62xVJaOS-wDeeJnQ8zzhqJACstuF7g-jidRoJmGc8yChHfCN8ZFOhT0poNQB-Jf5IUZ7aSCXmceYN4VUhmB_w-Db1XZUNHOJqGiTgcT1KzejzNpN49b0QUjcRJiOpEhJp_LzBUiRQSnweOSFrWlTs5Jf9p3wqN9zFYZ_3Xz6IR2klwyLQXc-LbBd1QFwkB17HTYMspUXjrSpJULdQ90OxzbSEafF4RKvgIL4sAU1pCMTa2bVrcUmY2MiECVIbwPNN0CjZeoEAd1dP5FFjlwGG7xUNRO1E20CqHZJ1oqeEur06ZXvPK1zy3SlF-_lKF6eRfNClzR2ERGYqf-zEQwwkPNiMNnURPcdt64pw4kcjTKBIkorum3ruuqJZMitcZx0YiANx7ssy8dMuVteEFFCQnmglgTCsEZTK_xzigPie_f8Q5p1vsJPje5Z2cugsaW-vOXbuOE471n6LuIyoII2dWq0m8H3_8pxlErkZ5E7OY--w3InCuSCv2ubxaZ9AbaNuuyGw49fI3zvRurTYespYO-Aj1FcjDrxqRB3bihJm_u3a56fwnoyOeE0071TY_AlVlq1RYauV4-7L-RAFJZo0wKnPZM9Hs7VB_cCwJ_oPe1y0XBF95agtAQdicj42KdstIlpjWtdGb4LpHgVQI_56G3As0H81-uj47VuBourA2hUay0BpHAvcwbNLyu8OcZB31I6dfy2797wGlrWwAN-Xt3M3CVW9SvIN_GMlg0RB75rUEtgPkR-VPRdPH_Jb19wVoFPPpwjP6cYzVW1U_iRymFKaNpMo4CWFN6t54wshlCVwkfZKbhSP14z74oMKxy-qqt-WKNhkOr1uh_sevNa57iHBnFlHzt_eaZoPNTsCmzqnC4boOlK9o5_hFn8hiw33R3NQC-RD-w1XEl8-hpdZYdCcnexwRYd9sH2LMHySL59Kp_09yIwAE_ukVMDa6Yd9OHrbSCycQNZSI_0fMnF5s9oWTXnsxecDpRKgSWJQIQPUb6dlOdGOT0-MnebivpKgbDxzx52Zr0EMS7aU5eJxEdO9rdiFda8kQk5IeBgr1QcqIFs_1UIp6oQneXgwTlpXXxLHs16ShDG1qkLmDZjb4vrb_Ha2YCBIqid6wVKjec-UwEwWyvfV4UAPFgiNRJN7TdQNRxbSZJ8XWeA2gor9PN5JkMS0l_qGKoke3sbWDsp-G_B0KUjwUBTtPsKRhdnc0JyV_akuZ8jxAmXDDydxOy_EqNMgrDGN_4FuSY7XNLy2OXXJG3bB9a_lxEzdVNPWzM0cijTQFLzIiAKAyWTfwPNagcvgLUAeHxlQ22E0V37-sFwkstvpJ-s8C2yqxQKcv4GfMZOfSYEaZAhiO_y8EXgFknGGwjLB7K3CgvGwBRWWcgx-eqXYs9rAygf_X2_7-rBG_7Rxj3GW957PwwzwZjZDkdRHik8sj0htIkDRAyHo2EsPwObKXK-W32JKUX3VSgiY8AzCUhUUIWwFVVLXEvB1jtU7G7wRaj5_z9QywvgoIqnOTmpm4TTRA0cCJkiYoJcl8BOIHoWuYznL89zWjWy_ZQDKaYAsHugQYXaKI_UaaLV4gVFjDNqZCgqjAFyMjG4qZR64jkaI71mefUaDLLwsqIiLpOWZi8BlvP0YcOVeTyo2mJbq3EXfjXyDvPuZuZ9SAjqwCdLr902yzLm4DdzYRyfPbpt8rGUu-Uw27Ix2oZRe_zj0G_3FdCw0"];
 
-		const storymodels1 = ["erebus","nerys","nerybus","janeway","hermes","airoboros","chrono","llama","wizard","mantis","myth","xwin","spicyboros","mlewd","mxlewd","mistral","maid","mixtral","estopia","fighter","fimbul"];
+		const storymodels1 = ["erebus","nerys","nerybus","janeway","hermes","airoboros","chrono","llama","wizard","mantis","myth","xwin","spicyboros","mlewd","mxlewd","mistral","maid","mixtral","estopia","fighter","fimbul","euryale"];
 		const storymodels2 = ["opt","vicuna","manticore","alpaca"];
-		const adventuremodels1 = ["nerys","nerybus","skein","adventure","hermes","airoboros","chrono","llama","wizard","mantis","myth","xwin","spicyboros","mlewd","mxlewd","mistral","maid","mixtral","estopia","fighter","fimbul"];
+		const adventuremodels1 = ["nerys","nerybus","skein","adventure","hermes","airoboros","chrono","llama","wizard","mantis","myth","xwin","spicyboros","mlewd","mxlewd","mistral","maid","mixtral","estopia","fighter","fimbul","euryale"];
 		const adventuremodels2 = ["erebus","janeway","opt","vicuna","manticore","alpaca"];
-		const chatmodels1 = ["pygmalion-6","pygmalion-v8","pygmalion-2","hermes","airoboros","chrono","llama","wizard","mantis","myth","xwin","spicyboros","mlewd","mxlewd","mistral","maid","mixtral","estopia","fighter","fimbul"];
+		const chatmodels1 = ["pygmalion-6","pygmalion-v8","pygmalion-2","hermes","airoboros","chrono","llama","wizard","mantis","myth","xwin","spicyboros","mlewd","mxlewd","mistral","maid","mixtral","estopia","fighter","fimbul","euryale"];
 		const chatmodels2 = ["pygmalion","janeway","nerys","erebus","nerybus","opt","vicuna","manticore","alpaca"];
-		const instructmodels1 = ["gpt4all","supercot","hermes","airoboros","chrono","wizard","mantis","vicuna","manticore","alpaca","myth","xwin","spicyboros","mlewd","mxlewd","mistral","maid","mixtral","estopia","fighter","fimbul"];
+		const instructmodels1 = ["gpt4all","supercot","hermes","airoboros","chrono","wizard","mantis","vicuna","manticore","alpaca","myth","xwin","spicyboros","mlewd","mxlewd","mistral","maid","mixtral","estopia","fighter","fimbul","euryale"];
 		const instructmodels2 = ["erebus","nerys","nerybus","janeway","opt","llama"];
-		const defaultmodels = ["gpt4all","supercot","hermes","airoboros","chrono","wizard","mantis","vicuna","manticore","alpaca","myth","xwin","spicyboros","mlewd","mxlewd","llama","mistral","maid","mixtral","estopia","fighter","fimbul"];
+		const defaultmodels = ["gpt4all","supercot","hermes","airoboros","chrono","wizard","mantis","vicuna","manticore","alpaca","myth","xwin","spicyboros","mlewd","mxlewd","llama","mistral","maid","mixtral","estopia","fighter","fimbul","euryale"];
 		const ignoredmodels = ["tinyllama"];
 
 		const instructstartplaceholder = "\n{{[INPUT]}}\n";
 		const instructendplaceholder = "\n{{[OUTPUT]}}\n";
+		const instructsysplaceholder = "\n{{[SYSTEM]}}\n";
 
 		const scenario_db = [
 		{
@@ -2800,6 +2976,14 @@ Current version: 148
 			return replaceAll(localsettings.instruct_endtag, "\\n", "\n");
 		}
 	}
+	function get_instruct_systag(doTrim=true)
+	{
+		if(doTrim){
+			return replaceAll(localsettings.instruct_systag, "\\n", "\n").trim();
+		} else {
+			return replaceAll(localsettings.instruct_systag, "\\n", "\n");
+		}
+	}
 
 	function readTavernPngFromBlob(blob, onDone)
 	{
@@ -3446,9 +3630,17 @@ Current version: 148
 		return words.length;
 	}
 
+	function copyMarkdownCode(btn)
+	{
+		const codeContainer = btn.parentElement.querySelector('pre code');
+		//selectElementContents(codeContainer);
+		navigator.clipboard.writeText(codeContainer.innerText);
+	}
+
 	function simpleMarkdown(text) {
 		const escapeHTML = (str) => str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 		const highlightCode = (code) => {
+			let cpybtn = `<button class="unselectable" onclick="return copyMarkdownCode(this)" style="float:right;">Copy</button>`;
 			code = escapeHTML(code);
 			code = code.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 			code = code.replace(/\t/g, "   ");
@@ -3457,7 +3649,7 @@ Current version: 148
 			code = code.replace(/\s\/\/(.*)/gm, " <rem>//$1</rem>");
 			code = code.replace(/(\s?)(function|procedure|return|exit|if|then|else|end|loop|while|or|and|case|when)(\s)/gim, "$1<b>$2</b>$3");
 			code = code.replace(/(\s?)(var|let|const|=>|for|next|do|while|loop|continue|break|switch|try|catch|finally)(\s)/gim, "$1<b>$2</b>$3");
-			return `<pre><code>${code}</code></pre>`;
+			return `<pre>${cpybtn}<code>${code}</code></pre>`;
 		};
 		const convertMarkdownTableToHtml = (t) => {
 			let hsep = /^[\s]*\|(?:[\s]*[-:]+[-:|\s]*)+\|[\s]*$/gm;let l=/^[\s]*\|(.*)\|[\s]*$/gm,r=t.split(/\r?\n|\r/),e="<table class='tablelines'>";for(let o of r){let hs=o.match(hsep);if(hs){continue;}let d=o.match(l);if(d){let i=d[0].split("|").map(t=>t.trim());e+=`<tr class='tablelines'><td class='tablelines'>${i.join("</td><td class='tablelines'>")}</td></tr>`}}return e+"</table>"
@@ -3674,6 +3866,7 @@ Current version: 148
 	const ALLTALK_ID = 1001;
 	const HD_RES_PX = 512;
 	const NO_HD_RES_PX = 320;
+	const SAVE_SLOTS = 6;
 
 	//all configurable globals
 	var perfdata = null; //if it's null, we are not connected
@@ -3803,6 +3996,7 @@ Current version: 148
 		chatopponent: defaultchatopponent,
 		instruct_starttag: "\\n### Instruction:\\n",
 		instruct_endtag: "\\n### Response:\\n",
+		instruct_systag: "",
 		instruct_sysprompt: "",
 		instruct_has_markdown: true,
 		placeholder_tags: true,
@@ -3832,10 +4026,10 @@ Current version: 148
 		prompt_for_savename: false,
 		case_sensitive_wi: false,
 		last_selected_preset: 0,
-		gui_type_story: 0, //0=standard, 1=messenger, 2=aesthetic
-		gui_type_adventure: 0, //0=standard, 1=messenger, 2=aesthetic
-		gui_type_chat: 1, //0=standard, 1=messenger, 2=aesthetic
-		gui_type_instruct: 0, //0=standard, 1=messenger, 2=aesthetic
+		gui_type_story: 0, //0=standard, 1=messenger, 2=aesthetic, 3=corpo
+		gui_type_adventure: 0, //0=standard, 1=messenger, 2=aesthetic, 3=corpo
+		gui_type_chat: 1, //0=standard, 1=messenger, 2=aesthetic, 3=corpo
+		gui_type_instruct: 0, //0=standard, 1=messenger, 2=aesthetic, 3=corpo
 		multiline_replies: true,
 		multiline_replies_adventure: true,
 		allow_continue_chat: false,
@@ -3852,7 +4046,7 @@ Current version: 148
 		entersubmit: true, //enter sends the prompt
 
 		max_context_length: (localflag?2048:1600),
-		max_length: 150,
+		max_length: 200,
 		auto_ctxlen: true,
 		auto_genamt: true,
 		rep_pen: 1.07,
@@ -3900,7 +4094,7 @@ Current version: 148
 			rep_pen_slope: defaultsettings.rep_pen_slope,
 			sampler_order: defaultsettings.sampler_order
 		},
-		{"preset":"Godlike","description":"Makes AI give a descriptive and sensual output.","temp":0.7,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":150,"top_k":0,"top_p":0.5,"min_p":0.0,"presence_penalty":0.0,"top_a":0.75,"typical":0.19,"tfs":0.97,"rep_pen":1.1,"rep_pen_range":1024,"rep_pen_slope":0.7,"sampler_order":[6,5,4,3,2,1,0]},{"preset":"Mayday","description":"Wacky plot, creativity from AI, crazy stories you want AI to weird out.","temp":1.05,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":150,"top_k":0,"top_p":0.95,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.1,"rep_pen_range":1024,"rep_pen_slope":0.7,"sampler_order":[6,0,1,2,3,4,5]},{"preset":"Good Winds","description":"Let AI direct the plot, but still stay logical.","temp":0.7,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":150,"top_k":0,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.9,"rep_pen":1.1,"rep_pen_range":1024,"rep_pen_slope":0.7,"sampler_order":[6,0,1,2,3,4,5]},{"preset":"Liminal Drift","description":"Drives coherent dialogue, responses, and behavior, sometimes surreal situations arise based on information already present in the story.","temp":0.66,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":150,"top_k":0,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"top_a":0.96,"typical":0.6,"tfs":1,"rep_pen":1.1,"rep_pen_range":1024,"rep_pen_slope":0.7,"sampler_order":[6,4,5,1,0,2,3]},{"preset":"TavernAI","description":"Preset used in TavernAI.","temp":0.79,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":150,"top_k":0,"top_p":0.9,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.95,"rep_pen":1.19,"rep_pen_range":1024,"rep_pen_slope":0.9,"sampler_order":[6,0,1,2,3,4,5]},{"preset":"Storywriter 6B","description":"Optimized settings for relevant output.","genamt":150,"rep_pen":1.1,"rep_pen_range":2048,"rep_pen_slope":0.2,"sampler_order":[6,5,0,2,3,1,4],"temp":0.72,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"tfs":1,"top_a":0,"top_k":0,"top_p":0.73,"min_p":0.0,"presence_penalty":0.0,"typical":1},{"preset":"Coherent Creativity 6B","description":"A good balance between coherence, creativity, and quality of prose.","genamt":150,"rep_pen":1.2,"rep_pen_range":2048,"rep_pen_slope":0,"sampler_order":[6,5,0,2,3,1,4],"temp":0.51,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"tfs":0.99,"top_a":0,"top_k":0,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"typical":1},{"preset":"Luna Moth 6B","description":"A great degree of creativity without losing coherency.","temp":1.5,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":150,"top_k":85,"top_p":0.24,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.1,"rep_pen_range":2048,"rep_pen_slope":0,"sampler_order":[6,5,0,2,3,1,4]},{"preset":"Pleasing Results 6B","description":"Expectable output with alternative context settings.","temp":0.44,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":150,"top_k":0,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.9,"rep_pen":1.15,"rep_pen_range":2048,"rep_pen_slope":6.8,"sampler_order":[6,5,0,2,3,1,4]},{"preset":"Genesis 13B","description":"Stable and logical, but with scattered creativity.","temp":0.63,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":150,"top_k":0,"top_p":0.98,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.98,"rep_pen":1.05,"rep_pen_range":2048,"rep_pen_slope":0.1,"sampler_order":[6,2,0,3,5,1,4]},{"preset":"Basic Coherence 13B","description":"Keep things on track.","temp":0.59,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":150,"top_k":0,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.87,"rep_pen":1.1,"rep_pen_range":2048,"rep_pen_slope":0.3,"sampler_order":[6,5,0,2,3,1,4]},{"preset":"Ouroboros 13B","description":"Versatile, conforms well to poems, lists, chat, etc.","temp":1.07,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":150,"top_k":100,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.93,"rep_pen":1.05,"rep_pen_range":404,"rep_pen_slope":0.8,"sampler_order":[6,0,5,3,2,1,4]},{"preset":"Ace of Spades 13B","description":"Expressive, while still staying focused.","temp":1.15,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":150,"top_k":0,"top_p":0.95,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.8,"rep_pen":1.05,"rep_pen_range":2048,"rep_pen_slope":7,"sampler_order":[6,3,2,0,5,1,4]},{"preset":"Min-P Basic","description":"A good default for Min-P, only works on backends with min-p.","temp":1.25,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":150,"top_k":0,"top_p":1,"min_p":0.1,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.03,"rep_pen_range":320,"rep_pen_slope":0.7,"sampler_order":[6,5,0,1,3,4,2]},{"preset":"DynaTemp Basic","description":"A good default for DynaTemp, only works on backends with it.","temp":1.25,"dynatemp_range":0.75,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":150,"top_k":0,"top_p":1,"min_p":0.05,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.03,"rep_pen_range":320,"rep_pen_slope":0.7,"sampler_order":[6,5,0,1,3,4,2]},{"preset":"Smoothed Basic","description":"A good default for Smooth Sampling, only works on backends with it.","temp":1.0,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.25,"genamt":150,"top_k":0,"top_p":1,"min_p":0.05,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.03,"rep_pen_range":320,"rep_pen_slope":0.7,"sampler_order":[6,5,0,1,3,4,2]}
+		{"preset":"Godlike","description":"Makes AI give a descriptive and sensual output.","temp":0.7,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":0.5,"min_p":0.0,"presence_penalty":0.0,"top_a":0.75,"typical":0.19,"tfs":0.97,"rep_pen":1.1,"rep_pen_range":1024,"rep_pen_slope":0.7,"sampler_order":[6,5,4,3,2,1,0]},{"preset":"Mayday","description":"Wacky plot, creativity from AI, crazy stories you want AI to weird out.","temp":1.05,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":0.95,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.1,"rep_pen_range":1024,"rep_pen_slope":0.7,"sampler_order":[6,0,1,2,3,4,5]},{"preset":"Good Winds","description":"Let AI direct the plot, but still stay logical.","temp":0.7,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.9,"rep_pen":1.1,"rep_pen_range":1024,"rep_pen_slope":0.7,"sampler_order":[6,0,1,2,3,4,5]},{"preset":"Liminal Drift","description":"Drives coherent dialogue, responses, and behavior, sometimes surreal situations arise based on information already present in the story.","temp":0.66,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"top_a":0.96,"typical":0.6,"tfs":1,"rep_pen":1.1,"rep_pen_range":1024,"rep_pen_slope":0.7,"sampler_order":[6,4,5,1,0,2,3]},{"preset":"TavernAI","description":"Preset used in TavernAI.","temp":0.79,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":0.9,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.95,"rep_pen":1.19,"rep_pen_range":1024,"rep_pen_slope":0.9,"sampler_order":[6,0,1,2,3,4,5]},{"preset":"Storywriter 6B","description":"Optimized settings for relevant output.","genamt":200,"rep_pen":1.1,"rep_pen_range":2048,"rep_pen_slope":0.2,"sampler_order":[6,5,0,2,3,1,4],"temp":0.72,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"tfs":1,"top_a":0,"top_k":0,"top_p":0.73,"min_p":0.0,"presence_penalty":0.0,"typical":1},{"preset":"Coherent Creativity 6B","description":"A good balance between coherence, creativity, and quality of prose.","genamt":200,"rep_pen":1.2,"rep_pen_range":2048,"rep_pen_slope":0,"sampler_order":[6,5,0,2,3,1,4],"temp":0.51,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"tfs":0.99,"top_a":0,"top_k":0,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"typical":1},{"preset":"Luna Moth 6B","description":"A great degree of creativity without losing coherency.","temp":1.5,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":85,"top_p":0.24,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.1,"rep_pen_range":2048,"rep_pen_slope":0,"sampler_order":[6,5,0,2,3,1,4]},{"preset":"Pleasing Results 6B","description":"Expectable output with alternative context settings.","temp":0.44,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.9,"rep_pen":1.15,"rep_pen_range":2048,"rep_pen_slope":6.8,"sampler_order":[6,5,0,2,3,1,4]},{"preset":"Genesis 13B","description":"Stable and logical, but with scattered creativity.","temp":0.63,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":0.98,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.98,"rep_pen":1.05,"rep_pen_range":2048,"rep_pen_slope":0.1,"sampler_order":[6,2,0,3,5,1,4]},{"preset":"Basic Coherence 13B","description":"Keep things on track.","temp":0.59,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.87,"rep_pen":1.1,"rep_pen_range":2048,"rep_pen_slope":0.3,"sampler_order":[6,5,0,2,3,1,4]},{"preset":"Ouroboros 13B","description":"Versatile, conforms well to poems, lists, chat, etc.","temp":1.07,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":100,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.93,"rep_pen":1.05,"rep_pen_range":404,"rep_pen_slope":0.8,"sampler_order":[6,0,5,3,2,1,4]},{"preset":"Ace of Spades 13B","description":"Expressive, while still staying focused.","temp":1.15,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":0.95,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.8,"rep_pen":1.05,"rep_pen_range":2048,"rep_pen_slope":7,"sampler_order":[6,3,2,0,5,1,4]},{"preset":"Min-P Basic","description":"A good default for Min-P, only works on backends with min-p.","temp":1.25,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":1,"min_p":0.1,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.03,"rep_pen_range":320,"rep_pen_slope":0.7,"sampler_order":[6,5,0,1,3,4,2]},{"preset":"DynaTemp Basic","description":"A good default for DynaTemp, only works on backends with it.","temp":1.25,"dynatemp_range":0.75,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":1,"min_p":0.05,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.03,"rep_pen_range":320,"rep_pen_slope":0.7,"sampler_order":[6,5,0,1,3,4,2]},{"preset":"Smoothed Basic","description":"A good default for Smooth Sampling, only works on backends with it.","temp":1.0,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.25,"genamt":200,"top_k":0,"top_p":1,"min_p":0.05,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.03,"rep_pen_range":320,"rep_pen_slope":0.7,"sampler_order":[6,5,0,1,3,4,2]}
 	];
 
 	function polyfills()
@@ -3980,6 +4174,11 @@ Current version: 148
 	function init() {
 
 		polyfills();
+
+		document.getElementById("lastreq1").innerHTML =
+		document.getElementById("lastreq2").innerHTML =
+		document.getElementById("lastreq3").innerHTML =
+		`KoboldAI Lite v${LITEVER} Web Version`;
 
 		prepare_abort_controller();
 
@@ -4096,6 +4295,7 @@ Current version: 148
 					document.getElementById("enhancedchatinterface").classList.add("transparentbg");
 					document.getElementById("enhancedchatinterface_inner").classList.add("transparentbg");
 				}
+				populate_corpo_leftpanel();
 				loadok = true;
 			} else {
 				console.log("Skipped missing local save");
@@ -4231,6 +4431,7 @@ Current version: 148
 		const dropZone = document.getElementById('gamescreen');
 		const dropZone2 = document.getElementById('chat_msg_body');
 		const dropZone3 = document.getElementById('outerbodybg');
+		const dropZone4 = document.getElementById('corpostylemain');
 
 		const onDropFn = function(e){
 			e.preventDefault();
@@ -4269,6 +4470,14 @@ Current version: 148
 			},
 			false
 		);
+		dropZone4.addEventListener(
+			"dragover",
+			(e) => {
+				e.preventDefault();
+				e.stopPropagation();
+			},
+			false
+		);
 		dropZone.addEventListener(
 			"drop",
 			(e) => {
@@ -4284,6 +4493,13 @@ Current version: 148
 			false
 		);
 		dropZone3.addEventListener(
+			"drop",
+			(e) => {
+				onDropFn(e);
+			},
+			false
+		);
+		dropZone4.addEventListener(
 			"drop",
 			(e) => {
 				onDropFn(e);
@@ -4308,8 +4524,8 @@ Current version: 148
 			}
 			document.getElementById("customkoboldendpoint").value = localprotocol + localmodehost + ":" + localmodeport + sublocalpathname;
 			connect_custom_endpoint();
-			document.getElementById("lastreq").innerHTML = document.getElementById("lastreq2").innerHTML =
-			`<span class=color_gray>You're using KoboldAI Lite Embedded.</span>`;
+			document.getElementById("lastreq3").innerHTML = document.getElementById("lastreq2").innerHTML = document.getElementById("lastreq1").innerHTML =
+			`KoboldAI Lite v${LITEVER} Embedded Version`;
 
 			read_url_params_data();
 		}
@@ -4341,9 +4557,8 @@ Current version: 148
 						}
 					}
 					document.body.classList.add("connected");
-					document.getElementById("connectstatus").innerHTML = "Connected to AI Horde";
-					document.getElementById("connectstatus").classList.remove("color_orange");
-					document.getElementById("connectstatus").classList.add("color_green");
+					document.getElementById("connectstatus").innerHTML = "AI Horde";
+					document.getElementById("connectstatus").classList.add("color_offwhite");
 					render_gametext(false);
 
 					read_url_params_data();
@@ -4354,11 +4569,10 @@ Current version: 148
 
 				}
 				else {
-					msgbox("Failed to connect to AI Horde Service!\nPlease check your network connection.<br><br>You may still be able to connect to an alternative service, <a href='#' class='color_blueurl' onclick='display_endpoint_container()'>click here to view options</a>.","Error Encountered",true);
+					msgbox("Failed to connect to AI Horde Service!\nPlease check your network connection.<br><br>You may still be able to connect to an alternative service, <a href='#' class='color_blueurl' onclick='hide_popups();display_endpoint_container()'>click here to view options</a>.","Error Encountered",true);
 					document.body.classList.remove("connected");
 					document.getElementById("connectstatus").innerHTML = "Offline Mode";
-					document.getElementById("connectstatus").classList.add("color_orange");
-					document.getElementById("connectstatus").classList.remove("color_green");
+					document.getElementById("connectstatus").classList.remove("color_offwhite");
 					render_gametext(false);
 				}
 			});
@@ -4394,6 +4608,7 @@ Current version: 148
 		const foundScenario = urlParams.get('scenario');
 		const foundChub = urlParams.get('chub');
 		const foundPyg = urlParams.get('pyg');
+		const foundAicc = urlParams.get('aicc');
 
 		if (foundStory && foundStory != "") {
 			let safe_to_overwrite = (gametext_arr.length == 0 && current_memory == "" && current_anote == "" && current_wi.length == 0 && redo_arr.length == 0);
@@ -4423,6 +4638,11 @@ Current version: 148
 		} else if (foundPyg && foundPyg != "") {
 			display_scenarios();
 			get_pygchat_scenario(foundPyg);
+			//purge url params
+			window.history.replaceState(null, null, window.location.pathname);
+		} else if (foundAicc && foundAicc != "") {
+			display_scenarios();
+			get_aicc_scenario(foundAicc);
 			//purge url params
 			window.history.replaceState(null, null, window.location.pathname);
 		}
@@ -5168,6 +5388,7 @@ Current version: 148
 
 	function save_file_button(use_existing_save=false) //for triggering an optional popup. if use save is true, assume temp obj is set
 	{
+		warn_on_quit = false;
 		const save_file = function()
 		{
 			if(!use_existing_save)
@@ -6214,6 +6435,106 @@ Current version: 148
 		}
 	}
 
+	function get_aicc_scenario(inputstr="")
+	{
+		const loadaicc = function(userinput)
+		{
+			if(userinput=="")
+			{
+				//pass
+			}
+			else
+			{
+
+				let useraw = false;
+				if (userinput.match(/aicharactercards\.com\//i) && userinput.match(/sdm_process_download/i))
+				{
+					useraw = true;
+				}
+				else {
+					userinput = userinput.split("#")[0].split("?")[0];
+					userinput = userinput.endsWith('/') ? userinput.slice(0, -1) : userinput;
+					if (userinput.match(/aicharactercards\.com\//i) || userinput.match(/AICC\//i)) {
+						// is a URL, extract the character name
+						let tmp = userinput.split("/");
+						if(tmp.length >= 2)
+						{
+							userinput = tmp[tmp.length-2] + "/" + tmp[tmp.length-1];
+						}
+					}
+				}
+
+				if(userinput!="")
+				{
+					temp_scenario = {
+						"title":"",
+						"desc": "",
+						"opmode":3,
+						"chatname": "User",
+						"chatopponent": "",
+						"gui_type":1,
+						"prefmodel1":chatmodels1,
+						"prefmodel2":chatmodels2,
+						"prompt":"",
+						"memory": "",
+						"authorsnote": "",
+						"worldinfo": [],
+					};
+
+					let finalurl = useraw?userinput:"https://aicharactercards.com/wp-json/pngapi/v1/image/"+userinput;
+					finalurl = apply_proxy_url(finalurl,true);
+					//try to obtain the full portrait image
+					fetch(finalurl, {
+						method: 'GET',
+						redirect: 'follow',
+						referrerPolicy: 'no-referrer',
+						})
+						.then(rb => {
+							if(rb.ok)
+							{
+								return rb.blob();
+							}else{
+								throw new Error('Cannot fetch tavern image');
+							}
+						})
+						.then(blob => {
+							preview_temp_scenario();
+
+							readTavernPngFromBlob(blob,(obj)=>{
+								load_temp_scenario_from_tavernobj(obj,true);
+							});
+
+							const objectURL = URL.createObjectURL(blob);
+							const compressedImg = compressImage(objectURL, (compressedImageURI, aspectratio)=>{
+								temp_scenario.image = compressedImageURI;
+								temp_scenario.image_aspect = aspectratio;
+								preview_temp_scenario();
+							}, true);
+						})
+						.catch(error => {
+							temp_scenario = null;
+							document.getElementById("scenariodesc").innerText = "Error: Selected scenario is invalid.";
+							console.log("Error: " + error);
+
+						});
+				} else {
+					temp_scenario = null;
+					document.getElementById("scenariodesc").innerText = "Error: User input is invalid\n\n Please ensure you have input a valid AICC URL or ID.";
+				}
+			}
+		}
+
+		if(inputstr=="")
+		{
+			inputBox("Enter aicharactercards.com prompt URL","Import from aicharactercards.com","","https://aicharactercards.com/character-cards/work-jobs/deffcolony/lara-lightland", ()=>{
+				let userinput = getInputBoxValue().trim();
+				loadaicc(userinput);
+			},false);
+		}else{
+			loadaicc(inputstr);
+		}
+	}
+
 	function get_chubai_scenario(chubstr="")
 	{
 		const loadchub = function(userinput)
@@ -6353,7 +6674,7 @@ Current version: 148
 			let prompttxt = temp_scenario.prompt;
 			if(!localsettings.placeholder_tags) //do a one-time replace instead
 			{
-				prompttxt = replace_placeholders_direct(prompttxt);
+				prompttxt = replace_placeholders(prompttxt, false, true);
 			}
 			gametext_arr.push(prompttxt);
 		}
@@ -6361,14 +6682,14 @@ Current version: 148
 			current_anote = temp_scenario.authorsnote;
 			if(!localsettings.placeholder_tags)
 			{
-				current_anote = replace_placeholders_direct(current_anote);
+				current_anote = replace_placeholders(current_anote, false, true);
 			}
 		}
 		if (temp_scenario.memory != "") {
 			current_memory = temp_scenario.memory;
 			if(!localsettings.placeholder_tags)
 			{
-				current_memory = replace_placeholders_direct(current_memory);
+				current_memory = replace_placeholders(current_memory, false, true);
 			}
 		}
 		if (temp_scenario.image && temp_scenario.image != "") {
@@ -6418,6 +6739,7 @@ Current version: 148
 			if (temp_scenario.gui_type===1) { localsettings.gui_type_instruct = 1; }
 			else if(temp_scenario.gui_type===2) { localsettings.gui_type_instruct = 2; }
 			else if(temp_scenario.gui_type===0) { localsettings.gui_type_instruct = 0; }
+			else if(temp_scenario.gui_type===3) { localsettings.gui_type_instruct = 3; }
 
 			if (temp_scenario.instruct_has_markdown===true) {
 				localsettings.instruct_has_markdown = true;
@@ -6597,7 +6919,8 @@ Current version: 148
 
 		let scenarios = `<button type="button" name="" class="scenarioitem purple btn btn-primary" onclick="get_aetherroom_scenario()">Import from<br>aetherroom.club</button>`+
 		`<button type="button" name="" class="scenarioitem purple btn btn-primary" onclick="get_chubai_scenario()">Import from<br>characterhub.org / chub.ai</button>` +
-		`<button type="button" name="" class="scenarioitem purple btn btn-primary" onclick="get_pygchat_scenario()">Import from<br>pygmalion.chat</button>`;
+		`<button type="button" name="" class="scenarioitem purple btn btn-primary" onclick="get_pygchat_scenario()">Import from<br>pygmalion.chat</button>` +
+		`<button type="button" name="" class="scenarioitem purple btn btn-primary" onclick="get_aicc_scenario()">Import from<br>aicharactercards.com</button>`;
 		for(let i=0;i<scenario_db.length;++i)
 		{
 			let curr = scenario_db[i];
@@ -6883,10 +7206,17 @@ Current version: 148
 	}
 	function is_aesthetic_ui()
 	{
-		return (localsettings.gui_type_story!=0 && localsettings.opmode==1)
-		||(localsettings.gui_type_adventure!=0 && localsettings.opmode==2)
-		||(localsettings.gui_type_chat!=0 && localsettings.opmode==3)
-		||(localsettings.gui_type_instruct!=0 && localsettings.opmode==4);
+		return ((localsettings.gui_type_story==1 || localsettings.gui_type_story==2) && localsettings.opmode==1)
+		||((localsettings.gui_type_adventure==1 || localsettings.gui_type_adventure==2) && localsettings.opmode==2)
+		||((localsettings.gui_type_chat==1 || localsettings.gui_type_chat==2) && localsettings.opmode==3)
+		||((localsettings.gui_type_instruct==1 || localsettings.gui_type_instruct==2) && localsettings.opmode==4);
+	}
+	function is_corpo_ui()
+	{
+		return (localsettings.gui_type_story==3 && localsettings.opmode==1)
+		||(localsettings.gui_type_adventure==3 && localsettings.opmode==2)
+		||(localsettings.gui_type_chat==3 && localsettings.opmode==3)
+		||(localsettings.gui_type_instruct==3 && localsettings.opmode==4);
 	}
 	function is_popup_open()
 	{
@@ -7611,7 +7941,7 @@ Current version: 148
 						console.log(values);
 						let mdlname = values[0].result;
 						if (!mdlname) {
-							msgbox("Error at Custom Kobold Endpoint!\n\nThe custom endpoint failed to respond correctly.");
+							msgbox("Error at Custom KoboldAI Endpoint!\n\nThe custom endpoint failed to respond correctly.");
 							selected_models = [];
 							selected_workers = [];
 							custom_kobold_endpoint = "";
@@ -7640,10 +7970,9 @@ Current version: 148
 									"worker_count": 0
 								};
 								document.body.classList.add("connected");
-								document.getElementById("connectstatus").classList.remove("color_orange");
-								document.getElementById("connectstatus").classList.add("color_green");
+								document.getElementById("connectstatus").classList.add("color_offwhite");
 							}
-							document.getElementById("connectstatus").innerHTML = "Connected to Custom Endpoint";
+							document.getElementById("connectstatus").innerHTML = "KoboldAI Endpoint";
 							render_gametext();
 
 							{
@@ -7698,6 +8027,7 @@ Current version: 148
 									{
 										koboldcpp_version = data.version;
 										console.log("KoboldCpp Detected: " + koboldcpp_version);
+										document.getElementById("connectstatus").innerHTML = ("KoboldCpp "+koboldcpp_version);
 										koboldcpp_has_vision = (data.vision?true:false);
 										koboldcpp_has_whisper = (data.transcribe?true:false);
 										let has_password = (data.protected?true:false);
@@ -7785,7 +8115,7 @@ Current version: 148
 										if(localflag && has_password && !localmodekey)
 										{
 											console.log("Password protection detected. Prompting for password...");
-											inputBox("This KoboldCpp instance may be password protected.\nPlease input password:","Kobold API Key Required",localsettings.saved_kai_key,"(Input Kobold API Key)", ()=>{
+											inputBox("This KoboldCpp instance may be password protected.\nPlease input password:","API Key Required",localsettings.saved_kai_key,"(Input API Key)", ()=>{
 												let userinput = getInputBoxValue();
 												userinput = userinput.trim();
 												if (userinput != null && userinput!="") {
@@ -7828,7 +8158,7 @@ Current version: 148
 							}
 							else
 							{
-								msgbox("Failed to connect to Custom Kobold Endpoint!<br><br>Please check if KoboldAI is running at the url: " + desiredkoboldendpoint + "<br><br>You can also <a href='#' class='color_blueurl' onclick='hide_popups();display_endpoint_container();'>try a different URL or API type</a>.","Error Encountered",true);
+								msgbox("Failed to connect to Custom KoboldAI Endpoint!<br><br>Please check if KoboldAI is running at the url: " + desiredkoboldendpoint + "<br><br>You can also <a href='#' class='color_blueurl' onclick='hide_popups();display_endpoint_container();'>try a different URL or API type</a>.","Error Encountered",true);
 								selected_models = [];
 								selected_workers = [];
 								custom_kobold_endpoint = "";
@@ -7903,10 +8233,9 @@ Current version: 148
 						"worker_count": 0
 					};
 					document.body.classList.add("connected");
-					document.getElementById("connectstatus").classList.remove("color_orange");
-					document.getElementById("connectstatus").classList.add("color_green");
+					document.getElementById("connectstatus").classList.add("color_offwhite");
 				}
-				document.getElementById("connectstatus").innerHTML = "Connected to OAI Endpoint";
+				document.getElementById("connectstatus").innerHTML = "OpenAI Endpoint";
 				render_gametext(true);
 			}
 		}
@@ -7954,10 +8283,9 @@ Current version: 148
 						"worker_count": 0
 					};
 					document.body.classList.add("connected");
-					document.getElementById("connectstatus").classList.remove("color_orange");
-					document.getElementById("connectstatus").classList.add("color_green");
+					document.getElementById("connectstatus").classList.add("color_offwhite");
 				}
-				document.getElementById("connectstatus").innerHTML = "Connected to Claude Endpoint";
+				document.getElementById("connectstatus").innerHTML = "Claude Endpoint";
 				render_gametext();
 
 			}
@@ -7987,10 +8315,9 @@ Current version: 148
 						"worker_count": 0
 					};
 					document.body.classList.add("connected");
-					document.getElementById("connectstatus").classList.remove("color_orange");
-					document.getElementById("connectstatus").classList.add("color_green");
+					document.getElementById("connectstatus").classList.add("color_offwhite");
 				}
-				document.getElementById("connectstatus").innerHTML = "Connected to PaLM Endpoint";
+				document.getElementById("connectstatus").innerHTML = "Gemini Endpoint";
 				render_gametext();
 			}
 		}
@@ -8019,10 +8346,9 @@ Current version: 148
 						"worker_count": 0
 					};
 					document.body.classList.add("connected");
-					document.getElementById("connectstatus").classList.remove("color_orange");
-					document.getElementById("connectstatus").classList.add("color_green");
+					document.getElementById("connectstatus").classList.add("color_offwhite");
 				}
-				document.getElementById("connectstatus").innerHTML = "Connected to Cohere Endpoint";
+				document.getElementById("connectstatus").innerHTML = "Cohere Endpoint";
 				render_gametext();
 			}
 		}
@@ -8056,7 +8382,7 @@ Current version: 148
 
 		try
 		{
-			for(let i=0;i<6;++i)
+			for(let i=0;i<SAVE_SLOTS;++i)
 			{
 				let testslot = localStorage.getItem(STORAGE_PREFIX + "slot_"+i+"_meta");
 				entry = `<div style="display:flex; height:42px;">
@@ -8071,6 +8397,8 @@ Current version: 148
 					</div></div>`;
 				filetable += entry;
 			}
+
+			populate_corpo_leftpanel();
 		} catch (e) {
 			console.log("get slots failed: " + e);
 		}
@@ -8090,6 +8418,7 @@ Current version: 148
 
 		const slotwrite = function()
 		{
+			warn_on_quit = false;
 			inputBox("Enter a label for this Browser Storage Slot data","Enter a label",savename,defaultsavename,()=>{
 				let userinput = getInputBoxValue();
 				if(userinput.trim()=="")
@@ -8197,7 +8526,10 @@ Current version: 148
 			else
 			{
 				console.log("Error: " + errArr);
-				msgbox("Failed to fetch models!\nPlease check your network connection.");
+				if(!is_popup_open())
+				{
+					msgbox("Failed to fetch models!\nPlease check your network connection.");
+				}
 			}
 		});
 	}
@@ -8372,7 +8704,7 @@ Current version: 148
 				desired_new_home_cluster = null;
 			}
 
-			document.getElementById("connectstatus").innerHTML = "Connected to AI Horde";
+			document.getElementById("connectstatus").innerHTML = "AI Horde";
 
 			render_gametext();
 			hide_popups();
@@ -8640,6 +8972,7 @@ Current version: 148
 		document.getElementById("chatopponent").value = replaceAll(localsettings.chatopponent,"||$||","\n");
 		handle_bot_name_onchange();
 		document.getElementById("instruct_starttag").value = localsettings.instruct_starttag;
+		document.getElementById("instruct_systag").value = localsettings.instruct_systag;
 		let sp = replaceAll(localsettings.instruct_sysprompt, "\n", "\\n");
 		document.getElementById("instruct_sysprompt").value = sp;
 		document.getElementById("instruct_endtag").value = localsettings.instruct_endtag;
@@ -8911,6 +9244,7 @@ Current version: 148
 		}
 		localsettings.chatopponent = newopps;
 		localsettings.instruct_starttag = document.getElementById("instruct_starttag").value;
+		localsettings.instruct_systag = document.getElementById("instruct_systag").value;
 		localsettings.instruct_sysprompt = document.getElementById("instruct_sysprompt").value;
 		localsettings.instruct_sysprompt = replaceAll(localsettings.instruct_sysprompt, "\\n", "\n");
 		if (localsettings.instruct_starttag == null || localsettings.instruct_starttag == "") {
@@ -9037,7 +9371,7 @@ Current version: 148
 			localsettings.img_aspect = defaultsettings.img_aspect;
 		}
 
-		if(is_aesthetic_ui())
+		if(is_aesthetic_ui() || is_corpo_ui())
 		{
 			//kick out of edit mode
 			if(document.getElementById("allowediting"))
@@ -9089,67 +9423,85 @@ Current version: 148
 	{
 		let st = "";
 		let et = "";
+		let systag = "";
 
 		switch(sel)
 		{
-			case "1": //alpaca
+			case "1": //Alpaca
 				st = defaultsettings.instruct_starttag;
 				et = defaultsettings.instruct_endtag;
+				systag = "";
 				break;
-			case "2": //vicuna
+			case "2": //Vicuna
 				st = "\\nUSER: ";
 				et = "\\nASSISTANT: ";
+				systag = "";
 				break;
-			case "3": //metharme
+			case "3": //Metharme
 				st = `<|user|>`;
 				et = `<|model|>`;
+				systag = "";
 				break;
-			case "4": //llama 2 chat
+			case "4": //Llama 2 chat
 				st = "[INST] ";
 				et = " [/INST]";
+				systag = "";
 				break;
 			case "5": //Q & A
 				st = "\\nQuestion: ";
 				et = "\\nAnswer: ";
+				systag = "";
 				break;
 			case "6": //ChatML
 				st = "<|im_end|>\\n<|im_start|>user\\n";
 				et = "<|im_end|>\\n<|im_start|>assistant\\n";
+				systag = "<|im_start|>system\\n";
 				break;
 			case "7": //Input & Output
 				st = "\\n{{[INPUT]}}\\n";
 				et = "\\n{{[OUTPUT]}}\\n";
+				systag = "";
 				break;
 			case "8": //CommandR
 				st = "<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|USER_TOKEN|>";
 				et = "<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>";
+				systag = "<|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|>";
 				break;
-			case "9": //llama 3 chat
+			case "9": //Llama 3 chat
 				st = "<|eot_id|><|start_header_id|>user<|end_header_id|>\\n\\n";
 				et = "<|eot_id|><|start_header_id|>assistant<|end_header_id|>\\n\\n";
+				systag = "<|start_header_id|>system<|end_header_id|>\\n\\n";
 				break;
-			case "10": // Phi-3 Mini
-                st = "<|end|><|user|>\\n";
-                et = "<|end|>\\n<|assistant|>";
-                break;
-			case "11": // Gemma 2
-                st = "<end_of_turn>\\n<start_of_turn>user\\n";
-                et = "<end_of_turn>\\n<start_of_turn>assistant\\n";
-                break;
+			case "10": //Phi-3 Mini
+				st = "<|end|><|user|>\\n";
+				et = "<|end|>\\n<|assistant|>";
+				systag = "<|system|>\\n";
+				break;
+			case "11": //Gemma 2
+				st = "<end_of_turn>\\n<start_of_turn>user\\n";
+				et = "<end_of_turn>\\n<start_of_turn>model\\n";
+				systag = "<start_of_turn>user\\n";
+				break;
+			case "12": //Mistral
+				st = "\\n[INST] ";
+				et = " [/INST]\\n";
+				systag = "";
+				break;
 			default:
 				break;
 		}
 
-		return {"start":st,"end":et};
+		return {"start":st,"end":et,"system":systag};
 	}
 	function toggle_instruct_tag_format()
 	{
 		let sel = document.getElementById('instruct_tag_format').value;
 		let itags = get_preset_instruct_tag_format(sel);
-		if(itags.start!="" && itags.end!="")
+		if(itags.start!="" && itags.end!="" && itags.system!==null)
 		{
 			document.getElementById('instruct_starttag').value = itags.start;
 			document.getElementById('instruct_endtag').value = itags.end;
+			document.getElementById('instruct_systag').value = itags.system;
 		}
 	}
 	function edit_instruct_tag_format()
@@ -9162,7 +9514,8 @@ Current version: 148
 			let itags = get_preset_instruct_tag_format(option.value);
 			let st = document.getElementById('instruct_starttag').value;
 			let et = document.getElementById('instruct_endtag').value;
-			if(itags.start!="" && itags.end!="" && itags.start==st && itags.end==et)
+			let systag = document.getElementById('instruct_systag').value;
+			if(itags.start!="" && itags.end!="" && itags.start==st && itags.end==et && itags.system==systag)
 			{
 				document.getElementById('instruct_tag_format').value = option.value;
 				found = true;
@@ -9252,6 +9605,7 @@ Current version: 148
 		document.getElementById('uipicker_classic').classList.remove('hidden');
 		document.getElementById('uipicker_messenger').classList.add('hidden');
 		document.getElementById('uipicker_aesthetic').classList.add('hidden');
+		document.getElementById('uipicker_corpo').classList.add('hidden');
 
 		if (document.getElementById('opmode').value == 1) {
 			document.getElementById('gui_type').value = localsettings.gui_type_story;
@@ -9276,6 +9630,7 @@ Current version: 148
 			document.getElementById('instructsection1').classList.remove('hidden');
 			document.getElementById('instructsection2').classList.remove('hidden');
 			document.getElementById('uipicker_aesthetic').classList.remove('hidden');
+			document.getElementById('uipicker_corpo').classList.remove('hidden');
 			toggle_include_chatnames();
 		}
 
@@ -9396,6 +9751,7 @@ Current version: 148
 		document.getElementById("chatopponent").value = document.getElementById("placeholder_replace_hc1").value;
 		document.getElementById("instruct_starttag").value = document.getElementById("placeholder_replace_hc2").value;
 		document.getElementById("instruct_endtag").value = document.getElementById("placeholder_replace_hc3").value;
+		document.getElementById("instruct_systag").value = document.getElementById("placeholder_replace_hc4").value;
 		confirm_chat_and_instruct_tags();
 		placeholder_tags_data = [];
 		for(let i=0;i<num_regex_rows;++i)
@@ -9456,7 +9812,7 @@ Current version: 148
 			"params": {
 				"n": 1,
 				"max_context_length": localsettings.max_context_length,
-				"max_length": (long_story?200:150),
+				"max_length": (long_story?250:200),
 				"rep_pen": localsettings.rep_pen,
 				"temperature": localsettings.temperature,
 				"top_p": localsettings.top_p,
@@ -9593,6 +9949,7 @@ Current version: 148
 		pending_context_preinjection = "";
 		pending_context_postinjection = "";
 		document.getElementById("input_text").value = "";
+		document.getElementById("corpo_cht_inp").value = "";
 		document.getElementById("cht_inp").value = "";
 		chat_resize_input();
 		image_db = {};
@@ -9622,6 +9979,8 @@ Current version: 148
 			regexreplace_data = [];
 			placeholder_tags_data = [];
 		}
+		warn_on_quit = false;
+		show_corpo_leftpanel(false);
 		render_gametext(save); //necessary to trigger an autosave to wipe out current story in case they exit browser after newgame.
 	}
 
@@ -9676,14 +10035,20 @@ Current version: 148
 		render_gametext(false);
 	}
 
-	function replace_placeholders_direct(inputtxt,escape=false)
+	//we separate these 2 functions, as sometimes we only need to replace instruct
+	function replace_instruct_placeholders(inputtxt) //only for instruct placeholders first
 	{
 		inputtxt = replaceAll(inputtxt,instructstartplaceholder,get_instruct_starttag(false));
 		inputtxt = replaceAll(inputtxt,instructendplaceholder,get_instruct_endtag(false));
+		inputtxt = replaceAll(inputtxt,instructsysplaceholder,get_instruct_systag(false));
 		//failsafe to handle removing newline tags
 		inputtxt = replaceAll(inputtxt,instructstartplaceholder.trim(),get_instruct_starttag(false));
 		inputtxt = replaceAll(inputtxt,instructendplaceholder.trim(),get_instruct_endtag(false));
-
+		inputtxt = replaceAll(inputtxt,instructsysplaceholder.trim(),get_instruct_systag(false));
+		return inputtxt;
+	}
+	function replace_noninstruct_placeholders(inputtxt,escape=false)
+	{
 		if(escape)
 		{
 			inputtxt = replaceAll(inputtxt,"{{user}}",escapeHtml(localsettings.chatname?localsettings.chatname:"User"),true);
@@ -9702,15 +10067,17 @@ Current version: 148
 				inputtxt = replaceAll(inputtxt,placeholder_tags_data[i].p,placeholder_tags_data[i].r);
 			}
 		}
-
 		return inputtxt;
 	}
-	function replace_placeholders(inputtxt, escape=false)
+
+	//if alwaysreplace, then settings are not considered, otherwise checks settings
+	function replace_placeholders(inputtxt, escape=false, alwaysreplace=false)
 	{
 		//only do this for chat and instruct modes
-		if(localsettings.placeholder_tags)
+		if(alwaysreplace || localsettings.placeholder_tags)
 		{
-			inputtxt = replace_placeholders_direct(inputtxt,escape);
+			inputtxt = replace_instruct_placeholders(inputtxt);
+			inputtxt = replace_noninstruct_placeholders(inputtxt,escape);
 		}
 		return inputtxt;
 	}
@@ -9789,6 +10156,17 @@ Current version: 148
 		}
 	}
 
+	var warn_on_quit = false;
+	function handle_quit()
+	{
+		if(warn_on_quit)
+		{
+			warn_on_quit = false;
+			return "Unsaved changes will be lost!"; //the actual message will not be shown in new browsers
+		}
+		return undefined;
+	}
+
 	function handle_escape_button(event)
 	{
 		if(is_popup_open())
@@ -9808,6 +10186,7 @@ Current version: 148
 	function handle_typing(event) {
 		var event = event || window.event;
 		var charCode = event.keyCode || event.which;
+		warn_on_quit = true;
 
 		if (!event.shiftKey && (charCode == 13||(charCode == 10 && event.ctrlKey))) {
 			let willsubmit = (document.getElementById("entersubmit").checked ? true : false);
@@ -9831,11 +10210,13 @@ Current version: 148
 		{
 			document.getElementById("abortgen").classList.add("hidden");
 			document.getElementById("chat_msg_send_btn_abort").classList.add("hidden");
+			document.getElementById("corpo_chat_send_btn_abort").classList.add("hidden");
 		}
 		else
 		{
 			document.getElementById("abortgen").classList.remove("hidden");
 			document.getElementById("chat_msg_send_btn_abort").classList.remove("hidden");
+			document.getElementById("corpo_chat_send_btn_abort").classList.remove("hidden");
 		}
 	}
 
@@ -10311,7 +10692,7 @@ Current version: 148
 					update_submit_button(false);
 					if(recent_voice_duration<500) //if too short, fall back to click behavior
 					{
-						if(is_aesthetic_ui())
+						if(is_corpo_ui() || is_aesthetic_ui())
 						{
 							chat_submit_generation();
 						}
@@ -10339,8 +10720,9 @@ Current version: 148
 		}
 	}
 
-	function submit_generation() {
-
+	function submit_generation()
+	{
+		warn_on_quit = true;
 		let newgen = document.getElementById("input_text").value;
 
 		//apply regex transforms
@@ -10687,7 +11069,7 @@ Current version: 148
 			if(localsettings.opmode==4 && localsettings.instruct_sysprompt!="")
 			{
 				max_mem_len = Math.floor(max_allowed_characters*0.7);
-				appendedsysprompt = localsettings.instruct_sysprompt + "\n";
+				appendedsysprompt = get_instruct_systag(false) + localsettings.instruct_sysprompt + "\n";
 			}
 			let truncated_memory = appendedsysprompt + substring_to_boundary(current_memory, max_mem_len);
 			if (truncated_memory != null && truncated_memory != "") {
@@ -10897,6 +11279,7 @@ Current version: 148
 			if(is_using_kcpp_with_added_memory())
 			{
 				submit_payload.params.memory = truncated_memory;
+				submit_payload.params.trim_stop = true;
 			}
 			if(is_using_kcpp_with_llava() && insertAIVisionImages.length>0)
 			{
@@ -11033,7 +11416,7 @@ Current version: 148
 			{
 				resp = resp.slice(3);
 			}
-			if(/^[^\p{P}\p{Z}\s]/u.test(resp))
+			if (/^[^!\"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~ \t\r\n\f\v]/.test(resp)) // List of common punctuation and whitespace
 			{
 				resp = " "+resp;
 			}
@@ -12456,9 +12839,10 @@ Current version: 148
 		{
 			shownotify();
 		}
-		let lastreq = "<a href=\"#\" onclick=\"show_last_req()\">Last request</a> served by <a href=\"#\" onclick=\"get_and_show_workers()\">" + genworker + "</a> using <span class=\"color_darkgreen\">"+genmdl+ "</span>"+(genkudos>0?(" for " + genkudos + " kudos"):"")+" in " + getTimeTaken() + " seconds.";
-		document.getElementById("lastreq").innerHTML = lastreq;
+		let lastreq = `<a href="#" onclick="show_last_req()">Last request</a> served by <a href="#" onclick="get_and_show_workers()">${genworker}</a> using <span class="color_darkgreen">${genmdl}</span>${(genkudos>0?` for ${genkudos} kudos`:``)} in ${getTimeTaken()} seconds.`;
+		document.getElementById("lastreq1").innerHTML = lastreq;
 		document.getElementById("lastreq2").innerHTML = lastreq;
+		document.getElementById("lastreq3").innerHTML = lastreq;
 	}
 
 	function poll_interrogation_db()
@@ -12716,7 +13100,7 @@ Current version: 148
 		}
 
 		let newgenempty = (document.getElementById("input_text").value == "");
-		let	chatinputempty = (document.getElementById("cht_inp").value == "");
+		let	chatinputempty = (document.getElementById("cht_inp").value == "" && document.getElementById("corpo_cht_inp").value == "");
 		if ((localsettings.opmode == 1 || localsettings.opmode == 2 || localsettings.opmode == 3 || localsettings.opmode == 4)
 		&& localsettings.idle_responses > 0 && newgenempty && chatinputempty && !document.getElementById("btnsend").disabled && idle_triggered_counter<localsettings.idle_responses && !is_popup_open())
 		{
@@ -13101,7 +13485,10 @@ Current version: 148
 						pending_response_id = "";
 						poll_in_progress = false;
 						let resp = synchro_polled_response;
-						last_reply_was_empty = (resp=="" || resp.trim()=="");
+						if(!waiting_for_autosummary)
+						{
+							last_reply_was_empty = (resp=="" || resp.trim()=="");
+						}
 						if (resp != null && resp != "") {
 							let gentxt = resp;
 							let genworker = "Custom Endpoint";
@@ -13115,6 +13502,8 @@ Current version: 148
 							{
 								handle_incoming_text(gentxt, genworker, genmdl, genkudos);
 							}
+						}else{
+							retry_preserve_last = false;
 						}
 						synchro_polled_response = null;
 						last_stop_reason = "";
@@ -13231,6 +13620,7 @@ Current version: 148
 		{
 			const isSupported = typeof window.getSelection !== "undefined";
 			if (isSupported) {
+				warn_on_quit = true;
 				const selection = window.getSelection();
 				if(selection.focusNode!=null && selection.focusNode.parentElement!=null
 				&& selection.focusNode.parentElement.classList.contains("txtchunk"))
@@ -13245,6 +13635,29 @@ Current version: 148
 				idle_timer = 0;
 			}
 		}
+	}
+
+	function stash_image_placeholders(text, addspan)
+	{
+		text = text.replace(/\[<\|p\|.+?\|p\|>\]/g, function (m) {
+			if(!addspan)
+			{
+				return m;
+			}
+			return `<span class=\"color_pink\">`+m+`</span>`;
+		});
+		text = text.replace(/\[<\|d\|.+?\|d\|>\]/g, function (m) {
+			let inner = m.substring(5, m.length - 5);
+			let imghash = cyrb_hash(inner);
+			img_hash_to_b64_lookup[imghash] = m;
+			let hashtag = `{{[IMG_${imghash}_REF]}}`;
+			if(!addspan)
+			{
+				return hashtag;
+			}
+			return `<span class=\"color_pink\">${hashtag}</span>`;
+		});
+		return text;
 	}
 
 	function unstash_image_placeholders(text)
@@ -13518,7 +13931,7 @@ Current version: 148
 				document.getElementById("btnsend").classList.remove("wait");
 				document.getElementById("btnsend").classList.add("btn-primary");
 			}
-			if (gametext_arr.length > 0 && document.getElementById("input_text").value == "" && document.getElementById("cht_inp").value == "") {
+			if (gametext_arr.length > 0 && document.getElementById("input_text").value == "" && document.getElementById("cht_inp").value == "" && document.getElementById("corpo_cht_inp").value == "") {
 				document.getElementById("btnsend").innerHTML = "Generate<br>More";
 			}
 			else {
@@ -13558,7 +13971,7 @@ Current version: 148
 				}
 			}
 		}
-		document.getElementById("chat_msg_send_btn").disabled = document.getElementById("btnsend").disabled;
+		document.getElementById("corpo_chat_send_btn").disabled = document.getElementById("chat_msg_send_btn").disabled = document.getElementById("btnsend").disabled;
 
 	}
 
@@ -13567,6 +13980,7 @@ Current version: 148
 		if (localsettings.autoscroll) {
 			let box1 = document.getElementById("gametext");
 			let box2 = document.getElementById("chat_msg_body");
+			let box3 = document.getElementById("corpostylemain");
 			function isScrolledToBottom(element) {
 				return element.scrollHeight - element.scrollTop <= element.clientHeight + 250;
 			}
@@ -13577,6 +13991,10 @@ Current version: 148
 			if(alwaysscroll || isScrolledToBottom(box2))
 			{
 				box2.scrollTop = box2.scrollHeight - box2.clientHeight + 10;
+			}
+			if(alwaysscroll || isScrolledToBottom(box3))
+			{
+				box3.scrollTop = box3.scrollHeight - box3.clientHeight + 10;
 			}
 		}
 	}
@@ -13647,7 +14065,7 @@ Current version: 148
 					whorun = "<br>You're using the Cohere API";
 				}
 				else {
-					whorun = "<br>There are <span class=\"color_orange\">" + selected_models.reduce((s, a) => s + a.count, 0) + "</span> <a class=\"color_green\" href=\"#\" onclick=\"get_and_show_workers()\">volunteer(s)</a> running selected models with a total queue length of <span class=\"color_orange\">"+ selected_models.reduce((s, a) => s + a.queued, 0) + "</span> tokens";
+					whorun = `<br>There are <span class="color_orange">${selected_models.reduce((s, a) => s + a.count, 0)}</span> <a class="color_green" href="#" onclick="get_and_show_workers()">volunteer(s)</a> running selected models with a total queue length of <span class="color_orange">${selected_models.reduce((s, a) => s + a.queued, 0)}</span> tokens`;
 				}
 				let nowmode = (localsettings.opmode==1?"Story Mode":(localsettings.opmode==2?"Adventure Mode":(localsettings.opmode==3?"Chat Mode":"Instruct Mode")));
 				let selmodelstr = "";
@@ -13660,10 +14078,12 @@ Current version: 148
 					selmodelstr = selected_models.reduce((s, a) => s + (s == "" ? "" : ", ") + a.name, "");
 				}
 
-				document.getElementById("gametext").innerHTML = "Welcome to <span class=\"color_cyan\">KoboldAI Lite</span>!<br>You are using the models <span class=\"color_green\">"
-					+ selmodelstr + "</span>" + (selected_workers.length == 0 ? "" : (" (Pinned to " + selected_workers.length + " worker IDs)"))
-					+ "." + whorun +".<br><br><b><span class=\"color_orange\">"+ nowmode +" Selected</span></b> - Enter a prompt below to begin!" + "<br>Or, <a href=\"#\" class=\"color_blueurl\" onclick=\"document.getElementById('loadfileinput').click()\">load a <b>JSON File</b> or a <b>Character Card</b> here.</a>" + "<br>Or, <a href=\"#\" class=\"color_blueurl\" onclick=\"display_scenarios()\">select a <b>Quick Start Scenario</b> here.</a><br>"+
-					(welcome!=""?("<br><em>"+escapeHtml(welcome)+"</em>"):"");
+				document.getElementById("gametext").innerHTML = `Welcome to <span class="color_cyan">KoboldAI Lite</span>!`+
+				`<br>You are using the models <span class="color_green">${selmodelstr}</span>${(selected_workers.length == 0 ? `` : ` (Pinned to ${selected_workers.length} worker IDs)`)}.`+
+				`${whorun}.<br><br><b><span class="color_orange">${nowmode} Selected</span></b> - Enter a prompt below to begin!`+
+				`<br>Or, <a href="#" class="color_blueurl" onclick="document.getElementById('loadfileinput').click()">load a <b>JSON File</b> or a <b>Character Card</b> here.</a>`+
+				`<br>Or, <a href="#" class="color_blueurl" onclick="display_scenarios()">select a <b>Quick Start Scenario</b> here.</a>`+
+				`<br>${(welcome!=""?`<br><em>${escapeHtml(welcome)}</em>`:``)}`;
 			}
 
 			//kick out of edit mode
@@ -13728,6 +14148,12 @@ Current version: 148
 				//failsafe to handle removing newline tags
 				fulltxt = replaceAll(fulltxt, instructstartplaceholder.trim(), `%SclStg%`+instructstartplaceholder.trim()+`%SpnEtg%`);
 				fulltxt = replaceAll(fulltxt, instructendplaceholder.trim(), `%SclStg%`+instructendplaceholder.trim()+`%SpnEtg%`);
+
+				if(get_instruct_systag(true)!="")
+				{
+					fulltxt = replaceAll(fulltxt, get_instruct_systag(true), `%SclStg%`+escapeHtml(get_instruct_systag(true))+`%SpnEtg%`);
+				}
+				fulltxt = replaceAll(fulltxt, instructsysplaceholder.trim(), `%SclStg%`+instructsysplaceholder.trim()+`%SpnEtg%`);
 			}
 
 			//this is a hacky fix to handle instruct tags that use arrow brackets only
@@ -13772,7 +14198,7 @@ Current version: 148
 			//streaming display
 			if(synchro_pending_stream!="")
 			{
-				fulltxt += "<span class=\"color_yellow pending_text\">" + escapeHtml(pending_context_preinjection) + escapeHtml(synchro_pending_stream) + "</span>";
+				fulltxt += `<span class="color_yellow pending_text">${escapeHtml(pending_context_preinjection) + escapeHtml(synchro_pending_stream)}</span>`;
 			}
 
 			if(!inEditMode)
@@ -13795,15 +14221,7 @@ Current version: 148
 			}
 			else
 			{
-				fulltxt = fulltxt.replace(/\[<\|p\|.+?\|p\|>\]/g, function (m) {
-					return `<span class=\"color_pink\">`+m+`</span>`;
-				});
-				fulltxt = fulltxt.replace(/\[<\|d\|.+?\|d\|>\]/g, function (m) {
-					let inner = m.substring(5, m.length - 5);
-					let imghash = cyrb_hash(inner);
-					img_hash_to_b64_lookup[imghash] = m;
-					return `<span class=\"color_pink\">{{[IMG_${imghash}_REF]}}</span>`;
-				});
+				fulltxt = stash_image_placeholders(fulltxt,true);
 			}
 
 
@@ -13883,8 +14301,8 @@ Current version: 148
 			document.getElementById("fvico").href = favivon_normal;
 		}
 		else if (selected_models.length == 0 && selected_workers.length == 0) {
-			let perfinfo = "There are <span class=\"color_orange\">" + perfdata.worker_count + "</span> total <a class=\"color_green\" href=\"#\" onclick=\"get_and_show_workers()\">volunteer(s)</a> in the AI Horde, and <span class=\"color_orange\">" + perfdata.queued_requests + "</span> request(s) in queues.<br>A total of <span class=\"color_orange\">" + perfdata.past_minute_tokens + "</span> tokens were generated in the last minute.<br><br>";
-			document.getElementById("gametext").innerHTML = "Welcome to <span class=\"color_cyan\">KoboldAI Lite</span>!<br><br>" + perfinfo + "<a href=\"#\" class=\"color_blueurl\" onclick=\"display_endpoint_container()\">Please select an AI service to use!</a><br>";
+			let perfinfo = `There are <span class="color_orange">${perfdata.worker_count}</span> total <a class="color_green" href="#" onclick="get_and_show_workers()">volunteer(s)</a> in the AI Horde, and <span class="color_orange">${perfdata.queued_requests}</span> request(s) in queues.<br>A total of <span class="color_orange">${perfdata.past_minute_tokens}</span> tokens were generated in the last minute.<br><br>`;
+			document.getElementById("gametext").innerHTML = `Welcome to <span class="color_cyan">KoboldAI Lite</span>!<br><br>${perfinfo}<a href="#" class="color_blueurl" onclick="display_endpoint_container()">Please select an AI service to use!</a><br>`;
 			document.getElementById("fvico").href = favivon_normal;
 		}
 		else if (pending_response_id == "") {
@@ -13895,9 +14313,27 @@ Current version: 148
 		}
 
 		// Render onto enhanced chat interface if selected.
-		let isStyleApplicable = is_aesthetic_ui();
+		let isAestheticUiStyle = is_aesthetic_ui();
+		let isCorpoUiStyle = is_corpo_ui();
 
-		if (!inEditMode && isStyleApplicable)
+		if (!inEditMode && isCorpoUiStyle)
+		{
+			if(gametext_arr.length == 0)
+			{
+				document.getElementById("corpo_body").innerHTML = render_corpo_welcome();
+			}
+			else
+			{
+				let textToRender = concat_gametext(false, "", "", "", true);
+				document.getElementById("corpo_body").innerHTML = render_corpo_instruct(textToRender);
+				corpoedit_resize_input();
+			}
+
+			document.getElementById("corpointerface").classList.remove("hidden");
+			document.getElementById("enhancedchatinterface").classList.add("hidden");
+			document.getElementById("normalinterface").classList.add("hidden");
+		}
+		else if (!inEditMode && isAestheticUiStyle)
 		{
 			let textToRender = (gametext_arr.length == 0 ? document.getElementById("gametext").innerHTML : concat_gametext(false, "", "", "", true));
 			textToRender = replace_placeholders(textToRender,true);
@@ -13948,12 +14384,14 @@ Current version: 148
 				document.getElementById("chatistyping").classList.remove("hidden");
 				document.getElementById("chat_msg_body").classList.add("withtyping");
 			}
-			document.getElementById("chat_msg_send_btn").disabled = document.getElementById("btnsend").disabled;
+			document.getElementById("corpo_chat_send_btn").disabled = document.getElementById("chat_msg_send_btn").disabled = document.getElementById("btnsend").disabled;
 
 			document.getElementById("enhancedchatinterface").classList.remove("hidden");
 			document.getElementById("normalinterface").classList.add("hidden");
+			document.getElementById("corpointerface").classList.add("hidden");
 		} else {
 			document.getElementById("enhancedchatinterface").classList.add("hidden");
+			document.getElementById("corpointerface").classList.add("hidden");
 			document.getElementById("normalinterface").classList.remove("hidden");
 		}
 
@@ -13978,7 +14416,12 @@ Current version: 148
 		}
 
 		let maincon = document.getElementById("maincontainer");
-		if(localsettings.viewport_width_mode==1) //clamped
+		if(is_corpo_ui() || localsettings.viewport_width_mode==3) //unlock
+		{
+			maincon.classList.remove("adaptivecontainer");
+			maincon.classList.remove("clampedcontainer");
+			maincon.classList.remove("bigclampedcontainer");
+		}else if(localsettings.viewport_width_mode==1) //clamped
 		{
 			maincon.classList.remove("adaptivecontainer");
 			maincon.classList.add("clampedcontainer");
@@ -13989,12 +14432,6 @@ Current version: 148
 			maincon.classList.remove("adaptivecontainer");
 			maincon.classList.remove("clampedcontainer");
 			maincon.classList.add("bigclampedcontainer");
-		}
-		else if(localsettings.viewport_width_mode==3) //unlock
-		{
-			maincon.classList.remove("adaptivecontainer");
-			maincon.classList.remove("clampedcontainer");
-			maincon.classList.remove("bigclampedcontainer");
 		}
 		else //adaptive
 		{
@@ -14007,6 +14444,356 @@ Current version: 148
 
 		idle_timer = 0;
 		document.getElementById("token-budget").innerText = last_token_budget;
+	}
+
+	function render_corpo_welcome()
+	{
+		return `<div class='corpowelcome'>
+			<img src="`+niko_square+`" style="height:80px;width:auto;padding:10px;border-radius: 20%;"/>
+			<p>How can I help you today?</p>
+			</div>`;
+	}
+
+	function corpo_repack_history(input) //repack all history into individual turns
+	{
+		let myturnchat = false; //who is currently speaking?
+		let st = get_instruct_starttag(false);
+		let et = get_instruct_endtag(false);
+
+		let chatunits = []; //parse chat body into nice chat chunks
+
+		let combined_chunks = [];
+		let turnchunks = input.split(st);
+		let startoppo = true;
+		for(let i=0;i<turnchunks.length;++i)
+		{
+			let chnk = turnchunks[i];
+			if(chnk.trim().length==0)
+			{
+				if(i==0)
+				{
+					startoppo = false;
+				}
+				continue;
+			}
+			let turnchunks2 = chnk.split(et);
+			for(let j=0;j<turnchunks2.length;++j)
+			{
+				if(j==0)
+				{
+					if(startoppo)
+					{
+						startoppo = false;
+						combined_chunks.push("%AIPlaceholder%");
+					}
+					else
+					{
+						combined_chunks.push("%HumanPlaceholder%");
+					}
+
+					combined_chunks.push(turnchunks2[j]);
+				}
+				else
+				{
+					combined_chunks.push("%AIPlaceholder%");
+					combined_chunks.push(turnchunks2[j]);
+				}
+			}
+		}
+
+		for(let i=0;i<combined_chunks.length;++i)
+		{
+			let curr = combined_chunks[i];
+			if(curr=="%HumanPlaceholder%")
+			{
+				myturnchat = true;
+			}
+			else if(curr=="%AIPlaceholder%")
+			{
+				myturnchat = false;
+			}
+			else
+			{
+				if(curr.trim()!="")
+				{
+					chatunits.push({
+					msg:curr,
+					myturn:myturnchat});
+				}
+			}
+		}
+		return chatunits;
+	}
+
+	function corpo_chunk_prev()
+	{
+		let incomplete_resp = (synchro_pending_stream != "" || pending_response_id != "");
+		if (incomplete_resp) { return; }
+
+		if(retry_prev_text.length>0)
+		{
+			btn_back();
+		}
+	}
+	function corpo_chunk_next()
+	{
+		let incomplete_resp = (synchro_pending_stream != "" || pending_response_id != "");
+		if (incomplete_resp) { return; }
+
+		if (redo_prev_text.length > 0) {
+			btn_redo();
+		}
+	}
+	function corpo_retry_chunk(idx)
+	{
+		let incomplete_resp = (synchro_pending_stream != "" || pending_response_id != "");
+		if (incomplete_resp) { return; }
+
+		let currctx = concat_gametext(false, "", "", "", false);
+		currctx = replace_instruct_placeholders(currctx);
+		let chatunits = corpo_repack_history(currctx);
+		if(idx < chatunits.length)
+		{
+			gametext_arr = [];
+
+			let st = get_instruct_starttag(false);
+			let et = get_instruct_endtag(false);
+			if(localsettings.placeholder_tags)
+			{
+				st = instructstartplaceholder;
+				et = instructendplaceholder;
+			}
+
+			for(let i=0;i<=idx;++i)
+			{
+				let cont = chatunits[i].msg;
+				let chunk = cont;
+				if(i!=idx)
+				{
+					chunk = (chatunits[i].myturn?st:et) + chunk;
+				}
+				if(i==idx-1)
+				{
+					chunk += et;
+				}
+
+				gametext_arr.push(chunk);
+			}
+			corpo_editing_turn = -1;
+			render_gametext(true);
+			btn_retry();
+		}
+	}
+	function corpo_edit_chunk_start(idx)
+	{
+		let incomplete_resp = (synchro_pending_stream != "" || pending_response_id != "");
+		if (incomplete_resp) { return; }
+
+		corpo_editing_turn = idx;
+		render_gametext(false);
+	}
+	function corpo_edit_chunk_delete()
+	{
+		let incomplete_resp = (synchro_pending_stream != "" || pending_response_id != "");
+		if (incomplete_resp) { return; }
+
+		let textarea = document.getElementById("corpo_edit_inp");
+		textarea.value = "";
+		corpo_edit_chunk_save();
+	}
+	function corpo_edit_chunk_save()
+	{
+		let incomplete_resp = (synchro_pending_stream != "" || pending_response_id != "");
+		if (incomplete_resp) { return; }
+
+		let idx = corpo_editing_turn;
+		let currctx = concat_gametext(false, "", "", "", false);
+		currctx = replace_instruct_placeholders(currctx);
+		let chatunits = corpo_repack_history(currctx);
+		let textarea = document.getElementById("corpo_edit_inp");
+		let needsave = false;
+
+		let existing_msg_compare = stash_image_placeholders(chatunits[idx].msg,false);
+		if(idx < chatunits.length && textarea.value != existing_msg_compare)
+		{
+			needsave = true;
+			gametext_arr = [];
+			redo_arr = [];
+			last_reply_was_empty = false;
+			retry_prev_text = [];
+			retry_preserve_last = false;
+			redo_prev_text = [];
+
+			let st = get_instruct_starttag(false);
+			let et = get_instruct_endtag(false);
+			if(localsettings.placeholder_tags)
+			{
+				st = instructstartplaceholder;
+				et = instructendplaceholder;
+			}
+			let newtxt = textarea.value;
+			newtxt = unstash_image_placeholders(newtxt);
+
+			for(let i=0;i<chatunits.length;++i)
+			{
+				let cont = (i==idx?newtxt:chatunits[i].msg);
+				if(cont!="")
+				{
+					let chunk = (chatunits[i].myturn?st:et) + cont;
+					gametext_arr.push(chunk);
+				}
+			}
+			if(gametext_arr.length>0)
+			{
+				gametext_arr[gametext_arr.length-1] += et;
+			}
+
+			console.log("Merged corpo edit field. Parts:" + gametext_arr.length);
+		}
+
+		corpo_editing_turn = -1;
+		render_gametext(needsave);
+	}
+
+	var corpo_editing_turn = -1;
+	function render_corpo_instruct(input)
+	{
+		var corpobody = document.getElementById("corpo_body");
+		if(!corpobody)
+		{
+			return "";
+		}
+
+		let newbodystr = "";
+		input = replace_instruct_placeholders(input);
+		let chatunits = corpo_repack_history(input);
+		let incomplete_resp = (synchro_pending_stream!="" || pending_response_id!="");
+
+		for(var i=0;i<chatunits.length;++i)
+		{
+			let curr = chatunits[i];
+			let foundimg = "";
+			let processed_msg = curr.msg;
+			if(processed_msg && processed_msg!="")
+			{
+				processed_msg = replace_noninstruct_placeholders(processed_msg,true);
+				let codeblockcount = (processed_msg.match(/```/g) || []).length;
+				if(codeblockcount>0 && codeblockcount%2!=0 )
+				{
+					processed_msg += "```"; //force end code block
+				}
+				processed_msg = simpleMarkdown(processed_msg);
+
+				//convert the msg into images
+				processed_msg = processed_msg.replace(/\[<\|p\|.+?\|p\|>\]/g, function (m) {
+					// m here means the whole matched string
+					let inner = m.substring(5, m.length - 5);
+					inner = render_image_html("", inner,false,true);
+					return inner;
+				});
+				processed_msg = processed_msg.replace(/\[<\|d\|.+?\|d\|>\]/g, function (m) {
+					// m here means the whole matched string
+					let inner = m.substring(5, m.length - 5);
+					inner = render_image_html(inner, "",false,true);
+					return inner;
+				});
+				processed_msg = processed_msg.replace(/\[<\|.+?\|>\]/g, ""); //remove normal comments too
+			}
+
+			let namepart = (curr.myturn ? "User" : "KoboldAI");
+			let bodypart = (corpo_editing_turn == i ?
+				`<div class="corpo_edit_outer">
+				<div class="corpo_edit_inner" id="corpo_edit_inp_lengthtester" style="white-space: nowrap; visibility: hidden; height: 0px; position:absolute; width: auto;"></div>
+				<textarea class="corpo_edit_inner" id="corpo_edit_inp" type="text" name="crpeditinp"  role="presentation" autocomplete="noppynop" spellcheck="true" rows="1" wrap="on" placeholder="Edit Message" value="" oninput="corpoedit_resize_input();"/>${stash_image_placeholders(curr.msg, false)}</textarea>
+				</div>
+				<button type="button" class="btn btn-primary" style="margin:2px;float:right;" onclick="corpo_edit_chunk_start(-1)">Cancel</button>
+				<button type="button" class="btn btn-primary" style="margin:2px;float:right;" onclick="corpo_edit_chunk_save()">Save</button>
+				<button type="button" class="btn btn-primary bg_red" style="margin:2px;float:left;" onclick="corpo_edit_chunk_delete()">Delete</button>`:
+				`<div class="corpostyleitemcontent">${processed_msg}</div>`);
+			let historical_btns = "";
+			if(!curr.myturn && i==chatunits.length-1 && !incomplete_resp)
+			{
+				if(retry_prev_text.length+redo_prev_text.length>0)
+				{
+					historical_btns = `<button onclick="corpo_chunk_prev()" class="corpo_hover_btn" type="button" style="background-image: var(--img_corpo_left);"></button>`+
+					`<span class="corpo_btn_text">${retry_prev_text.length+1} / ${retry_prev_text.length+redo_prev_text.length+1}</span>`+
+					`<button onclick="corpo_chunk_next()" class="corpo_hover_btn" type="button" style="background-image: var(--img_corpo_right);"></button>`;
+				}
+			}
+			let chunkbtns = (corpo_editing_turn == i ? `` : `<div style="line-height: 1">`+
+				historical_btns +
+				`<button onclick="corpo_edit_chunk_start(${i})" class="corpo_hover_btn" type="button" style="background-image: var(--img_corpo_edit);"></button>`+
+				(curr.myturn ? `` : `<button onclick="corpo_retry_chunk(${i})" class="corpo_hover_btn" type="button" style="background-image: var(--img_corpo_retry);"></button>`)
+				+ `</div>`);
+
+			newbodystr += `<div class="corpostyleitem">
+				<div><img src="`+ (curr.myturn ? human_square : niko_square) + `" class="corpoavatar"/></div>
+				<div style="width:100%">
+				<div class="corpostyleitemheading">`+ namepart + `</div>
+				`+ bodypart + chunkbtns + `
+				</div>
+				</div>`;
+		}
+		if(incomplete_resp)
+		{
+			let namepart = "KoboldAI";
+			let futuretext = (synchro_pending_stream!=""?(escapeHtml(pending_context_preinjection) + escapeHtml(synchro_pending_stream)):"...");
+			newbodystr += `<div class="corpostyleitem">
+			<div><img src="`+niko_square+`" class="corpoavatar"/></div>
+			<div>
+				<div class="corpostyleitemheading">`+namepart+`</div>
+				<div class="corpostyleitemcontent"><p><span class="pending_text">`+ futuretext +`</span></p></div>
+			</div>
+			</div>`;
+		}
+
+		return newbodystr;
+	}
+
+	function btn_theme()
+	{
+		document.body.classList.toggle('darkmode');
+
+	}
+
+	function populate_corpo_leftpanel()
+	{
+		let panel = document.getElementById('corpoleftpanelitems');
+		let panelitems = `
+		<div onclick="display_newgame();" class="corpo_leftpanel_btn" type="button" style="background-image: var(--img_nikosquare); padding-left: 44px;">New Chat</div>
+		<div onclick="btn_memory()" class="corpo_leftpanel_btn" type="button" style="background-image: var(--img_gear); padding-left: 44px;">Context</div>
+		<div onclick="btn_editmode()" class="corpo_leftpanel_btn" type="button" style="background-image: var(--img_corpo_edit); padding-left: 44px;">Raw Editor</div>
+		<div onclick="btn_theme()" class="corpo_leftpanel_btn" type="button" style="background-image: var(--img_corpo_theme); padding-left: 44px;">Theme</div>
+		<div style="padding:2px;font-size:14px;margin-left:8px;font-weight:600;line-height:1.1;margin-top:20px">Quick Slot Load</div>
+		`;
+
+		for(let i=0;i<SAVE_SLOTS;++i)
+		{
+			let testslot = localStorage.getItem(STORAGE_PREFIX + "slot_"+i+"_meta");
+			let entry = "";
+			if(testslot)
+			{
+				entry = `<div onclick="load_from_slot(`+i+`)" class="corpo_leftpanel_btn" type="button">`+testslot+`</div>`;
+			}
+
+			panelitems += entry;
+		}
+
+
+		panel.innerHTML = panelitems;
+	}
+
+	function show_corpo_leftpanel(open)
+	{
+		let panel = document.getElementById('corpo_leftpannel');
+		if(open)
+		{
+			panel.classList.add('open');
+		}
+		else
+		{
+			panel.classList.remove('open');
+		}
 	}
 
 	function render_enhanced_chat(input)
@@ -14142,7 +14929,7 @@ Current version: 148
 		}
 		if(synchro_pending_stream!="")
 		{
-			newbodystr += `<div class="incoming_msg"><div class="chat_received_msg"><div class="chat_received_withd_msg"><p>`+"<span class=\"color_yellow pending_text\">" + escapeHtml(pending_context_preinjection) + escapeHtml(synchro_pending_stream) + "</span>"+`</p></div></div></div>`;
+			newbodystr += `<div class="incoming_msg"><div class="chat_received_msg"><div class="chat_received_withd_msg"><p><span class="color_yellow pending_text">` + escapeHtml(pending_context_preinjection) + escapeHtml(synchro_pending_stream) + `</span></p></div></div></div>`;
 		}
 
 		chatbody.innerHTML = newbodystr;
@@ -14152,10 +14939,11 @@ Current version: 148
 	{
 		var event = event || window.event;
 		var charCode = event.keyCode || event.which;
+		warn_on_quit = true;
 
 		if (!event.shiftKey && charCode == 13) {
 			let willsubmit = (document.getElementById("entersubmit").checked ? true : false);
-			let newgennotempty = (document.getElementById("cht_inp").value != "");
+			let newgennotempty = (document.getElementById("cht_inp").value != "" || document.getElementById("corpo_cht_inp").value != "");
 			if (willsubmit) {
 				event.preventDefault();
 				//enter pressed, trigger auto submit
@@ -14166,14 +14954,37 @@ Current version: 148
 			}
 		}
 	}
+	function corpoedit_resize_input()
+	{
+		//resize chat inp
+		let textarea = document.getElementById("corpo_edit_inp");
+		let lengthtester = document.getElementById("corpo_edit_inp_lengthtester");
+
+		if(textarea && lengthtester) //may not exist, depending on selection
+		{
+			let textlines = textarea.value.split("\n");
+			let numberOfLineBreaks = textlines.length;
+			for(let l=0;l<textlines.length;++l)
+			{
+				lengthtester.innerText = textlines[l];
+				if(textarea.offsetWidth>0)
+				{
+					numberOfLineBreaks += Math.floor(lengthtester.offsetWidth / textarea.offsetWidth );
+				}
+			}
+			lengthtester.innerText = "";
+			numberOfLineBreaks = numberOfLineBreaks>12?12:numberOfLineBreaks;
+			textarea.rows = numberOfLineBreaks;
+		}
+	}
 	function chat_resize_input()
 	{
 		//resize chat inp
-		let textarea = document.getElementById("cht_inp");
+		let textarea = is_corpo_ui()?document.getElementById("corpo_cht_inp"):document.getElementById("cht_inp");
+		let lengthtester = is_corpo_ui()?document.getElementById("corpo_cht_inp_lengthtester"):document.getElementById("cht_inp_lengthtester");
 
 		let textlines = textarea.value.split("\n");
 		let numberOfLineBreaks = textlines.length;
-		let lengthtester = document.getElementById("cht_inp_lengthtester");
 		for(let l=0;l<textlines.length;++l)
 		{
 			lengthtester.innerText = textlines[l];
@@ -14185,16 +14996,22 @@ Current version: 148
 		lengthtester.innerText = "";
 		numberOfLineBreaks = numberOfLineBreaks>5?5:numberOfLineBreaks;
 		textarea.rows = numberOfLineBreaks;
-
-		// textarea.style.height = "auto";
-		// textarea.style.height = textarea.scrollHeight + 3 + "px";
 	}
 	function chat_submit_generation()
 	{
 		//easy solution is to just pump the text into the main box and submit it
-		document.getElementById("input_text").value = document.getElementById("cht_inp").value;
+		if(is_corpo_ui())
+		{
+			document.getElementById("input_text").value = document.getElementById("corpo_cht_inp").value;
+		}
+		else
+		{
+			document.getElementById("input_text").value = document.getElementById("cht_inp").value;
+		}
+
 		submit_generation();
 		document.getElementById("cht_inp").value = "";
+		document.getElementById("corpo_cht_inp").value = "";
 		chat_resize_input();
 	}
 	function chat_toggle_actionmenu()
@@ -14405,8 +15222,8 @@ Current version: 148
 		</tr>`;
 		let regextable = document.getElementById("placeholder_replace_table");
 
-		let hardcoded1 = ["{{user}}","{{char}}","{{[INPUT]}}","{{[OUTPUT]}}"];
-		let hardcoded2 = [localsettings.chatname,localsettings.chatopponent,localsettings.instruct_starttag,localsettings.instruct_endtag];
+		let hardcoded1 = ["{{user}}","{{char}}","{{[INPUT]}}","{{[OUTPUT]}}","{{[SYSTEM]}}"];
+		let hardcoded2 = [localsettings.chatname,localsettings.chatopponent,localsettings.instruct_starttag,localsettings.instruct_endtag,localsettings.instruct_systag];
 
 		for(let i=0;i<hardcoded1.length;++i)
 		{
@@ -14625,6 +15442,7 @@ Current version: 148
 
 		console.log("Clear story");
 		if (!document.getElementById("btnsend").disabled && pending_response_id == "" && gametext_arr.length > 0) {
+			warn_on_quit = true;
 			last_reply_was_empty = false;
 			while(gametext_arr.length > 0)
 			{
@@ -14651,6 +15469,7 @@ Current version: 148
 	}
 	function btn_back() {
 		if (!document.getElementById("btnsend").disabled && pending_response_id == "" && gametext_arr.length > 0) {
+			warn_on_quit = true;
 			last_reply_was_empty = false;
 			retry_preserve_last = false;
 			if(retry_prev_text.length>0)
@@ -14674,6 +15493,7 @@ Current version: 148
 
 		console.log("Redo All story");
 		if (!document.getElementById("btnsend").disabled && pending_response_id == "" && redo_arr.length > 0) {
+			warn_on_quit = true;
 			last_reply_was_empty = false;
 			retry_preserve_last = false;
 			while(redo_arr.length > 0)
@@ -14696,6 +15516,7 @@ Current version: 148
 	}
 	function btn_redo() {
 		if (!document.getElementById("btnsend").disabled && pending_response_id == "") {
+			warn_on_quit = true;
 			if (redo_arr.length > 0) {
 				last_reply_was_empty = false;
 				retry_preserve_last = false;
@@ -14715,6 +15536,7 @@ Current version: 148
 	function btn_retry() {
 		if (!document.getElementById("btnsend").disabled && pending_response_id == "" && (gametext_arr.length > 1 ||
 		(gametext_arr.length > 0 && (current_memory != "" || current_anote != "")))) {
+			warn_on_quit = true;
 			last_reply_was_empty = false;
 			let boxtextstash = document.getElementById("input_text").value;
 			document.getElementById("input_text").value = "";
@@ -14781,6 +15603,7 @@ Current version: 148
 		if (willsubmit) {
 			document.getElementById("input_text").value = "";
 			document.getElementById("cht_inp").value = "";
+			document.getElementById("corpo_cht_inp").value = "";
 			is_impersonate_user = true;
 			submit_generation();
 		}else{
@@ -15419,7 +16242,7 @@ Current version: 148
 
 </head>
 
-<body id="outerbody" class="" onkeydown="handle_escape_button(event)">
+<body id="outerbody" class="" onkeydown="handle_escape_button(event)" onbeforeunload="return handle_quit()">
 
 	<div id="maincontainer" class="adaptivecontainer maincontainer">
 		<div id="outerbodybg"></div>
@@ -15472,17 +16295,12 @@ Current version: 148
 						</div>
 					</nav>
 				</div>
-				<div id="connectstatusdiv" class="flex-row-container">
-					<span id="connectstatus" class="color_orange flex-row">Waiting for Connection</span>
-					<div class="layer-container status-container flex-push-left" style="color: #FFFFFF;" id="runtime">
-					</div>
-					<div class="layer-container status-container flex-push-right">
-						<div class="layer-top statusiconlabel" id="usiconlabel"></div>
-					</div>
-
+				<div id="connectstatusdiv">
+					<div id="connectstatus">Connecting</div>
 				</div>
 			</div>
 		</div>
+
 		<div id="normalinterface">
 		<div id="maineditbody" class="layer-container">
 			<div class="layer-bottom gamescreenbgnormal normal_viewport_height" id="gamescreen">
@@ -15493,7 +16311,6 @@ Current version: 148
 				<div class="hidden" id="wimenu">
 				</div>
 			</div>
-			<div id="curtain" class="layer-top hidden"></div>
 		</div>
 
 		<div class="flex" id="actionmenu">
@@ -15534,7 +16351,7 @@ Current version: 148
 				</div>
 			</div>
 		</div>
-		<div class="lastreq" id="lastreq" style="color:#999999"><span class="color_gray">KoboldAI Lite - A frontend for self hosted and third party API services</span></div>
+		<div class="lastreq color_gray" id="lastreq1"></div>
 		</div>
 
 		<div id="enhancedchatinterface" class="chat_mesgs hidden">
@@ -15569,7 +16386,33 @@ Current version: 148
 					</div>
 				</div>
 
-				<div class="lastreq" id="lastreq2" style="padding-top: 2px; color:#999999"><span class="color_gray">KoboldAI Lite - A frontend for self hosted and third party API services.</span></div>
+				<div class="lastreq color_gray" id="lastreq2" style="padding-top: 2px; color:#999999"></div>
+			</div>
+		</div>
+
+		<div id="corpointerface" class="hidden">
+			<div class="corpostyle">
+				<div id="corpo_leftpannel" class="corpoleftpanel">
+					<button class="corpo_leftpanel_close" onclick="show_corpo_leftpanel(false)">&times;</button>
+					<p id="corpoleftpanelitems" class="corpoleftpanelitems">
+
+					</p>
+				</div>
+				<button class="corpo_leftpanel_open" onclick="show_corpo_leftpanel(true)"><div class="corpo_arrow_right"></div></button>
+				<div class="corporightpanel">
+					<div id="corpostylemain" class="corpostylemain">
+						<div id="corpo_body" class="corpostyleinner"></div>
+					</div>
+					<div class="corpomainbtm">
+						<div class="corpo_chat_outer">
+							<div class="corpo_chat_inner" id="corpo_cht_inp_lengthtester" style="white-space: nowrap; visibility: hidden; height: 0px; position:absolute; width: auto;"></div>
+							<textarea class="corpo_chat_inner" id="corpo_cht_inp" type="text" name="crpchtinp"  role="presentation" autocomplete="noppynop" spellcheck="true" rows="1" wrap="on" placeholder="Message KoboldAI" value="" oninput="update_submit_button();chat_resize_input();" onkeypress="return chat_handle_typing(event)"/></textarea>
+							<button onclick="submit_generation_button(true)" id="corpo_chat_send_btn" class="corpo_chat_send_btn" type="button"></button>
+							<button onclick="abort_generation()" id="corpo_chat_send_btn_abort" class="hidden corpo_chat_send_btn_abort" type="button"></button>
+						</div>
+						<div id="lastreq3" class="corpolastreq color_gray"></div>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -15705,7 +16548,7 @@ Current version: 148
 				Localhost IPs require host mode enabled. You can use the remote address displayed in the <span class="color_orange" style="font-weight: bold;">remote-play.bat</span> window or <span class="color_orange" style="font-weight: bold;">colab window</span>, note that the model must be loaded first.<br><br>
 				<span class="color_green" style="font-weight: bold;">Please input URL of the KoboldAI instance.</span><br><br>
 				<input class="form-control" id="customkoboldendpoint" placeholder="https://sample-remote-address.trycloudflare.com" value="">
-				<input class="form-control" type="password" id="customkoboldkey" placeholder="Kobold API Key (Optional)" value="" onfocus="focus_api_keys()" onblur="blur_api_keys()"><br>
+				<input class="form-control" type="password" id="customkoboldkey" placeholder="KoboldAI API Key (Optional)" value="" onfocus="focus_api_keys()" onblur="blur_api_keys()"><br>
 				<div class="box flex flex-push-right">
 					<input type="checkbox" id="remoteconsolelog">
 					<div class="box-label" title="Will display outputs to the remote endpoint's console logs, useful for debugging.">Show Console Logging</div>
@@ -16086,6 +16929,7 @@ Current version: 148
 									<option id="uipicker_classic" value="0">Classic</option>
 									<option id="uipicker_messenger" value="1">Messenger</option>
 									<option id="uipicker_aesthetic" value="2">Aesthetic</option>
+									<option id="uipicker_corpo" value="3">Corpo</option>
 								</select>
 								<button type="button" class="btn btn-primary" id="btn_aesthetics" onclick="openAestheticUISettingsMenu()" style="height: 24px; padding: 0px 2px; margin: 0px 0px 0px 3px;">⚙️</button>
 							</div>
@@ -16159,12 +17003,19 @@ Current version: 148
 								<option value="9">Llama 3 Chat</option>
 								<option value="10">Phi-3</option>
 								<option value="11">Gemma-2</option>
+								<option value="12">Mistral</option>
 							</select>
-							<div class="settingsmall miniinput" style="width:100%;padding:2px">
-							<div class="justifyleft settingsmall">Sys. Prompt <span class="helpicon">?<span class="helptext">A system pre-prompt sent at the very start to guide the AI behavior. Usually NOT needed.</span></span></div>
-							<input class="settinglabel miniinput" type="text" placeholder="(Optional)" value="" id="instruct_sysprompt">
-							</div>
-							<table class="settingsmall text-center" style="border-spacing: 3px 2px;	border-collapse: separate;">
+
+							<table class="settingsmall text-center" style="font-size:9px; border-spacing: 3px 2px;	border-collapse: separate;">
+								<tr>
+									<th>Sys. Seq.<span class="helpicon">?<span class="helptext">The sequence to start the system prompt</span></span></th>
+									<th>Sys. Prompt<span class="helpicon">?<span class="helptext">A fixed system message sent at the very start to guide the AI behavior. Usually NOT needed.</span></span></th>
+								</tr>
+								<tr>
+								<td><input class="settinglabel miniinput" type="text" placeholder="(Optional)" value="" id="instruct_systag" onchange="edit_instruct_tag_format()"></td>
+								<td><input class="settinglabel miniinput" type="text" placeholder="(Optional)" value="" id="instruct_sysprompt" onchange="edit_instruct_tag_format()"></td>
+								</tr>
+
 								<tr>
 									<th>Start Seq.<span class="helpicon">?<span class="helptext">The sequence to start an instruction prompt</span></span></th>
 									<th>End Seq.<span class="helpicon">?<span class="helptext">The sequence to end an instruction prompt</span></span></th>

@@ -3,6 +3,6 @@
 "system_end":"<end_of_turn>",
 "user_start":"<start_of_turn>user\n",
 "user_end":"<end_of_turn>",
-"assistant_start":"<start_of_turn>assistant\n",
+"assistant_start":"<start_of_turn>model\n",
 "assistant_end":"<end_of_turn>"
 }

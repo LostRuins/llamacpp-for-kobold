@@ -1812,6 +1812,10 @@ static void ggml_cl_mul_mat_q_f32(const ggml_tensor * src0, const ggml_tensor * 
 
     cl_kernel* to_fp32_cl = ggml_get_to_fp32_cl(type);
     cl_kernel* dmmv = ggml_get_dequantize_mul_mat_vec_cl(type);
+    if(to_fp32_cl==nullptr)
+    {
+        printf("\nOpenCL: Unsupported Tensor Type Detected: %d\n",type);
+    }
     GGML_ASSERT(to_fp32_cl != nullptr);
 
     const size_t global_denom = ggml_cl_global_denom(type);
