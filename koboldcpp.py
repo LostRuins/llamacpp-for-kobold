@@ -930,11 +930,45 @@ def transform_genparams(genparams, api_format):
                                 json_formatting_instruction = f"The user is asking you to use the style of this JSON object formatting to complete the parameters for the specific function named {specified_function} in the following format: " + json.dumps([{"id": "insert an id for the response", "type": "function", "function": {"name": f"{specified_function}", "arguments": {"first property key": "first property value", "second property key": "second property value"}}}], indent=0)
                              except:
                                 # In case of any issues, just revert back to no specified function
-                                specified_function = None
+                                pass
                         messages_string += json_formatting_instruction
 
                         # Set temperature low automatically if function calling
                         genparams["temperature"] = 0.2
+
+                        # Set grammar to llamacpp example grammar to force json response (see https://github.com/ggerganov/llama.cpp/blob/master/grammars/json_arr.gbnf)
+                        genparams["grammar"] = r"""
+root   ::= arr
+value  ::= object | array | string | number | ("true" | "false" | "null") ws
+
+arr  ::=
+  "[\n" ws (
+            value
+    (",\n" ws value)*
+  )? "]"
+
+object ::=
+  "{" ws (
+            string ":" ws value
+    ("," ws string ":" ws value)*
+  )? "}" ws
+
+array  ::=
+  "[" ws (
+            value
+    ("," ws value)*
+  )? "]" ws
+
+string ::=
+  "\"" (
+    [^"\\\x7F\x00-\x1F] |
+    "\\" (["\\bfnrt] | "u" [0-9a-fA-F]{4})
+  )* "\"" ws
+
+number ::= ("-"? ([0-9] | [1-9] [0-9]{0,15})) ("." [0-9]+)? ([eE] [-+]? [1-9] [0-9]{0,15})? ws
+
+ws ::= | " " | "\n" [ \t]{0,20}
+"""
                     else:
                         using_openai_tools = False
                 if message['role'] == "system":
