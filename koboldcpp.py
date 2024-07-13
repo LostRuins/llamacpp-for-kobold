@@ -804,45 +804,35 @@ last_non_horde_req_time = time.time()
 currfinishreason = "null"
 using_gui_launcher = False
 using_outdated_flags = False
-using_openai_tools = False
 
 # Used to parse json for openai tool calls
 def extract_json_from_string(input_string):
     parsed_json = None
-
-    # First check if model exported perfect json
-    try:
+    try: # First check if model exported perfect json
         parsed_json = json.loads(input_string)
         return parsed_json
-    except:
+    except Exception as e:
         pass
-
-    # Next check if all we need is to add brackets to make it perfect json
-    try:
+    try: # Next check if all we need is to add brackets to make it perfect json
         parsed_json = json.loads(f"[{input_string}]")
         return parsed_json
-    except:
+    except Exception as e:
         pass
-
-    # Now use regular expression to match JSON objects or arrays in case part is valid json and part is not
-    json_pattern = r'(\{.*?\}|\[.*?\])'  # was json_pattern = r'(\{.*\}|\[.*\])'  
-
-    # Find all potential JSON parts
-    potential_jsons = re.findall(json_pattern, input_string, re.DOTALL)
-
-    for potential_json in potential_jsons:
-        try:
-            # Attempt to parse the potential JSON part
-            parsed_json = json.loads(potential_json)
-            return parsed_json
-        except json.JSONDecodeError:
-            # If not valid JSON, continue to the next match
-            continue
-
+    try:
+        # Now use regular expression to match JSON objects or arrays in case part is valid json and part is not
+        json_pattern = r'(\{.*?\}|\[.*?\])'  # was json_pattern = r'(\{.*\}|\[.*\])'
+        potential_jsons = re.findall(json_pattern, input_string, re.DOTALL)
+        for potential_json in potential_jsons:
+            try:
+                parsed_json = json.loads(potential_json)
+                return parsed_json
+            except Exception as e:
+                continue
+    except Exception as e:
+        pass
     return []
 
 def transform_genparams(genparams, api_format):
-    global using_openai_tools
     #api format 1=basic,2=kai,3=oai,4=oai-chat,5=interrogate
     #alias all nonstandard alternative names for rep pen.
     rp1 = genparams.get('repeat_penalty', 1.0)
@@ -917,60 +907,52 @@ def transform_genparams(genparams, api_format):
                 if message['role'] == "user" and message_index == len(messages_array):
                     # Check if user is passing a openai tools array, if so add to end of prompt before assistant prompt unless tool_choice has been set to None
                     tools_array = genparams.get('tools', [])
-                    if tools_array and not genparams.get('tool_choice') == None:
+                    if tools_array and len(tools_array)>0 and not genparams.get('tool_choice',None) == None:
                         response_array = [{"id": "insert an id for the response", "type": "function", "function": {"name": "insert the name of the function you want to call", "arguments": {"first property key": "first property value", "second property key": "second property value"}}}]
                         json_formatting_instruction = " Use this style of JSON object formatting to give your answer if you think the user is asking you to perform an action: " + json.dumps(response_array, indent=0)
                         tools_string = json.dumps(tools_array, indent=0)
                         messages_string += tools_string
-                        using_openai_tools = True
                         specified_function = None
                         if isinstance(genparams.get('tool_choice'), dict):
                              try:
                                 specified_function = genparams.get('tool_choice').get('function').get('name')
                                 json_formatting_instruction = f"The user is asking you to use the style of this JSON object formatting to complete the parameters for the specific function named {specified_function} in the following format: " + json.dumps([{"id": "insert an id for the response", "type": "function", "function": {"name": f"{specified_function}", "arguments": {"first property key": "first property value", "second property key": "second property value"}}}], indent=0)
-                             except:
+                             except Exception as e:
                                 # In case of any issues, just revert back to no specified function
                                 pass
                         messages_string += json_formatting_instruction
 
                         # Set temperature low automatically if function calling
                         genparams["temperature"] = 0.2
+                        genparams["using_openai_tools"] = True
 
                         # Set grammar to llamacpp example grammar to force json response (see https://github.com/ggerganov/llama.cpp/blob/master/grammars/json_arr.gbnf)
                         genparams["grammar"] = r"""
 root   ::= arr
 value  ::= object | array | string | number | ("true" | "false" | "null") ws
-
 arr  ::=
   "[\n" ws (
             value
     (",\n" ws value)*
   )? "]"
-
 object ::=
   "{" ws (
             string ":" ws value
     ("," ws string ":" ws value)*
   )? "}" ws
-
 array  ::=
   "[" ws (
             value
     ("," ws value)*
   )? "]" ws
-
 string ::=
   "\"" (
     [^"\\\x7F\x00-\x1F] |
     "\\" (["\\bfnrt] | "u" [0-9a-fA-F]{4})
   )* "\"" ws
-
 number ::= ("-"? ([0-9] | [1-9] [0-9]{0,15})) ("." [0-9]+)? ([eE] [-+]? [1-9] [0-9]{0,15})? ws
-
 ws ::= | " " | "\n" [ \t]{0,20}
 """
-                    else:
-                        using_openai_tools = False
                 if message['role'] == "system":
                     messages_string += system_message_end
                 elif message['role'] == "user":
@@ -1038,11 +1020,10 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
             return None
 
     async def generate_text(self, genparams, api_format, stream_flag):
-        global friendlymodelname, chatcompl_adapter, currfinishreason, using_openai_tools
+        global friendlymodelname, chatcompl_adapter, currfinishreason
         is_quiet = args.quiet
         currfinishreason = "null"
-        
-        
+
         def run_blocking():  # api format 1=basic,2=kai,3=oai,4=oai-chat
             # flag instance as non-idle for a while
             washordereq = genparams.get('genkey', '').startswith('HORDEREQ_')
@@ -1090,7 +1071,7 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
             )
 
         genout = {"text": "", "status": -1, "stopreason": -1}
-        if stream_flag and not using_openai_tools:
+        if stream_flag:
             loop = asyncio.get_event_loop()
             executor = ThreadPoolExecutor()
             genout = await loop.run_in_executor(executor, run_blocking)
@@ -1116,15 +1097,11 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                    "usage": {"prompt_tokens": 100, "completion_tokens": 100, "total_tokens": 200},
                    "choices": [{"text": recvtxt, "index": 0, "finish_reason": currfinishreason}]}
         elif api_format == 4:
-            tool_calls = []
+            using_openai_tools = genparams.get('using_openai_tools', False)
             if using_openai_tools:
-                try:
-                    tool_calls = extract_json_from_string(recvtxt)
-                    if tool_calls:
-                        recvtxt = None
-                except Exception as e:
-                    print(f"Error parsing or finding tool calls: {e}, omitting tool calls from response, and just passing generated content as message content")
-
+                tool_calls = extract_json_from_string(recvtxt)
+                if tool_calls and len(tool_calls)>0:
+                    recvtxt = None
             res = {"id": "chatcmpl-1", "object": "chat.completion", "created": 1, "model": friendlymodelname,
                    "usage": {"prompt_tokens": 100, "completion_tokens": 100, "total_tokens": 200},
                    "choices": [{"index": 0, "message": {"role": "assistant", "content": recvtxt, "tool_calls": tool_calls}, "finish_reason": currfinishreason}]}
