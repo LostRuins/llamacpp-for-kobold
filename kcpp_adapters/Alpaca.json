@@ -1,0 +1,8 @@
+{
+  "system_start": "",
+  "system_end": "\n\n",
+  "user_start": "### Instruction:\n",
+  "user_end": "\n\n",
+  "assistant_start": "### Response:\n",
+  "assistant_end": "</s>\n\n"
+}
