@@ -1098,6 +1098,7 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                    "choices": [{"text": recvtxt, "index": 0, "finish_reason": currfinishreason}]}
         elif api_format == 4:
             using_openai_tools = genparams.get('using_openai_tools', False)
+            tool_calls = []
             if using_openai_tools:
                 tool_calls = extract_json_from_string(recvtxt)
                 if tool_calls and len(tool_calls)>0:
