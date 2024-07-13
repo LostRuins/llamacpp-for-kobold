@@ -907,7 +907,7 @@ def transform_genparams(genparams, api_format):
                 if message['role'] == "user" and message_index == len(messages_array):
                     # Check if user is passing a openai tools array, if so add to end of prompt before assistant prompt unless tool_choice has been set to None
                     tools_array = genparams.get('tools', [])
-                    if tools_array and len(tools_array)>0 and not genparams.get('tool_choice',None) == None:
+                    if tools_array and len(tools_array) > 0 and genparams.get('tool_choice',None) != None:
                         response_array = [{"id": "insert an id for the response", "type": "function", "function": {"name": "insert the name of the function you want to call", "arguments": {"first property key": "first property value", "second property key": "second property value"}}}]
                         json_formatting_instruction = " Use this style of JSON object formatting to give your answer if you think the user is asking you to perform an action: " + json.dumps(response_array, indent=0)
                         tools_string = json.dumps(tools_array, indent=0)
