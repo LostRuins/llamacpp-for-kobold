@@ -1615,7 +1615,7 @@ Enter Prompt:<br>
                 api_format = 2
                 sse_stream_flag = True
 
-            if self.path.endswith('/v1/completions'):
+            if self.path.endswith('/v1/completions') or self.path.endswith('/v1/completion'):
                 api_format = 3
 
             if self.path.endswith('/v1/chat/completions'):

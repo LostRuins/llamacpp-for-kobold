@@ -12,7 +12,7 @@ Current version indicated by LITEVER below.
 -->
 
 <script>
-	const LITEVER = 149;
+	const LITEVER = 153;
 	const urlParams = new URLSearchParams(window.location.search);
 	const localflag = true;
 	const STORAGE_PREFIX = (localflag?"e_":"")+"kaihordewebui_";
@@ -141,6 +141,7 @@ Current version indicated by LITEVER below.
 			border:0px solid #ccc;
 			border-radius: 4px;
 			width: 100%;
+			padding: 2px;
 		}
 		.settinglabel.miniinput:focus {
 			color:#555;
@@ -204,6 +205,13 @@ Current version indicated by LITEVER below.
 			flex-wrap: wrap;
 			background-color: #4d4d4d;
 			padding: 6px;
+		}
+
+		.settingsbody
+		{
+			height: calc(82vh - 100px);
+			overflow-y: auto;
+			overflow-x: hidden;
 		}
 
 		body.connected .settingsmenu,
@@ -870,6 +878,7 @@ Current version indicated by LITEVER below.
 			background: #ffffff;
 			border: 1px solid white;
 			text-decoration: none;
+			/* position: relative; */
 		}
 
 		.helpicon:hover {
@@ -878,16 +887,25 @@ Current version indicated by LITEVER below.
 
 		.helpicon:hover .helptext {
 			display: inline-block;
-			width: 280px;
+			width: 260px;
 			background-color: #1f2931;
 			color: #ffffff;
-			font-size: 11pt;
+			font-size: 10pt;
 			font-weight: normal;
 			line-height: normal;
 			border-radius: 6px;
-			padding: 15px;
+			padding: 10px;
 			margin-left: 10px;
 			border: 1px solid #337ab7;
+		}
+		@media (max-width: 680px) {
+			.helpicon:hover .helptext {
+				margin: 0 0 auto;
+				position: fixed;
+				top: 20%;
+				left: 50%;
+				transform: translate(-50%, -50%);
+			}
 		}
 
 
@@ -991,6 +1009,7 @@ Current version indicated by LITEVER below.
 		{
 			margin-top: 6px;
     		margin-left: 6px;
+			font-size: 12px;
 		}
 
 		.settingsnav>li.active>a {
@@ -998,6 +1017,7 @@ Current version indicated by LITEVER below.
 		}
 		.settingsnav>li>a{
 			border-radius: 8px 8px 0 0;
+			padding: 5px;
 			padding-top: 6px!important;
 			padding-bottom: 2px!important;
 			color: #666;
@@ -1100,6 +1120,22 @@ Current version indicated by LITEVER below.
 			padding-top: 5px;
 			display: inline-block;
 			border-bottom: 1px solid #12324f;
+		}
+		.settingitem.wide{
+			width: 100%;
+		}
+		.settingcell
+		{
+			padding: 3px;
+			width: 100%;
+		}
+
+		.settingsdesctxt
+		{
+			width:100%;
+			font-size:11px;
+			color:#ffffff;
+			padding:3px;
 		}
 
 		.settinglabel {
@@ -1921,6 +1957,26 @@ Current version indicated by LITEVER below.
 		display: flex;
 	}
 
+	@media (max-width: 400px) {
+		.corpostyle
+		{
+			font-size: 17px;
+			line-height: 27px;
+		}
+		.corpostyleinner
+		{
+			padding-left: 6px;
+			padding-right: 6px;
+		}
+		.corpostyleitem
+		{
+			padding-left: 6px;
+			padding-right: 6px;
+			padding-top: 8px;
+			padding-bottom: 8px;
+		}
+	}
+
 	body.darkmode .corpostyle {
 		background-color: #222222;
 		color: #ececec;
@@ -1970,6 +2026,11 @@ Current version indicated by LITEVER below.
         border: 1px solid #bbbbbbaa;
 		position: relative;
 	}
+	body.darkmode .corpo_chat_outer
+	{
+		background: #3b3b3baa none repeat scroll 0 0;
+	}
+
 	.corpo_chat_inner
 	{
 		width: 100%;
@@ -1983,6 +2044,11 @@ Current version indicated by LITEVER below.
 		outline:none;
 		line-height: 28px;
 	}
+	body.darkmode .corpo_chat_inner
+	{
+		color: #dddddd;
+	}
+
 	.corpo_chat_send_btn {
 		background: #000000 none repeat scroll 0 0;
 		border:none;
@@ -2117,6 +2183,7 @@ Current version indicated by LITEVER below.
 		padding: 8px;
 		padding-left: 0px;
 		float: right;
+		background-color: #00000000;
 	}
 	.corpo_leftpanel_open
 	{
@@ -2127,6 +2194,14 @@ Current version indicated by LITEVER below.
 	.corpo_leftpanel_open:hover
 	{
 		background: #dddddd;
+	}
+	body.darkmode .corpo_leftpanel_open
+	{
+		background: #333333;
+	}
+	body.darkmode .corpo_leftpanel_open:hover
+	{
+		background: #444444;
 	}
 	.corpo_arrow_right {
 		display: inline-block;
@@ -4031,10 +4106,8 @@ Current version indicated by LITEVER below.
 		gui_type_chat: 1, //0=standard, 1=messenger, 2=aesthetic, 3=corpo
 		gui_type_instruct: 0, //0=standard, 1=messenger, 2=aesthetic, 3=corpo
 		multiline_replies: true,
-		multiline_replies_adventure: true,
 		allow_continue_chat: false,
-		inject_timestamps_chat: false,
-		inject_timestamps_instruct: false,
+		inject_timestamps: false,
 		inject_chatnames_instruct: false,
 		inject_jailbreak_instruct: false,
 		idle_responses: 0,
@@ -4044,6 +4117,7 @@ Current version indicated by LITEVER below.
 		invert_colors: false,
 		passed_ai_warning: false, //used to store AI safety panel acknowledgement state
 		entersubmit: true, //enter sends the prompt
+		darkmode: true,
 
 		max_context_length: (localflag?2048:1600),
 		max_length: 200,
@@ -4067,16 +4141,20 @@ Current version indicated by LITEVER below.
 		miro_type: 0,
 		miro_tau: 5.0,
 		miro_eta: 0.1,
+		dry_multiplier: 0.0,
+		dry_base: 1.75,
+		dry_allowed_length: 2,
+		dry_sequence_breakers: ["\n", ":", "\"", "*"],
 		sampler_order: [6, 0, 1, 3, 4, 2, 5],
 	};
 
 	var defaultsettings = JSON.parse(JSON.stringify(localsettings));
 
 	//a list of presets users can choose from
-	const presets = [
+	const samplerpresets = [
 		{
 			preset: "[Default]",
-			description: "Known Working Settings.",
+			description: "Good default settings, same as Simple Balanced.",
 			temp: defaultsettings.temperature,
 			dynatemp_range: defaultsettings.dynatemp_range,
 			dynatemp_exponent: defaultsettings.dynatemp_exponent,
@@ -4094,7 +4172,94 @@ Current version indicated by LITEVER below.
 			rep_pen_slope: defaultsettings.rep_pen_slope,
 			sampler_order: defaultsettings.sampler_order
 		},
-		{"preset":"Godlike","description":"Makes AI give a descriptive and sensual output.","temp":0.7,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":0.5,"min_p":0.0,"presence_penalty":0.0,"top_a":0.75,"typical":0.19,"tfs":0.97,"rep_pen":1.1,"rep_pen_range":1024,"rep_pen_slope":0.7,"sampler_order":[6,5,4,3,2,1,0]},{"preset":"Mayday","description":"Wacky plot, creativity from AI, crazy stories you want AI to weird out.","temp":1.05,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":0.95,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.1,"rep_pen_range":1024,"rep_pen_slope":0.7,"sampler_order":[6,0,1,2,3,4,5]},{"preset":"Good Winds","description":"Let AI direct the plot, but still stay logical.","temp":0.7,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.9,"rep_pen":1.1,"rep_pen_range":1024,"rep_pen_slope":0.7,"sampler_order":[6,0,1,2,3,4,5]},{"preset":"Liminal Drift","description":"Drives coherent dialogue, responses, and behavior, sometimes surreal situations arise based on information already present in the story.","temp":0.66,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"top_a":0.96,"typical":0.6,"tfs":1,"rep_pen":1.1,"rep_pen_range":1024,"rep_pen_slope":0.7,"sampler_order":[6,4,5,1,0,2,3]},{"preset":"TavernAI","description":"Preset used in TavernAI.","temp":0.79,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":0.9,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.95,"rep_pen":1.19,"rep_pen_range":1024,"rep_pen_slope":0.9,"sampler_order":[6,0,1,2,3,4,5]},{"preset":"Storywriter 6B","description":"Optimized settings for relevant output.","genamt":200,"rep_pen":1.1,"rep_pen_range":2048,"rep_pen_slope":0.2,"sampler_order":[6,5,0,2,3,1,4],"temp":0.72,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"tfs":1,"top_a":0,"top_k":0,"top_p":0.73,"min_p":0.0,"presence_penalty":0.0,"typical":1},{"preset":"Coherent Creativity 6B","description":"A good balance between coherence, creativity, and quality of prose.","genamt":200,"rep_pen":1.2,"rep_pen_range":2048,"rep_pen_slope":0,"sampler_order":[6,5,0,2,3,1,4],"temp":0.51,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"tfs":0.99,"top_a":0,"top_k":0,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"typical":1},{"preset":"Luna Moth 6B","description":"A great degree of creativity without losing coherency.","temp":1.5,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":85,"top_p":0.24,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.1,"rep_pen_range":2048,"rep_pen_slope":0,"sampler_order":[6,5,0,2,3,1,4]},{"preset":"Pleasing Results 6B","description":"Expectable output with alternative context settings.","temp":0.44,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.9,"rep_pen":1.15,"rep_pen_range":2048,"rep_pen_slope":6.8,"sampler_order":[6,5,0,2,3,1,4]},{"preset":"Genesis 13B","description":"Stable and logical, but with scattered creativity.","temp":0.63,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":0.98,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.98,"rep_pen":1.05,"rep_pen_range":2048,"rep_pen_slope":0.1,"sampler_order":[6,2,0,3,5,1,4]},{"preset":"Basic Coherence 13B","description":"Keep things on track.","temp":0.59,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.87,"rep_pen":1.1,"rep_pen_range":2048,"rep_pen_slope":0.3,"sampler_order":[6,5,0,2,3,1,4]},{"preset":"Ouroboros 13B","description":"Versatile, conforms well to poems, lists, chat, etc.","temp":1.07,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":100,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.93,"rep_pen":1.05,"rep_pen_range":404,"rep_pen_slope":0.8,"sampler_order":[6,0,5,3,2,1,4]},{"preset":"Ace of Spades 13B","description":"Expressive, while still staying focused.","temp":1.15,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":0.95,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":0.8,"rep_pen":1.05,"rep_pen_range":2048,"rep_pen_slope":7,"sampler_order":[6,3,2,0,5,1,4]},{"preset":"Min-P Basic","description":"A good default for Min-P, only works on backends with min-p.","temp":1.25,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":1,"min_p":0.1,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.03,"rep_pen_range":320,"rep_pen_slope":0.7,"sampler_order":[6,5,0,1,3,4,2]},{"preset":"DynaTemp Basic","description":"A good default for DynaTemp, only works on backends with it.","temp":1.25,"dynatemp_range":0.75,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":1,"min_p":0.05,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.03,"rep_pen_range":320,"rep_pen_slope":0.7,"sampler_order":[6,5,0,1,3,4,2]},{"preset":"Smoothed Basic","description":"A good default for Smooth Sampling, only works on backends with it.","temp":1.0,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.25,"genamt":200,"top_k":0,"top_p":1,"min_p":0.05,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.03,"rep_pen_range":320,"rep_pen_slope":0.7,"sampler_order":[6,5,0,1,3,4,2]}
+		{"preset":"Simple Logical","description":"A very predictable preset with low randomness.","temp":0.25,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":100,"top_p":0.6,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.01,"rep_pen_range":320,"rep_pen_slope":0.7,"sampler_order":[6,0,1,3,4,2,5]},{"preset":"Simple Balanced","description":"A good balanced preset with medium randomness.","temp":0.7,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":100,"top_p":0.92,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.07,"rep_pen_range":320,"rep_pen_slope":0.7,"sampler_order":[6,0,1,3,4,2,5]},{"preset":"Simple Creative","description":"A wild and unpredictable preset with higher randomness.","temp":1.0,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":100,"top_p":0.98,"min_p":0.0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.15,"rep_pen_range":320,"rep_pen_slope":0.7,"sampler_order":[6,0,1,3,4,2,5]},{"preset":"Basic Min-P","description":"A good default for Min-P, only works on backends with min-p.","temp":1.25,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":1,"min_p":0.1,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.03,"rep_pen_range":320,"rep_pen_slope":0.7,"sampler_order":[6,5,0,1,3,4,2]},{"preset":"Basic DynaTemp","description":"A good default for DynaTemp, only works on backends with it.","temp":1.25,"dynatemp_range":0.75,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":1,"min_p":0.05,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.03,"rep_pen_range":320,"rep_pen_slope":0.7,"sampler_order":[6,5,0,1,3,4,2]},{"preset":"Basic SmoothSample","description":"A good default for Smooth Sampling, only works on backends with it.","temp":1.0,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.25,"genamt":200,"top_k":0,"top_p":1,"min_p":0.05,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1,"rep_pen":1.03,"rep_pen_range":320,"rep_pen_slope":0.7,"sampler_order":[6,5,0,1,3,4,2]},{"preset":"Basic SillyTavern","description":"Similar to default preset used in SillyTavern.","temp":0.7,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":40,"top_p":0.6,"min_p":0,"presence_penalty":0.0,"top_a":0,"typical":1,"tfs":1.0,"rep_pen":1.18,"rep_pen_range":1024,"rep_pen_slope":0.8,"sampler_order":[6,0,1,3,4,2,5]},{"preset":"CoherentCreativity (Legacy)","description":"Legacy preset. A good balance between coherence, creativity, and quality of prose.","genamt":200,"rep_pen":1.2,"rep_pen_range":2048,"rep_pen_slope":0,"sampler_order":[6,5,0,2,3,1,4],"temp":0.5,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"tfs":0.99,"top_a":0,"top_k":0,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"typical":1},{"preset":"Godlike (Legacy)","description":"Legacy preset. Makes AI give a descriptive and sensual output.","temp":0.7,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":0.5,"min_p":0.0,"presence_penalty":0.0,"top_a":0.75,"typical":0.19,"tfs":0.97,"rep_pen":1.1,"rep_pen_range":1024,"rep_pen_slope":0.7,"sampler_order":[6,5,4,3,2,1,0]},{"preset":"LiminalDrift (Legacy)","description":"Legacy preset. Sometimes surreal situations arise based on information already present in the story.","temp":0.66,"dynatemp_range":0.0,"dynatemp_exponent":1.0,"smoothing_factor":0.0,"genamt":200,"top_k":0,"top_p":1,"min_p":0.0,"presence_penalty":0.0,"top_a":0.96,"typical":0.6,"tfs":1,"rep_pen":1.1,"rep_pen_range":1024,"rep_pen_slope":0.7,"sampler_order":[6,4,5,1,0,2,3]}
+	];
+
+	const instructpresets = [
+	{
+		"id":1,
+		"name":"Alpaca",
+		"user":"\\n### Instruction:\\n",
+		"assistant":"\\n### Response:\\n",
+		"system":"",
+	},
+	{
+		"id":2,
+		"name":"Vicuna",
+		"user":"\\nUSER: ",
+		"assistant":"\\nASSISTANT: ",
+		"system":"",
+	},
+	{
+		"id":3,
+		"name":"Metharme",
+		"user":"<|user|>",
+		"assistant":"<|model|>",
+		"system":"",
+	},
+	{
+		"id":4,
+		"name":"Llama 2 Chat",
+		"user":"[INST] ",
+		"assistant":" [/INST]",
+		"system":"",
+	},
+	{
+		"id":5,
+		"name":"Q & A",
+		"user":"\\nQuestion: ",
+		"assistant":"\\nAnswer: ",
+		"system":"",
+	},
+	{
+		"id":6,
+		"name":"ChatML",
+		"user":"<|im_end|>\\n<|im_start|>user\\n",
+		"assistant":"<|im_end|>\\n<|im_start|>assistant\\n",
+		"system":"<|im_start|>system\\n",
+	},
+	{
+		"id":7,
+		"name":"Input & Output",
+		"user":"\\n{{[INPUT]}}\\n",
+		"assistant":"\\n{{[OUTPUT]}}\\n",
+		"system":"",
+	},
+	{
+		"id":8,
+		"name":"CommandR",
+		"user":"<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|USER_TOKEN|>",
+		"assistant":"<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>",
+		"system":"<|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|>",
+	},
+	{
+		"id":9,
+		"name":"Llama 3 Chat",
+		"user":"<|eot_id|><|start_header_id|>assistant<|end_header_id|>\\n\\n",
+		"assistant":"<|eot_id|><|start_header_id|>assistant<|end_header_id|>\\n\\n",
+		"system":"<|start_header_id|>system<|end_header_id|>\\n\\n",
+	},
+	{
+		"id":10,
+		"name":"Phi-3 Mini",
+		"user":"<|end|><|user|>\\n",
+		"assistant":"<|end|>\\n<|assistant|>",
+		"system":"<|system|>\\n",
+	},
+	{
+		"id":11,
+		"name":"Gemma 2",
+		"user":"<end_of_turn>\\n<start_of_turn>user\\n",
+		"assistant":"<end_of_turn>\\n<start_of_turn>model\\n",
+		"system":"<start_of_turn>user\\n",
+	},
+	{
+		"id":12,
+		"name":"Mistral",
+		"user":"\\n[INST] ",
+		"assistant":" [/INST]\\n",
+		"system":"",
+	}
 	];
 
 	function polyfills()
@@ -4178,7 +4343,7 @@ Current version indicated by LITEVER below.
 		document.getElementById("lastreq1").innerHTML =
 		document.getElementById("lastreq2").innerHTML =
 		document.getElementById("lastreq3").innerHTML =
-		`KoboldAI Lite v${LITEVER} Web Version`;
+		`KoboldAI Lite v${LITEVER} Web - Frontend for External API Services`;
 
 		prepare_abort_controller();
 
@@ -4295,12 +4460,13 @@ Current version indicated by LITEVER below.
 					document.getElementById("enhancedchatinterface").classList.add("transparentbg");
 					document.getElementById("enhancedchatinterface_inner").classList.add("transparentbg");
 				}
-				populate_corpo_leftpanel();
 				loadok = true;
 			} else {
 				console.log("Skipped missing local save");
 				loadok = false;
 			}
+			populate_corpo_leftpanel();
+			update_toggle_theme(false); //load theme but dont save or toggle it
 
 		} catch (e) {
 			console.log("Discarded invalid local save: " + e);
@@ -4525,7 +4691,7 @@ Current version indicated by LITEVER below.
 			document.getElementById("customkoboldendpoint").value = localprotocol + localmodehost + ":" + localmodeport + sublocalpathname;
 			connect_custom_endpoint();
 			document.getElementById("lastreq3").innerHTML = document.getElementById("lastreq2").innerHTML = document.getElementById("lastreq1").innerHTML =
-			`KoboldAI Lite v${LITEVER} Embedded Version`;
+			`KoboldAI Lite v${LITEVER} Embedded`;
 
 			read_url_params_data();
 		}
@@ -4998,6 +5164,10 @@ Current version indicated by LITEVER below.
 	function is_using_kcpp_with_whisper()
 	{
 		return (custom_kobold_endpoint!="" && koboldcpp_version && koboldcpp_version!="" && compare_version_str(koboldcpp_version, "1.66") >= 0 && koboldcpp_has_whisper);
+	}
+	function is_using_kcpp_with_dry()
+	{
+		return (custom_kobold_endpoint!="" && koboldcpp_version && koboldcpp_version!="" && compare_version_str(koboldcpp_version, "1.70") >= 0);
 	}
 
 
@@ -6805,6 +6975,7 @@ Current version indicated by LITEVER below.
 	}
 	function confirm_scenario()
 	{
+		mainmenu_untab(false);
 		if(temp_scenario!=null)
 		{
 			hide_popups();
@@ -6914,6 +7085,7 @@ Current version indicated by LITEVER below.
 
 	function display_scenarios()
 	{
+		mainmenu_untab(true);
 		temp_scenario = null;
 		document.getElementById("quickstartcontainer").classList.remove("hidden");
 
@@ -7235,11 +7407,21 @@ Current version indicated by LITEVER below.
 			document.getElementById("quickstartcontainer").classList.contains("hidden") &&
 			document.getElementById("zoomedimgcontainer").classList.contains("hidden") &&
 			document.getElementById("groupselectcontainer").classList.contains("hidden") &&
-			document.getElementById("imagestylecontainer").classList.contains("hidden") &&
 			document.getElementById("addimgcontainer").classList.contains("hidden") &&
 			document.getElementById("pasteimgcontainer").classList.contains("hidden") &&
 			document.getElementById("choosesharecontainer").classList.contains("hidden") &&
 			document.getElementById("advancedloadfile").classList.contains("hidden")
+		);
+	}
+
+	var mainmenu_is_untab = false;
+	function mainmenu_untab(untab)
+	{
+		mainmenu_is_untab = untab;
+		document.querySelectorAll('.mainnav').forEach(
+			(el) => {
+				el.setAttribute('tabindex', mainmenu_is_untab?'-1':'0');
+			}
 		);
 	}
 	function hide_popups() {
@@ -7257,11 +7439,11 @@ Current version indicated by LITEVER below.
 		document.getElementById("quickstartcontainer").classList.add("hidden");
 		document.getElementById("zoomedimgcontainer").classList.add("hidden");
 		document.getElementById("groupselectcontainer").classList.add("hidden");
-		document.getElementById("imagestylecontainer").classList.add("hidden");
 		document.getElementById("addimgcontainer").classList.add("hidden");
 		document.getElementById("pasteimgcontainer").classList.add("hidden");
 		document.getElementById("choosesharecontainer").classList.add("hidden");
 		document.getElementById("advancedloadfile").classList.add("hidden");
+		mainmenu_untab(false);
 	}
 
 	function preview_dynatemp(isModifiedRange)
@@ -7300,7 +7482,7 @@ Current version indicated by LITEVER below.
 	function confirm_dynatemp()
 	{
 		document.getElementById("dynatempcontainer").classList.add("hidden");
-		document.getElementById("dynatemp_overview").innerText = ((document.getElementById("dynatemp_range").value>0||document.getElementById("smoothing_factor").value>0)?"ON":"OFF");
+		document.getElementById("dynatemp_overview").innerText = (document.getElementById("dynatemp_range").value>0?"ON":"OFF");
 	}
 	function show_dynatemp()
 	{
@@ -7320,15 +7502,6 @@ Current version indicated by LITEVER below.
 		window.open('./sdui','_blank');
 	}
 
-	function selectImgStyle()
-	{
-		document.getElementById("imagestylecontainer").classList.remove("hidden");
-	}
-	function confirmImgStyle()
-	{
-		document.getElementById("imagestylecontainer").classList.add("hidden");
-	}
-
 	var pendinggrammar = "";
 	function selectGrammar()
 	{
@@ -7336,6 +7509,17 @@ Current version indicated by LITEVER below.
 			let userinput = getInputBoxValue().trim();
 			pendinggrammar = userinput;
 			console.log("Saved grammar: " + pendinggrammar);
+		},false,true);
+	}
+
+	var pendingsequencebreakers = [];
+	function setDryBreakers()
+	{
+		let breakersString = pendingsequencebreakers.map((x) => x.replace("\n", "\\n")).join("\n")
+		inputBox("Enter each sequence breaker on a separate line.\nUse \\n for a newline token.\n","Set DRY Sequence Breakers",breakersString,"",()=>{
+			let userinput = getInputBoxValue();
+			pendingsequencebreakers = userinput.split("\n").filter(Boolean).map((x) => x.replace("\\n", "\n"));
+			console.log("Sequence breakers: " + pendingsequencebreakers.map((x) => x.replace("\n", "\\n")));
 		},false,true);
 	}
 
@@ -7674,17 +7858,20 @@ Current version indicated by LITEVER below.
 			oai_model_change();
 		},false);
 	}
-	function oai_model_change()
+	function oai_model_change(autotoggle_check = false)
 	{
 		let isOpenrouter = (document.getElementById("customapidropdown").value==3);
 		let dropdown = (isOpenrouter?document.getElementById("custom_openrouter_model"):document.getElementById("custom_oai_model"));
 		let non_completions = (dropdown.value.includes("davinci-002") || dropdown.value.includes("text-davinci-003") || dropdown.value.includes("text-davinci-002")
 		|| dropdown.value.includes("text-davinci-001") || dropdown.value.includes("gpt-3.5-turbo-instruct") || dropdown.value == "davinci");
-		if(isOpenrouter || dropdown.selectedIndex==dropdown.options.length-1)
+		if(autotoggle_check)
 		{
-			document.getElementById("useoaichatcompl").checked = true;
-		} else {
-			document.getElementById("useoaichatcompl").checked = !non_completions;
+			if(isOpenrouter || dropdown.selectedIndex==dropdown.options.length-1)
+			{
+				document.getElementById("useoaichatcompl").checked = true;
+			} else {
+				document.getElementById("useoaichatcompl").checked = !non_completions;
+			}
 		}
 		toggleoaichatcompl();
 	}
@@ -7745,7 +7932,7 @@ Current version indicated by LITEVER below.
 				}
 				dropdown.appendChild(lastOption);
 				dropdown.selectedIndex = selidx;
-				oai_model_change();
+				oai_model_change(true);
 			}
 			else
 			{
@@ -7898,6 +8085,7 @@ Current version indicated by LITEVER below.
 
 	function connect_custom_endpoint()
 	{
+		mainmenu_untab(false);
 		custom_kobold_endpoint = "";
 		custom_kobold_key = "";
 		custom_oai_key = "";
@@ -8356,16 +8544,19 @@ Current version indicated by LITEVER below.
 
 	function display_endpoint_container()
 	{
+		mainmenu_untab(true);
 		document.getElementById("customendpointcontainer").classList.remove("hidden");
 		customapi_dropdown();
 	}
 	function dismiss_endpoint_container()
 	{
+		mainmenu_untab(false);
 		document.getElementById("customendpointcontainer").classList.add("hidden");
 	}
 
 	function display_saveloadcontainer()
 	{
+		mainmenu_untab(true);
 		document.getElementById("saveloadcontainer").classList.remove("hidden");
 
 		let filetable = ``;
@@ -8390,10 +8581,10 @@ Current version indicated by LITEVER below.
 					`+(testslot?`[ Slot `+(i+1)+` - `+testslot+` ]`:`[ Slot `+(i+1)+` - Empty ]`)+`
 					</div>
 					<div style="text-align: right; align-self: center; width: 184px;">
-					<button type="button" name="slc`+i+`" class="btn btn-primary" onclick="save_to_slot(`+i+`)"><img class="btnicon-save"/></button>
-					<button type="button" name="slc`+i+`" class="btn btn-primary" onclick="load_from_slot(`+i+`)" `+(testslot?"":"disabled")+`><img class="btnicon-load"/></button>
-					<button type="button" name="slc`+i+`" class="btn btn-primary bg_green" onclick="download_from_slot(`+i+`)" `+(testslot?"":"disabled")+`><img class="btnicon-download"/></button>
-					<button type="button" name="slc`+i+`" class="btn btn-primary bg_red" onclick="delete_from_slot(`+i+`)" `+(testslot?"":"disabled")+`><img class="btnicon-delete"/></button>
+					<button type="button" title="Save To Slot ${i}" name="slc${i}" class="btn btn-primary" onclick="save_to_slot(${i})"><img class="btnicon-save"/></button>
+					<button type="button" title="Load From Slot ${i}" name="slc${i}" class="btn btn-primary" onclick="load_from_slot(${i})" `+(testslot?"":"disabled")+`><img class="btnicon-load"/></button>
+					<button type="button" title="Download Slot ${i}" name="slc${i}" class="btn btn-primary bg_green" onclick="download_from_slot(${i})" `+(testslot?"":"disabled")+`><img class="btnicon-download"/></button>
+					<button type="button" title="Delete Slot ${i}" name="slc${i}" class="btn btn-primary bg_red" onclick="delete_from_slot(${i})" `+(testslot?"":"disabled")+`><img class="btnicon-delete"/></button>
 					</div></div>`;
 				filetable += entry;
 			}
@@ -8924,30 +9115,46 @@ Current version indicated by LITEVER below.
 		}
 	}
 
-	var current_settings_tab_basic = true;
-	function display_settings_tab(isbasic)
+	var current_settings_tab_idx = 0;
+	function display_settings_tab(tabidx)
 	{
-		current_settings_tab_basic = isbasic;
-		document.getElementById("settingsmenubasic_tab").classList.remove("active");
+		current_settings_tab_idx = tabidx;
+		document.getElementById("settingsmenusamplers_tab").classList.remove("active");
+		document.getElementById("settingsmenuformat_tab").classList.remove("active");
+		document.getElementById("settingsmenumedia_tab").classList.remove("active");
 		document.getElementById("settingsmenuadvanced_tab").classList.remove("active");
-		if (isbasic) {
-			document.getElementById("settingsmenubasic1").classList.remove("hidden");
-			document.getElementById("settingsmenubasic2").classList.remove("hidden");
-			document.getElementById("settingsmenuadvanced1").classList.add("hidden");
-			document.getElementById("settingsmenuadvanced2").classList.add("hidden");
-			document.getElementById("settingsmenubasic_tab").classList.add("active");
-		} else {
-			document.getElementById("settingsmenubasic1").classList.add("hidden");
-			document.getElementById("settingsmenubasic2").classList.add("hidden");
-			document.getElementById("settingsmenuadvanced1").classList.remove("hidden");
-			document.getElementById("settingsmenuadvanced2").classList.remove("hidden");
-			document.getElementById("settingsmenuadvanced_tab").classList.add("active");
+
+		document.getElementById("settingsmenusamplers").classList.add("hidden");
+		document.getElementById("settingsmenuformat").classList.add("hidden");
+		document.getElementById("settingsmenumedia").classList.add("hidden");
+		document.getElementById("settingsmenuadvanced").classList.add("hidden");
+
+		switch (tabidx) {
+			case 0: //format
+				document.getElementById("settingsmenuformat").classList.remove("hidden");
+				document.getElementById("settingsmenuformat_tab").classList.add("active");
+			break;
+			case 1: //samplers
+				document.getElementById("settingsmenusamplers").classList.remove("hidden");
+				document.getElementById("settingsmenusamplers_tab").classList.add("active");
+			break;
+			case 2: //media
+				document.getElementById("settingsmenumedia").classList.remove("hidden");
+				document.getElementById("settingsmenumedia_tab").classList.add("active");
+			break;
+			case 3: //advanced
+				document.getElementById("settingsmenuadvanced").classList.remove("hidden");
+				document.getElementById("settingsmenuadvanced_tab").classList.add("active");
+			break;
+			default:
+			break;
 		}
 	}
 
 	function display_settings() {
+		mainmenu_untab(true);
 		document.getElementById("settingscontainer").classList.remove("hidden");
-		display_settings_tab(current_settings_tab_basic);
+		display_settings_tab(current_settings_tab_idx);
 		document.getElementById("max_context_length").value = document.getElementById("max_context_length_slide").value = localsettings.max_context_length;
 		document.getElementById("max_length").value = document.getElementById("max_length_slide").value = localsettings.max_length;
 		document.getElementById("temperature").value = document.getElementById("temperature_slide").value = localsettings.temperature;
@@ -8980,17 +9187,20 @@ Current version indicated by LITEVER below.
 		document.getElementById("dynatemp_range").value = localsettings.dynatemp_range;
 		document.getElementById("dynatemp_exponent").value = localsettings.dynatemp_exponent;
 		document.getElementById("smoothing_factor").value = localsettings.smoothing_factor;
-		document.getElementById("dynatemp_overview").innerText = ((localsettings.dynatemp_range>0||localsettings.smoothing_factor>0)?"ON":"OFF");
+		document.getElementById("dynatemp_overview").innerText = (localsettings.dynatemp_range>0?"ON":"OFF");
 		document.getElementById("presence_penalty").value = localsettings.presence_penalty;
 		document.getElementById("sampler_seed").value = localsettings.sampler_seed;
-		document.getElementById("top_k").value = localsettings.top_k;
+		document.getElementById("top_k").value =  document.getElementById("top_k_slide").value = localsettings.top_k;
 		document.getElementById("top_a").value = localsettings.top_a;
 		document.getElementById("typ_s").value = localsettings.typ_s;
 		document.getElementById("tfs_s").value = localsettings.tfs_s;
 		document.getElementById("miro_type").value = localsettings.miro_type;
 		document.getElementById("miro_tau").value = localsettings.miro_tau;
 		document.getElementById("miro_eta").value = localsettings.miro_eta;
-		edit_instruct_tag_format();
+		document.getElementById("dry_multiplier").value = localsettings.dry_multiplier;
+		document.getElementById("dry_base").value = localsettings.dry_base;
+		document.getElementById("dry_allowed_length").value = localsettings.dry_allowed_length;
+
 		if(is_using_kcpp_with_mirostat())
 		{
 			document.getElementById("mirosupporteddiv").classList.remove("hidden");
@@ -9001,6 +9211,18 @@ Current version indicated by LITEVER below.
 			document.getElementById("mirosupporteddiv").classList.add("hidden");
 			document.getElementById("mirounsupporteddiv").classList.remove("hidden");
 		}
+
+		if(is_using_kcpp_with_dry())
+		{
+			document.getElementById("drysupporteddiv").classList.remove("hidden");
+			document.getElementById("dryunsupporteddiv").classList.add("hidden");
+		}
+		else
+		{
+			document.getElementById("drysupporteddiv").classList.add("hidden");
+			document.getElementById("dryunsupporteddiv").classList.remove("hidden");
+		}
+		pendingsequencebreakers = localsettings.dry_sequence_breakers;
 
 		document.getElementById("setgrammar").disabled = !is_using_kcpp_with_grammar();
 		document.getElementById("voice_typing_mode").disabled = !is_using_kcpp_with_whisper();
@@ -9020,10 +9242,8 @@ Current version indicated by LITEVER below.
 			toggle_generate_images_mode(true);
 		}
 		document.getElementById("multiline_replies").checked = localsettings.multiline_replies;
-		document.getElementById("multiline_replies_adventure").checked = localsettings.multiline_replies_adventure;
 		document.getElementById("allow_continue_chat").checked = localsettings.allow_continue_chat;
-		document.getElementById("inject_timestamps_chat").checked = localsettings.inject_timestamps_chat;
-		document.getElementById("inject_timestamps_instruct").checked = localsettings.inject_timestamps_instruct;
+		document.getElementById("inject_timestamps").checked = localsettings.inject_timestamps;
 		document.getElementById("inject_chatnames_instruct").checked = localsettings.inject_chatnames_instruct;
 		document.getElementById("inject_jailbreak_instruct").checked = localsettings.inject_jailbreak_instruct;
 		document.getElementById("idle_responses").value = localsettings.idle_responses;
@@ -9052,14 +9272,23 @@ Current version indicated by LITEVER below.
 		let samplerstr = localsettings.sampler_order.toString();
 		document.getElementById("sampler_order").value = samplerstr;
 
-		//populate the presets list
+		//populate the sampler presets list
 		let npresets = "";
-		for (var i = 0; i < presets.length; ++i) {
-			npresets += `<option value="` + i + `" title="` + presets[i].description + `">` + presets[i].preset + `</option>`;
+		for (var i = 0; i < samplerpresets.length; ++i) {
+			npresets += `<option value="` + i + `" title="` + samplerpresets[i].description + `">` + samplerpresets[i].preset + `</option>`;
 		}
 		npresets += `<option value="9999" title="User Defined Settings">[Custom]</option>`;
-		document.getElementById("presets").innerHTML = npresets;
-		document.getElementById("presets").value = localsettings.last_selected_preset;
+		document.getElementById("samplerpresets").innerHTML = npresets;
+		document.getElementById("samplerpresets").value = localsettings.last_selected_preset;
+
+		//populate instruct presets
+		let inspresets = `<option value="0">[Custom]</option>`;
+		for(let i=0;i<instructpresets.length;++i)
+		{
+			inspresets += `<option value="${instructpresets[i].id}">${instructpresets[i].name}</option>`
+		}
+		document.getElementById("instruct_tag_format").innerHTML = inspresets;
+		edit_instruct_tag_format();
 
 		var ttshtml = "<option value=\"0\">Disabled</option>";
 		ttshtml += "<option value=\"1000\">XTTS API Server</option>";
@@ -9098,7 +9327,7 @@ Current version indicated by LITEVER below.
 		document.getElementById("img_steps").value = localsettings.img_steps;
 		document.getElementById("prompt_for_savename").checked = localsettings.prompt_for_savename;
 		document.getElementById("img_allownsfw").checked = localsettings.img_allownsfw;
-
+		setting_tweaked();
 	}
 
 	function update_horde_sdmodels()
@@ -9111,10 +9340,9 @@ Current version indicated by LITEVER below.
 	}
 
 	function toggle_preset() {
-		let selp = document.getElementById("presets").value;
-		let found = presets[selp];
+		let selp = document.getElementById("samplerpresets").value;
+		let found = samplerpresets[selp];
 		if (found) {
-			temp_changingpreset = true;
 			document.getElementById("temperature").value = document.getElementById("temperature_slide").value = found.temp;
 			document.getElementById("max_length").value = document.getElementById("max_length_slide").value = found.genamt;
 			document.getElementById("presence_penalty").value = found.presence_penalty;
@@ -9122,16 +9350,21 @@ Current version indicated by LITEVER below.
 			document.getElementById("dynatemp_range").value = found.dynatemp_range;
 			document.getElementById("dynatemp_exponent").value = found.dynatemp_exponent;
 			document.getElementById("smoothing_factor").value = found.smoothing_factor;
-			document.getElementById("top_k").value = found.top_k;
+			document.getElementById("top_k").value = document.getElementById("top_k_slide").value = found.top_k;
 			document.getElementById("top_p").value = document.getElementById("top_p_slide").value = found.top_p;
 			document.getElementById("top_a").value = found.top_a;
 			document.getElementById("typ_s").value = found.typical;
 			document.getElementById("tfs_s").value = found.tfs;
 			document.getElementById("miro_type").value = 0;
+			document.getElementById("dry_multiplier").value = 0;
 			document.getElementById("rep_pen").value = document.getElementById("rep_pen_slide").value = found.rep_pen;
 			document.getElementById("rep_pen_range").value = found.rep_pen_range;
 			document.getElementById("rep_pen_slope").value = found.rep_pen_slope;
 			document.getElementById("sampler_order").value = found.sampler_order.toString();
+			document.getElementById("presetsdesc").innerText = found.description;
+			document.getElementById("dynatemp_overview").innerText = (document.getElementById("dynatemp_range").value>0?"ON":"OFF");
+		}else{
+			document.getElementById("presetsdesc").innerText = "";
 		}
 	}
 
@@ -9191,13 +9424,36 @@ Current version indicated by LITEVER below.
 		}
 	}
 
-	//when we actually want to change presets, set to true temporarily, it will skip one update
-	var temp_changingpreset = false;
+	//check if any setting is modified from current preset, and set to custom if so
 	function setting_tweaked() {
-		if (!temp_changingpreset) {
-			document.getElementById("presets").value = 9999;
-		} else {
-			temp_changingpreset = false;
+		let selp = document.getElementById("samplerpresets").value;
+		let found = samplerpresets[selp];
+		if (found && selp!=9999) {
+			document.getElementById("presetsdesc").innerText = found.description;
+			let changed = (document.getElementById("temperature").value != found.temp ||
+			document.getElementById("max_length").value != found.genamt ||
+			document.getElementById("presence_penalty").value != found.presence_penalty ||
+			document.getElementById("min_p").value != found.min_p ||
+			document.getElementById("dynatemp_range").value != found.dynatemp_range ||
+			document.getElementById("dynatemp_exponent").value != found.dynatemp_exponent ||
+			document.getElementById("smoothing_factor").value != found.smoothing_factor ||
+			document.getElementById("top_k").value != found.top_k ||
+			document.getElementById("top_p").value != found.top_p ||
+			document.getElementById("top_a").value != found.top_a ||
+			document.getElementById("typ_s").value != found.typical ||
+			document.getElementById("tfs_s").value != found.tfs ||
+			document.getElementById("miro_type").value != 0 ||
+			document.getElementById("rep_pen").value !=  found.rep_pen ||
+			document.getElementById("rep_pen_range").value != found.rep_pen_range ||
+			document.getElementById("rep_pen_slope").value != found.rep_pen_slope ||
+			document.getElementById("sampler_order").value != found.sampler_order.toString());
+			if(changed)
+			{
+				document.getElementById("samplerpresets").value = 9999;
+				document.getElementById("presetsdesc").innerText = "Custom settings with modified settings.";
+			}
+		}else{
+			document.getElementById("presetsdesc").innerText = "Custom settings with modified settings.";
 		}
 	}
 
@@ -9294,10 +9550,8 @@ Current version indicated by LITEVER below.
 			localsettings.gui_type_instruct = document.getElementById("gui_type").value;
 		}
 		localsettings.multiline_replies = (document.getElementById("multiline_replies").checked ? true : false);
-		localsettings.multiline_replies_adventure = (document.getElementById("multiline_replies_adventure").checked ? true : false);
 		localsettings.allow_continue_chat = (document.getElementById("allow_continue_chat").checked ? true : false);
-		localsettings.inject_timestamps_chat = (document.getElementById("inject_timestamps_chat").checked ? true : false);
-		localsettings.inject_timestamps_instruct = (document.getElementById("inject_timestamps_instruct").checked ? true : false);
+		localsettings.inject_timestamps = (document.getElementById("inject_timestamps").checked ? true : false);
 		localsettings.inject_chatnames_instruct = (document.getElementById("inject_chatnames_instruct").checked ? true : false);
 		localsettings.inject_jailbreak_instruct = (document.getElementById("inject_jailbreak_instruct").checked ? true : false);
 		localsettings.idle_responses = document.getElementById("idle_responses").value;
@@ -9325,6 +9579,10 @@ Current version indicated by LITEVER below.
 		localsettings.miro_type = document.getElementById("miro_type").value;
 		localsettings.miro_tau = document.getElementById("miro_tau").value;
 		localsettings.miro_eta = document.getElementById("miro_eta").value;
+		localsettings.dry_multiplier = document.getElementById("dry_multiplier").value;
+		localsettings.dry_base = document.getElementById("dry_base").value;
+		localsettings.dry_allowed_length = document.getElementById("dry_allowed_length").value;
+		localsettings.dry_sequence_breakers = pendingsequencebreakers;
 
 		localsettings.speech_synth = document.getElementById("ttsselect").value;
 		localsettings.xtts_voice = document.getElementById("xtts_voices").value;
@@ -9383,7 +9641,7 @@ Current version indicated by LITEVER below.
 
 		//validate samplers, if fail, reset to default
 		validate_samplers(true);
-		localsettings.last_selected_preset = document.getElementById("presets").value;
+		localsettings.last_selected_preset = document.getElementById("samplerpresets").value;
 
 		//clean and clamp invalid values
 		localsettings.max_context_length = cleannum(localsettings.max_context_length, 8, 999999);
@@ -9406,6 +9664,9 @@ Current version indicated by LITEVER below.
 		localsettings.miro_type = cleannum(localsettings.miro_type, 0, 2);
 		localsettings.miro_tau = cleannum(localsettings.miro_tau, 0, 30);
 		localsettings.miro_eta = cleannum(localsettings.miro_eta, 0, 10);
+		localsettings.dry_multiplier = cleannum(localsettings.dry_multiplier, 0.0, 100.0);
+		localsettings.dry_base = cleannum(localsettings.dry_base, 0.0, 8.0);
+		localsettings.dry_allowed_length = cleannum(Math.floor(localsettings.dry_allowed_length), 0, 100);
 		localsettings.sampler_seed = cleannum(localsettings.sampler_seed, -1, 999999);
 		toggle_invert_colors();
 
@@ -9425,70 +9686,15 @@ Current version indicated by LITEVER below.
 		let et = "";
 		let systag = "";
 
-		switch(sel)
+		for(let i=0;i<instructpresets.length;++i)
 		{
-			case "1": //Alpaca
-				st = defaultsettings.instruct_starttag;
-				et = defaultsettings.instruct_endtag;
-				systag = "";
+			if(instructpresets[i].id==sel)
+			{
+				st = instructpresets[i].user;
+				et = instructpresets[i].assistant;
+				systag = instructpresets[i].system;
 				break;
-			case "2": //Vicuna
-				st = "\\nUSER: ";
-				et = "\\nASSISTANT: ";
-				systag = "";
-				break;
-			case "3": //Metharme
-				st = `<|user|>`;
-				et = `<|model|>`;
-				systag = "";
-				break;
-			case "4": //Llama 2 chat
-				st = "[INST] ";
-				et = " [/INST]";
-				systag = "";
-				break;
-			case "5": //Q & A
-				st = "\\nQuestion: ";
-				et = "\\nAnswer: ";
-				systag = "";
-				break;
-			case "6": //ChatML
-				st = "<|im_end|>\\n<|im_start|>user\\n";
-				et = "<|im_end|>\\n<|im_start|>assistant\\n";
-				systag = "<|im_start|>system\\n";
-				break;
-			case "7": //Input & Output
-				st = "\\n{{[INPUT]}}\\n";
-				et = "\\n{{[OUTPUT]}}\\n";
-				systag = "";
-				break;
-			case "8": //CommandR
-				st = "<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|USER_TOKEN|>";
-				et = "<|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>";
-				systag = "<|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|>";
-				break;
-			case "9": //Llama 3 chat
-				st = "<|eot_id|><|start_header_id|>user<|end_header_id|>\\n\\n";
-				et = "<|eot_id|><|start_header_id|>assistant<|end_header_id|>\\n\\n";
-				systag = "<|start_header_id|>system<|end_header_id|>\\n\\n";
-				break;
-			case "10": //Phi-3 Mini
-				st = "<|end|><|user|>\\n";
-				et = "<|end|>\\n<|assistant|>";
-				systag = "<|system|>\\n";
-				break;
-			case "11": //Gemma 2
-				st = "<end_of_turn>\\n<start_of_turn>user\\n";
-				et = "<end_of_turn>\\n<start_of_turn>model\\n";
-				systag = "<start_of_turn>user\\n";
-				break;
-			case "12": //Mistral
-				st = "\\n[INST] ";
-				et = " [/INST]\\n";
-				systag = "";
-				break;
-			default:
-				break;
+			}
 		}
 
 		return {"start":st,"end":et,"system":systag};
@@ -9583,29 +9789,42 @@ Current version indicated by LITEVER below.
 		//show or hide the 'Customize UI' button based on whether the Aesthetic Instruct UI Mode is active or not.
 		if (document.getElementById('gui_type').value==2) { document.getElementById('btn_aesthetics').classList.remove('hidden'); }
 		else { document.getElementById('btn_aesthetics').classList.add('hidden'); }
+		switch(document.getElementById('gui_type').value)
+		{
+			case "0": document.getElementById("guitypedesc").innerText = "The classic Kobold Blue theme everyone loves."; break;
+			case "1": document.getElementById("guitypedesc").innerText = "A compact instant messenger styled chat theme."; break;
+			case "2": document.getElementById("guitypedesc").innerText = "Customizable aesthetic theme with character portraits."; break;
+			case "3": document.getElementById("guitypedesc").innerText = "Clean, minimalistic, corporate AI assistant theme."; break;
+			default: document.getElementById("guitypedesc").innerText = ""; break;
+		}
 	}
+
 	function toggle_include_chatnames()
 	{
 		if (document.getElementById("inject_chatnames_instruct").checked) {
-			document.getElementById('chatinstructsharedsection2').classList.remove('hidden');
+			document.getElementById('chatnamessection').classList.remove('hidden');
 		} else {
-			document.getElementById('chatinstructsharedsection2').classList.add('hidden');
+			document.getElementById('chatnamessection').classList.add('hidden');
 		}
 	}
+
 	function toggle_opmode() {
 
-		document.getElementById('chatnamesection1').classList.add('hidden');
-		document.getElementById('adventuresection1').classList.add('hidden');
-		document.getElementById('instructsection1').classList.add('hidden');
-		document.getElementById('chatnamesection2').classList.add('hidden');
-		document.getElementById('chatinstructsharedsection2').classList.add('hidden');
-		document.getElementById('adventuresection2').classList.add('hidden');
-		document.getElementById('instructsection2').classList.add('hidden');
+		switch(document.getElementById('opmode').value)
+		{
+			case "1": document.getElementById("opmodedesc").innerText = "Let the AI co-write a story."; break;
+			case "2": document.getElementById("opmodedesc").innerText = "Participate in turn-based interactive adventures."; break;
+			case "3": document.getElementById("opmodedesc").innerText = "Roleplay with a virtual chatbot AI."; break;
+			case "4": document.getElementById("opmodedesc").innerText = "Give the AI instructions, questions, or do tasks."; break;
+			default: document.getElementById("opmodedesc").innerText = ""; break;
+		}
 
 		document.getElementById('uipicker_classic').classList.remove('hidden');
 		document.getElementById('uipicker_messenger').classList.add('hidden');
 		document.getElementById('uipicker_aesthetic').classList.add('hidden');
 		document.getElementById('uipicker_corpo').classList.add('hidden');
+		document.getElementById('chatnamessection').classList.add('hidden');
+		document.getElementById('instructtagsection').classList.add('hidden');
 
 		if (document.getElementById('opmode').value == 1) {
 			document.getElementById('gui_type').value = localsettings.gui_type_story;
@@ -9613,24 +9832,19 @@ Current version indicated by LITEVER below.
 		}
 		if (document.getElementById('opmode').value == 2) {
 			document.getElementById('gui_type').value = localsettings.gui_type_adventure;
-			document.getElementById('adventuresection1').classList.remove('hidden');
-			document.getElementById('adventuresection2').classList.remove('hidden');
 			document.getElementById('uipicker_aesthetic').classList.remove('hidden');
 		}
 		if (document.getElementById('opmode').value == 3) {
 			document.getElementById('gui_type').value = localsettings.gui_type_chat;
-			document.getElementById('chatnamesection1').classList.remove('hidden');
-			document.getElementById('chatnamesection2').classList.remove('hidden');
-			document.getElementById('chatinstructsharedsection2').classList.remove('hidden');
 			document.getElementById('uipicker_messenger').classList.remove('hidden');
 			document.getElementById('uipicker_aesthetic').classList.remove('hidden');
+			document.getElementById('chatnamessection').classList.remove('hidden');
 		}
 		if (document.getElementById('opmode').value == 4) {
 			document.getElementById('gui_type').value = localsettings.gui_type_instruct;
-			document.getElementById('instructsection1').classList.remove('hidden');
-			document.getElementById('instructsection2').classList.remove('hidden');
 			document.getElementById('uipicker_aesthetic').classList.remove('hidden');
 			document.getElementById('uipicker_corpo').classList.remove('hidden');
+			document.getElementById('instructtagsection').classList.remove('hidden');
 			toggle_include_chatnames();
 		}
 
@@ -9646,6 +9860,7 @@ Current version indicated by LITEVER below.
 		if (document.getElementById('gui_type').value==2) { document.getElementById('btn_aesthetics').classList.remove('hidden'); }
 		else { document.getElementById('btn_aesthetics').classList.add('hidden'); }
 
+		toggle_uistyle();
 	}
 
 	//triggers if advanced load is enabled
@@ -9682,6 +9897,7 @@ Current version indicated by LITEVER below.
 	}
 
 	function display_newgame() {
+		mainmenu_untab(true);
 		document.getElementById("newgamecontainer").classList.remove("hidden");
 	}
 
@@ -9981,6 +10197,7 @@ Current version indicated by LITEVER below.
 		}
 		warn_on_quit = false;
 		show_corpo_leftpanel(false);
+		update_toggle_theme(false); //load theme but dont save or toggle it
 		render_gametext(save); //necessary to trigger an autosave to wipe out current story in case they exit browser after newgame.
 	}
 
@@ -10669,6 +10886,7 @@ Current version indicated by LITEVER below.
 	}
 	function ptt_end()
 	{
+		var voice_end_delay = document.getElementById("voice_end_delay").value;
 		if(voice_typing_mode>0)
 		{
 			voice_is_speaking = false;
@@ -10702,7 +10920,7 @@ Current version indicated by LITEVER below.
 						}
 					}
 				}
-			}, 280); //prevent premature stopping
+			}, voice_end_delay); //prevent premature stopping
 		}
 	}
 	function submit_generation_button(aesthetic_ui)
@@ -10770,7 +10988,7 @@ Current version indicated by LITEVER below.
 					{
 						newgen = localsettings.chatname + ": " + newgen;
 					}
-					if(localsettings.inject_timestamps_instruct)
+					if(localsettings.inject_timestamps)
 					{
 						newgen = "["+(new Date().toLocaleTimeString([], {year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'}))+"] " + newgen;
 					}
@@ -10801,7 +11019,7 @@ Current version indicated by LITEVER below.
 			if (localsettings.opmode == 3 && newgen != "") {
 				//append chatname for chatmode
 				let injecttime = "";
-				if(localsettings.inject_timestamps_chat)
+				if(localsettings.inject_timestamps)
 				{
 					injecttime = " ["+(new Date().toLocaleTimeString([], {year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'}))+"]";
 				}
@@ -10995,7 +11213,7 @@ Current version indicated by LITEVER below.
 				{
 					co = replaceAll(co,"\n","");
 					pending_context_preinjection = "\n"+co + ":";
-					if(localsettings.inject_timestamps_chat)
+					if(localsettings.inject_timestamps)
 					{
 						pending_context_preinjection += " ["+(new Date().toLocaleTimeString([], {year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'}))+"]";
 					}
@@ -11033,11 +11251,11 @@ Current version indicated by LITEVER below.
 				{
 					let endmatcher = (localsettings.placeholder_tags ? instructendplaceholder : get_instruct_endtag(false));
 					if (truncated_context.toLowerCase().trim().endsWith(endmatcher.toLowerCase().trim())) {
-						if (localsettings.inject_timestamps_instruct) {
+						if (localsettings.inject_timestamps) {
 							pending_context_preinjection += "[" + (new Date().toLocaleTimeString([], { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })) + "]";
 						}
 						if (localsettings.inject_chatnames_instruct && localsettings.chatopponent!="") {
-							if (localsettings.inject_timestamps_instruct) {
+							if (localsettings.inject_timestamps) {
 								pending_context_preinjection += " ";
 							}
 							pending_context_preinjection += localsettings.chatopponent + ":";
@@ -11331,7 +11549,7 @@ Current version indicated by LITEVER below.
 		if (localsettings.opmode == 2) //stop on new action found
 		{
 			seqs = ["\n\> "];
-			if(!localsettings.multiline_replies_adventure)
+			if(!localsettings.multiline_replies)
 			{
 				seqs.push("\n");
 			}
@@ -11445,6 +11663,13 @@ Current version indicated by LITEVER below.
 			submit_payload.params.smoothing_factor = localsettings.smoothing_factor;
 			submit_payload.params.banned_tokens = get_token_bans();
 			submit_payload.params.render_special = localsettings.render_special_tags;
+		}
+		if((custom_kobold_endpoint != "" && is_using_kcpp_with_dry()))
+		{
+			submit_payload.params.dry_multiplier = localsettings.dry_multiplier;
+			submit_payload.params.dry_base = localsettings.dry_base;
+			submit_payload.params.dry_allowed_length = localsettings.dry_allowed_length;
+			submit_payload.params.dry_sequence_breakers = JSON.parse(JSON.stringify(localsettings.dry_sequence_breakers));
 		}
 		//presence pen and logit bias for OAI and newer kcpp
 		if((custom_kobold_endpoint != "" && is_using_kcpp_with_mirostat()) || custom_oai_endpoint!="")
@@ -12649,7 +12874,7 @@ Current version indicated by LITEVER below.
 				splitresponse = gentxt.split("\n\> ");
 				gentxt = splitresponse[0];
 			}
-			if(!localsettings.multiline_replies_adventure)
+			if(!localsettings.multiline_replies)
 			{
 				let foundnl = gentxt.indexOf("\n");
 				if (foundnl != -1) //if found, truncate to it
@@ -13115,7 +13340,7 @@ Current version indicated by LITEVER below.
 					} else {
 						pending_context_preinjection =  instructendplaceholder;
 					}
-					if(localsettings.inject_timestamps_instruct)
+					if(localsettings.inject_timestamps)
 					{
 						pending_context_preinjection += "["+(new Date().toLocaleTimeString([], {year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'}))+"]";
 					}
@@ -14065,7 +14290,7 @@ Current version indicated by LITEVER below.
 					whorun = "<br>You're using the Cohere API";
 				}
 				else {
-					whorun = `<br>There are <span class="color_orange">${selected_models.reduce((s, a) => s + a.count, 0)}</span> <a class="color_green" href="#" onclick="get_and_show_workers()">volunteer(s)</a> running selected models with a total queue length of <span class="color_orange">${selected_models.reduce((s, a) => s + a.queued, 0)}</span> tokens`;
+					whorun = `<br>There are <span class="color_orange">${selected_models.reduce((s, a) => s + a.count, 0)}</span> <a class="color_green mainnav" href="#" tabindex="${mainmenu_is_untab?`-1`:`0`}" onclick="get_and_show_workers()">volunteer(s)</a> running selected models with a total queue length of <span class="color_orange">${selected_models.reduce((s, a) => s + a.queued, 0)}</span> tokens`;
 				}
 				let nowmode = (localsettings.opmode==1?"Story Mode":(localsettings.opmode==2?"Adventure Mode":(localsettings.opmode==3?"Chat Mode":"Instruct Mode")));
 				let selmodelstr = "";
@@ -14081,8 +14306,8 @@ Current version indicated by LITEVER below.
 				document.getElementById("gametext").innerHTML = `Welcome to <span class="color_cyan">KoboldAI Lite</span>!`+
 				`<br>You are using the models <span class="color_green">${selmodelstr}</span>${(selected_workers.length == 0 ? `` : ` (Pinned to ${selected_workers.length} worker IDs)`)}.`+
 				`${whorun}.<br><br><b><span class="color_orange">${nowmode} Selected</span></b> - Enter a prompt below to begin!`+
-				`<br>Or, <a href="#" class="color_blueurl" onclick="document.getElementById('loadfileinput').click()">load a <b>JSON File</b> or a <b>Character Card</b> here.</a>`+
-				`<br>Or, <a href="#" class="color_blueurl" onclick="display_scenarios()">select a <b>Quick Start Scenario</b> here.</a>`+
+				`<br>Or, <a href="#" tabindex="${mainmenu_is_untab?`-1`:`0`}" class="color_blueurl mainnav" onclick="document.getElementById('loadfileinput').click()">load a <b>JSON File</b> or a <b>Character Card</b> here.</a>`+
+				`<br>Or, <a href="#" tabindex="${mainmenu_is_untab?`-1`:`0`}" class="color_blueurl mainnav" onclick="display_scenarios()">select a <b>Quick Start Scenario</b> here.</a>`+
 				`<br>${(welcome!=""?`<br><em>${escapeHtml(welcome)}</em>`:``)}`;
 			}
 
@@ -14131,7 +14356,7 @@ Current version indicated by LITEVER below.
 				fulltxt = replaceAll(fulltxt, `%SpcStg%`, `<hr class="hr_instruct"><span class="color_cyan"><img src="`+human_square+`" style="height:38px;width:auto;padding:3px 6px 3px 3px;border-radius: 8%;"/>`);
 				fulltxt = replaceAll(fulltxt, `%SpcEtg%`, `</span><hr class="hr_instruct"><img src="`+niko_square+`" style="height:38px;width:auto;padding:3px 6px 3px 3px;border-radius: 8%;"/>`);
 				//apply stylization to time tags
-				if(localsettings.inject_timestamps_instruct && localsettings.instruct_has_markdown)
+				if(localsettings.inject_timestamps && localsettings.instruct_has_markdown)
 				{
 					fulltxt = fulltxt.replace(/(\[\d{1,2}\/\d{1,2}\/\d{4}, \d{1,2}:\d{2} [AP]M\])/g, "$1\n");
 				}
@@ -14301,7 +14526,7 @@ Current version indicated by LITEVER below.
 			document.getElementById("fvico").href = favivon_normal;
 		}
 		else if (selected_models.length == 0 && selected_workers.length == 0) {
-			let perfinfo = `There are <span class="color_orange">${perfdata.worker_count}</span> total <a class="color_green" href="#" onclick="get_and_show_workers()">volunteer(s)</a> in the AI Horde, and <span class="color_orange">${perfdata.queued_requests}</span> request(s) in queues.<br>A total of <span class="color_orange">${perfdata.past_minute_tokens}</span> tokens were generated in the last minute.<br><br>`;
+			let perfinfo = `There are <span class="color_orange">${perfdata.worker_count}</span> total <a class="color_green mainnav" tabindex="${mainmenu_is_untab?`-1`:`0`}" href="#" onclick="get_and_show_workers()">volunteer(s)</a> in the AI Horde, and <span class="color_orange">${perfdata.queued_requests}</span> request(s) in queues.<br>A total of <span class="color_orange">${perfdata.past_minute_tokens}</span> tokens were generated in the last minute.<br><br>`;
 			document.getElementById("gametext").innerHTML = `Welcome to <span class="color_cyan">KoboldAI Lite</span>!<br><br>${perfinfo}<a href="#" class="color_blueurl" onclick="display_endpoint_container()">Please select an AI service to use!</a><br>`;
 			document.getElementById("fvico").href = favivon_normal;
 		}
@@ -14715,15 +14940,15 @@ Current version indicated by LITEVER below.
 			{
 				if(retry_prev_text.length+redo_prev_text.length>0)
 				{
-					historical_btns = `<button onclick="corpo_chunk_prev()" class="corpo_hover_btn" type="button" style="background-image: var(--img_corpo_left);"></button>`+
+					historical_btns = `<button title="Previous Arrow" onclick="corpo_chunk_prev()" class="corpo_hover_btn" type="button" style="background-image: var(--img_corpo_left);"></button>`+
 					`<span class="corpo_btn_text">${retry_prev_text.length+1} / ${retry_prev_text.length+redo_prev_text.length+1}</span>`+
-					`<button onclick="corpo_chunk_next()" class="corpo_hover_btn" type="button" style="background-image: var(--img_corpo_right);"></button>`;
+					`<button title="Next Arrow" onclick="corpo_chunk_next()" class="corpo_hover_btn" type="button" style="background-image: var(--img_corpo_right);"></button>`;
 				}
 			}
 			let chunkbtns = (corpo_editing_turn == i ? `` : `<div style="line-height: 1">`+
 				historical_btns +
-				`<button onclick="corpo_edit_chunk_start(${i})" class="corpo_hover_btn" type="button" style="background-image: var(--img_corpo_edit);"></button>`+
-				(curr.myturn ? `` : `<button onclick="corpo_retry_chunk(${i})" class="corpo_hover_btn" type="button" style="background-image: var(--img_corpo_retry);"></button>`)
+				`<button title="Edit Chunk" onclick="corpo_edit_chunk_start(${i})" class="corpo_hover_btn" type="button" style="background-image: var(--img_corpo_edit);"></button>`+
+				(curr.myturn ? `` : `<button title="Retry Chunk" onclick="corpo_retry_chunk(${i})" class="corpo_hover_btn" type="button" style="background-image: var(--img_corpo_retry);"></button>`)
 				+ `</div>`);
 
 			newbodystr += `<div class="corpostyleitem">
@@ -14750,9 +14975,22 @@ Current version indicated by LITEVER below.
 		return newbodystr;
 	}
 
-	function btn_theme()
+	function update_toggle_theme(toggle=false)
 	{
-		document.body.classList.toggle('darkmode');
+		if(toggle)
+		{
+			localsettings.darkmode = !localsettings.darkmode;
+			autosave();
+		}
+
+		if(localsettings.darkmode)
+		{
+			document.body.classList.add('darkmode');
+		}
+		else
+		{
+			document.body.classList.remove('darkmode');
+		}
 
 	}
 
@@ -14763,7 +15001,7 @@ Current version indicated by LITEVER below.
 		<div onclick="display_newgame();" class="corpo_leftpanel_btn" type="button" style="background-image: var(--img_nikosquare); padding-left: 44px;">New Chat</div>
 		<div onclick="btn_memory()" class="corpo_leftpanel_btn" type="button" style="background-image: var(--img_gear); padding-left: 44px;">Context</div>
 		<div onclick="btn_editmode()" class="corpo_leftpanel_btn" type="button" style="background-image: var(--img_corpo_edit); padding-left: 44px;">Raw Editor</div>
-		<div onclick="btn_theme()" class="corpo_leftpanel_btn" type="button" style="background-image: var(--img_corpo_theme); padding-left: 44px;">Theme</div>
+		<div onclick="update_toggle_theme(true)" class="corpo_leftpanel_btn" type="button" style="background-image: var(--img_corpo_theme); padding-left: 44px;">Light / Dark Theme</div>
 		<div style="padding:2px;font-size:14px;margin-left:8px;font-weight:600;line-height:1.1;margin-top:20px">Quick Slot Load</div>
 		`;
 
@@ -15105,6 +15343,7 @@ Current version indicated by LITEVER below.
 	}
 
 	function btn_memory() {
+		mainmenu_untab(true);
 		document.getElementById("memorycontainer").classList.remove("hidden");
 		display_memory_tab(memory_tab);
 
@@ -15638,7 +15877,7 @@ Current version indicated by LITEVER below.
 				{
 					let txt = "";
 
-					if(localsettings.inject_timestamps_instruct)
+					if(localsettings.inject_timestamps)
 					{
 						userinput = "["+(new Date().toLocaleTimeString([], {year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'}))+"] " + userinput;
 					}
@@ -15704,13 +15943,17 @@ Current version indicated by LITEVER below.
 
 	}
 
-	function toggleNavWithoutBootstrapJS() {
+	function toggleTopNav() {
 		var x = document.getElementById("navbarNavDropdown");
 		if (x.classList.contains("collapse")) {
 			x.classList.remove("collapse");
 		} else {
 			x.classList.add("collapse");
 		}
+	}
+	function closeTopNav() {
+		var x = document.getElementById("navbarNavDropdown");
+		x.classList.add("collapse");
 	}
 
 
@@ -16242,7 +16485,7 @@ Current version indicated by LITEVER below.
 
 </head>
 
-<body id="outerbody" class="" onkeydown="handle_escape_button(event)" onbeforeunload="return handle_quit()">
+<body id="outerbody" class="darkmode" onkeydown="handle_escape_button(event)" onbeforeunload="return handle_quit()">
 
 	<div id="maincontainer" class="adaptivecontainer maincontainer">
 		<div id="outerbodybg"></div>
@@ -16250,7 +16493,7 @@ Current version indicated by LITEVER below.
 			<div id="menuitems">
 				<div class="navcontainer">
 					<nav class="navbar" id="navbar">
-						<button class="navbar-toggler" type="button" onclick="toggleNavWithoutBootstrapJS()">
+						<button class="navbar-toggler" type="button" onclick="toggleTopNav()">
 							<span class="navbar-button-bar"></span>
 							<span class="navbar-button-bar"></span>
 							<span class="navbar-button-bar"></span>
@@ -16259,36 +16502,36 @@ Current version indicated by LITEVER below.
 							<ul class="nav navbar-nav">
 
 								<li class="nav-item hidden" id="topbtn_reconnect">
-									<a class="nav-link" href="#" onclick="attempt_connect()">Reconnect</a>
+									<a class="nav-link mainnav" href="#" onclick="closeTopNav();attempt_connect()">Reconnect</a>
 								</li>
 
 								<li class="nav-item hidden" id="topbtn_customendpt">
-									<a class="nav-link" href="#" onclick="display_endpoint_container()">Custom Endpoint</a>
+									<a class="nav-link mainnav" href="#" onclick="closeTopNav();display_endpoint_container()">Select Endpoint</a>
 								</li>
 
 								<li class="nav-item hidden" id="topbtn_ai">
-									<a class="nav-link" href="#" onclick="display_endpoint_container()">AI</a>
+									<a class="nav-link mainnav" href="#" onclick="closeTopNav();display_endpoint_container()">AI</a>
 								</li>
 
 								<li class="nav-item hidden" id="topbtn_newgame">
-									<a class="nav-link" href="#" onclick="display_newgame()">New Session</a>
+									<a class="nav-link mainnav" href="#" onclick="closeTopNav();display_newgame()">New Session</a>
 								</li>
 
 								<li class="nav-item hidden" id="topbtn_scenarios">
-									<a class="nav-link" href="#" onclick="display_scenarios()">Scenarios</a>
+									<a class="nav-link mainnav" href="#" onclick="closeTopNav();display_scenarios()">Scenarios</a>
 								</li>
 								<li class="nav-item hidden" id="topbtn_quickplay">
-									<a class="nav-link" href="#" onclick="display_scenarios()">Quick Start</a>
+									<a class="nav-link mainnav" href="#" onclick="closeTopNav();display_scenarios()">Quick Start</a>
 								</li>
 
 								<li class="nav-item hidden" id="topbtn_save_load">
 									<a id="tempfile" href="#" style="display:none;"></a>
 									<input type="file" id="loadfileinput" accept="text/json,application/json,image/png,image/webp,.kaistory,.webp,.png,.json,.txt,*.*,*" onchange="load_file(event)" style="display:none;">
-									<a class="nav-link" href="#" onclick="display_saveloadcontainer()">Save / Load</a>
+									<a class="nav-link mainnav" href="#" onclick="closeTopNav();display_saveloadcontainer()">Save / Load</a>
 								</li>
 								<li class="nav-item hidden" id="topbtn_settings">
-									<a class="nav-link" href="#" id="btn_settings"
-										onclick="display_settings()">Settings</a>
+									<a class="nav-link mainnav" href="#" id="btn_settings"
+										onclick="closeTopNav();display_settings()">Settings</a>
 								</li>
 
 							</ul>
@@ -16315,39 +16558,39 @@ Current version indicated by LITEVER below.
 
 		<div class="flex" id="actionmenu">
 			<div id="actionmenuitems">
-				<button type="button" class="btn btn-primary" id="btn_actmem" onclick="btn_memory()">Context</button>
-				<button type="button" class="btn btn-primary" id="btn_actundo" onpointerdown="btn_back_longpress_start()" onpointerleave="btn_back_longpress_end()" onpointerup="btn_back_longpress_end()" onclick="btn_back()">Back</button>
-				<button type="button" class="btn btn-primary" id="btn_actredo" onpointerdown="btn_redo_longpress_start()" onpointerleave="btn_redo_longpress_end()" onpointerup="btn_redo_longpress_end()" onclick="btn_redo()">Redo</button>
-				<button type="button" class="btn btn-primary" id="btn_actretry" onclick="btn_retry()">Retry</button>
-				<button type="button" class="btn btn-primary bg_green" id="btn_genimg" onclick="add_img_btn_menu()">Add Img</button>
+				<button type="button" class="btn btn-primary mainnav" id="btn_actmem" onclick="btn_memory()">Context</button>
+				<button type="button" class="btn btn-primary mainnav" id="btn_actundo" onpointerdown="btn_back_longpress_start()" onpointerleave="btn_back_longpress_end()" onpointerup="btn_back_longpress_end()" onclick="btn_back()">Back</button>
+				<button type="button" class="btn btn-primary mainnav" id="btn_actredo" onpointerdown="btn_redo_longpress_start()" onpointerleave="btn_redo_longpress_end()" onpointerup="btn_redo_longpress_end()" onclick="btn_redo()">Redo</button>
+				<button type="button" class="btn btn-primary mainnav" id="btn_actretry" onclick="btn_retry()">Retry</button>
+				<button type="button" class="btn btn-primary bg_green mainnav" id="btn_genimg" onclick="add_img_btn_menu()">Add Img</button>
 			</div>
 			<div class="box flex flex-push-right">
-				<input type="checkbox" id="entersubmit" onclick="toggle_entersends()" checked>
+				<input type="checkbox" id="entersubmit" class="mainnav" onclick="toggle_entersends()" checked>
 				<div class="box-label"><label class="unstyled" for="entersubmit">Enter Sends</label></div>
-				<input type="checkbox" id="allowediting"  onclick="toggle_editable()">
+				<input type="checkbox" id="allowediting" class="mainnav" onclick="toggle_editable()">
 				<div class="box-label"><label class="unstyled" for="allowediting">Allow Editing</label></div>
 			</div>
 		</div>
 		<div class="">
 			<div id="inputrow" class="">
 				<div id="inputrowmode" style="padding-right: 4px;">
-					<button type="button" class="btn btn-primary btn-secondary hidden" style="line-height: 1.4;" id="btnmode_adventure" onclick="btn_adventure_mode()">
+					<button title="Toggle Adventure Mode" type="button" class="btn btn-primary btn-secondary hidden mainnav" style="line-height: 1.4;" id="btnmode_adventure" onclick="btn_adventure_mode()">
 						<img id="adventure_mode_img" class="input_story">
 						<br><b id="adventure_mode_txt" style="font-size: 10px;">Story</b>
 					</button>
-					<button type="button" class="btn btn-primary btn-secondary" style="line-height: 1;" id="btnmode_chat" onclick="show_groupchat_select()">
+					<button title="Show Groupchat Selection" type="button" class="btn btn-primary btn-secondary mainnav" style="line-height: 1;" id="btnmode_chat" onclick="show_groupchat_select()">
 						<img class="input_chat">
 						<br><b style="font-size: 10px;">Chat<br>Select</b>
 					</button>
 				</div>
 				<div id="inputrowleft" class="tokens-in-box">
-					<textarea class="form-control" id="input_text" oninput="update_submit_button()" onkeypress="return handle_typing(event)" placeholder="Enter text here"></textarea>
+					<textarea title="User Input" class="form-control mainnav" id="input_text" oninput="update_submit_button()" onkeypress="return handle_typing(event)" placeholder="Enter text here"></textarea>
 					<span id="token-budget" class="token-budget"></span>
 				</div>
 				<div id="inputrowright" style="padding-right: 2px;">
-					<button type="button" class="btn btn-secondary wait" id="btnsend" disabled
+					<button type="button" class="btn btn-secondary wait mainnav" id="btnsend" disabled
 						onclick="submit_generation_button(false)" onmousedown="ptt_start()" onmouseup="ptt_end()">Loading</button>
-						<a href="#" id="abortgen" class="hidden bg_black" style="text-align: center;color: #ffaaaa;" onclick="abort_generation()"><b style="display: block;">[ABORT]</b></a>
+						<a href="#" id="abortgen" class="hidden bg_black mainnav" style="text-align: center;color: #ffaaaa;" onclick="abort_generation()"><b style="display: block;">[ABORT]</b></a>
 				</div>
 			</div>
 		</div>
@@ -16362,27 +16605,27 @@ Current version indicated by LITEVER below.
 				<!-- A greatly simplified action menu for this mode -->
 				<div class="flex hidden" id="actionmenu2">
 					<div id="actionmenuitems2" class="box flex-push-right" style="margin-bottom: 2px;">
-						<button type="button" class="btn btn-primary" id="btn_actmem2" onclick="btn_memory()">Context</button>
-						<button type="button" class="btn btn-primary" id="btn_actundo2" onpointerdown="btn_back_longpress_start()" onpointerleave="btn_back_longpress_end()" onpointerup="btn_back_longpress_end()" onclick="btn_back()">Back</button>
-						<button type="button" class="btn btn-primary" id="btn_actredo2" onpointerdown="btn_redo_longpress_start()" onpointerleave="btn_redo_longpress_end()" onpointerup="btn_redo_longpress_end()" onclick="btn_redo()">Redo</button>
-						<button type="button" class="btn btn-primary" id="btn_actretry2" onclick="btn_retry()">Retry</button>
-						<button type="button" class="btn btn-primary bg_green" id="btn_genimg2" onclick="add_img_btn_menu()">Add Img</button>
-						<button type="button" class="btn btn-primary" id="btn_editmode" onclick="btn_editmode()">Edit</button>
+						<button type="button" class="btn btn-primary mainnav" id="btn_actmem2" onclick="btn_memory()">Context</button>
+						<button type="button" class="btn btn-primary mainnav" id="btn_actundo2" onpointerdown="btn_back_longpress_start()" onpointerleave="btn_back_longpress_end()" onpointerup="btn_back_longpress_end()" onclick="btn_back()">Back</button>
+						<button type="button" class="btn btn-primary mainnav" id="btn_actredo2" onpointerdown="btn_redo_longpress_start()" onpointerleave="btn_redo_longpress_end()" onpointerup="btn_redo_longpress_end()" onclick="btn_redo()">Redo</button>
+						<button type="button" class="btn btn-primary mainnav" id="btn_actretry2" onclick="btn_retry()">Retry</button>
+						<button type="button" class="btn btn-primary bg_green mainnav" id="btn_genimg2" onclick="add_img_btn_menu()">Add Img</button>
+						<button type="button" class="btn btn-primary mainnav" id="btn_editmode" onclick="btn_editmode()">Edit</button>
 
 					</div>
 				</div>
 
 				<div class="cht_inp_hold_outer">
 					<div class="cht_inp_hold">
-					<button onclick="show_groupchat_select()" id="chat_btnmode_chat" class="chat_btnmode_chat hidden" type="button"></button>
-					<button onclick="btn_adventure_mode()" id="chat_btnmode_adventure" class="chat_btnmode_adventure actionmode hidden" type="button"></button>
+					<button title="Show Groupchat Selection" onclick="show_groupchat_select()" id="chat_btnmode_chat" class="chat_btnmode_chat hidden mainnav" type="button"></button>
+					<button title="Toggle Adventure Mode" onclick="btn_adventure_mode()" id="chat_btnmode_adventure" class="chat_btnmode_adventure actionmode hidden mainnav" type="button"></button>
 					<div id="cht_inp_bg" class="cht_inp_bg">
 					<div class="cht_inp_bg_inner" id="cht_inp_lengthtester" style="white-space: nowrap; visibility: hidden; height: 0px; position:absolute; width: auto;"></div>
-					<textarea class="cht_inp_bg_inner" id="cht_inp" type="text" name="chtchtinp"  role="presentation" autocomplete="noppynop" spellcheck="true" rows="1" wrap="on" placeholder="Type a message" value="" oninput="update_submit_button();chat_resize_input();" onkeypress="return chat_handle_typing(event)"/></textarea>
+					<textarea title="User Input" class="cht_inp_bg_inner mainnav" id="cht_inp" type="text" name="chtchtinp"  role="presentation" autocomplete="noppynop" spellcheck="true" rows="1" wrap="on" placeholder="Type a message" value="" oninput="update_submit_button();chat_resize_input();" onkeypress="return chat_handle_typing(event)"/></textarea>
 					</div>
-					<button onclick="submit_generation_button(true)" onmousedown="ptt_start()" onmouseup="ptt_end()" id="chat_msg_send_btn" class="chat_msg_send_btn" type="button"></button>
-					<button onclick="abort_generation()" id="chat_msg_send_btn_abort" class="hidden chat_msg_send_btn_abort" type="button"></button>
-					<button type="button" class="chat_msg_cust_btn" id="btn_chat_cust" onclick="chat_toggle_actionmenu()"></button>
+					<button title="Submit" onclick="submit_generation_button(true)" onmousedown="ptt_start()" onmouseup="ptt_end()" id="chat_msg_send_btn" class="chat_msg_send_btn mainnav" type="button"></button>
+					<button title="Abort" onclick="abort_generation()" id="chat_msg_send_btn_abort" class="hidden chat_msg_send_btn_abort mainnav" type="button"></button>
+					<button title="Toggle Action Menu" type="button" class="chat_msg_cust_btn mainnav" id="btn_chat_cust" onclick="chat_toggle_actionmenu()"></button>
 					</div>
 				</div>
 
@@ -16393,12 +16636,12 @@ Current version indicated by LITEVER below.
 		<div id="corpointerface" class="hidden">
 			<div class="corpostyle">
 				<div id="corpo_leftpannel" class="corpoleftpanel">
-					<button class="corpo_leftpanel_close" onclick="show_corpo_leftpanel(false)">&times;</button>
+					<button title="Hide Corpo Side Panel" class="corpo_leftpanel_close" onclick="show_corpo_leftpanel(false)">&times;</button>
 					<p id="corpoleftpanelitems" class="corpoleftpanelitems">
 
 					</p>
 				</div>
-				<button class="corpo_leftpanel_open" onclick="show_corpo_leftpanel(true)"><div class="corpo_arrow_right"></div></button>
+				<button title="Show Corpo Side Panel" class="corpo_leftpanel_open" onclick="show_corpo_leftpanel(true)"><div class="corpo_arrow_right"></div></button>
 				<div class="corporightpanel">
 					<div id="corpostylemain" class="corpostylemain">
 						<div id="corpo_body" class="corpostyleinner"></div>
@@ -16406,9 +16649,9 @@ Current version indicated by LITEVER below.
 					<div class="corpomainbtm">
 						<div class="corpo_chat_outer">
 							<div class="corpo_chat_inner" id="corpo_cht_inp_lengthtester" style="white-space: nowrap; visibility: hidden; height: 0px; position:absolute; width: auto;"></div>
-							<textarea class="corpo_chat_inner" id="corpo_cht_inp" type="text" name="crpchtinp"  role="presentation" autocomplete="noppynop" spellcheck="true" rows="1" wrap="on" placeholder="Message KoboldAI" value="" oninput="update_submit_button();chat_resize_input();" onkeypress="return chat_handle_typing(event)"/></textarea>
-							<button onclick="submit_generation_button(true)" id="corpo_chat_send_btn" class="corpo_chat_send_btn" type="button"></button>
-							<button onclick="abort_generation()" id="corpo_chat_send_btn_abort" class="hidden corpo_chat_send_btn_abort" type="button"></button>
+							<textarea title="User Input" class="corpo_chat_inner mainnav" id="corpo_cht_inp" type="text" name="crpchtinp"  role="presentation" autocomplete="noppynop" spellcheck="true" rows="1" wrap="on" placeholder="Message KoboldAI" value="" oninput="update_submit_button();chat_resize_input();" onkeypress="return chat_handle_typing(event)"/></textarea>
+							<button title="Submit" onclick="submit_generation_button(true)" id="corpo_chat_send_btn" class="corpo_chat_send_btn mainnav" type="button"></button>
+							<button title="Abort" onclick="abort_generation()" id="corpo_chat_send_btn_abort" class="hidden corpo_chat_send_btn_abort mainnav" type="button"></button>
 						</div>
 						<div id="lastreq3" class="corpolastreq color_gray"></div>
 					</div>
@@ -16446,7 +16689,7 @@ Current version indicated by LITEVER below.
 						Allow NSFW Models <span class="helpicon">?
 							<span class="helptext">If disabled, NSFW only models like Erebus will never be selected</span>
 						</span>
-						<input type="checkbox" id="scenarioallownsfw" checked>
+						<input title="Allow NSFW Models" type="checkbox" id="scenarioallownsfw" checked>
 					</span>
 				</div>
 
@@ -16493,7 +16736,7 @@ Current version indicated by LITEVER below.
 				<div class="popuptitletext">Select your AI provider</div>
 			</div>
 			<div style="padding: 4px;">
-			<select style="padding:4px;" class="form-control" id="customapidropdown" onchange="customapi_dropdown()">
+			<select title="Select your AI provider" style="padding:4px;" class="form-control" id="customapidropdown" onchange="customapi_dropdown()">
 				<option value="0">AI Horde</option>
 				<option value="1">KoboldAI Remote API</option>
 				<option value="2">OpenAI API</option>
@@ -16569,7 +16812,7 @@ Current version indicated by LITEVER below.
 				<input class="form-control" type="text" id="custom_oai_endpoint" placeholder="OpenAI API URL" value="">
 				<input class="form-control" type="password" id="custom_oai_key" placeholder="OpenAI API Key" value="" onfocus="focus_api_keys()" onblur="blur_api_keys()"><br>
 				Model Choice:<br>
-				<select style="padding:4px;display:inline;width:calc(100% - 220px)" class="form-control" id="custom_oai_model" onchange="oai_model_change()">
+				<select style="padding:4px;display:inline;width:calc(100% - 220px)" class="form-control" id="custom_oai_model" onchange="oai_model_change(true)">
 					<option value="gpt-3.5-turbo-instruct" selected="selected">gpt-3.5-turbo-instruct</option>
 					<option value="davinci-002">davinci-002</option>
 					<option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
@@ -16580,7 +16823,7 @@ Current version indicated by LITEVER below.
 					<option value="gpt-4-32k">gpt-4-32k</option>
 					<option style="display:none;" id="custom_oai_model_option" value="custom">[Custom]</option>
 				</select>
-				<select style="padding:4px;display:inline;width:calc(100% - 220px)" class="form-control hidden" id="custom_openrouter_model" onchange="oai_model_change()">
+				<select style="padding:4px;display:inline;width:calc(100% - 220px)" class="form-control hidden" id="custom_openrouter_model" onchange="oai_model_change(true)">
 					<option value="openai/gpt-3.5-turbo">openai/gpt-3.5-turbo</option>
 					<option value="openai/gpt-4">openai/gpt-4</option>
 					<option value="openai/gpt-3.5-turbo-instruct">openai/gpt-3.5-turbo-instruct</option>
@@ -16595,7 +16838,7 @@ Current version indicated by LITEVER below.
 				<input type="checkbox" id="oaiaddversion" onchange="" checked>
 				<div class="box-label" title="Add endpoint version">Add Endpoint Version</div>
 				<input type="checkbox" id="useoaichatcompl" onchange="toggleoaichatcompl()">
-				<div class="box-label" id="useoaichatcompllabel" title="">Use ChatCompletions API</div>
+				<div class="box-label" id="useoaichatcompllabel">Use ChatCompletions API</div>
 
 				<span id="useoaichatcomplbox" class="hidden" onload="toggleoaichatcompl();">
 					<br>
@@ -16692,9 +16935,9 @@ Current version indicated by LITEVER below.
 				<span class="color_green" style="font-weight: bold;">Please input Cohere API Key.</span><br><br>
 				<input class="form-control" type="password" id="custom_cohere_key" placeholder="Cohere API Key" value="" onfocus="focus_api_keys()" onblur="blur_api_keys()"><br>
 				<input type="checkbox" id="usecohereweb">
-				<div class="box-label" id="usecohereweblabel" title="">Use WebSearch</div>
+				<div class="box-label" id="usecohereweblabel">Use WebSearch</div>
 				<input type="checkbox" id="useocoherepreamble" onchange="togglecoherepreamble()">
-				<div class="box-label" id="useocoherepreamblelabel" title="">Use Preamble</div>
+				<div class="box-label" id="useocoherepreamblelabel">Use Preamble</div>
 
 				<span id="useocoherepreamblebox" class="hidden" onload="togglecoherepreamble();">
 					<textarea class="form-control" id="cohere_preamble" rows="3" style="resize: vertical; line-height:1.1; padding:4px; display:inline; width: 100%" type="text" placeholder="(Enter Preamble)" value=""></textarea>
@@ -16786,35 +17029,233 @@ Current version indicated by LITEVER below.
 
 	<div class="popupcontainer flex hidden" id="settingscontainer">
 		<div class="popupbg flex"></div>
-		<div class="nspopup flexsizevsmall highest">
+		<div class="nspopup flexsize" style="margin-top: 6vh; background-color:#102840">
 			<div class="popuptitlebar">
-				<div class="popuptitletext">Settings</div>
+				<div class="popuptitletext" title="Settings Menu">Settings</div>
 			</div>
 			<div><ul class="nav nav-tabs settingsnav">
-				<li id="settingsmenubasic_tab" class="active"><a class="" href="#" onclick="display_settings_tab(true)">Basic</a></li>
-				<li id="settingsmenuadvanced_tab" ><a class="" href="#" onclick="display_settings_tab(false)">Advanced</a></li>
-			  </ul></div>
-			<div class="aidgpopuplistheader">
+				<li id="settingsmenuformat_tab" class="active"><a class="" href="#" title="Open Format Menu" onclick="display_settings_tab(0)">Format</a></li>
+				<li id="settingsmenusamplers_tab" ><a class="" href="#" title="Open Samplers Menu" onclick="display_settings_tab(1)">Samplers</a></li>
+				<li id="settingsmenumedia_tab" ><a class="" href="#" title="Open Media Menu" onclick="display_settings_tab(2)">Media</a></li>
+				<li id="settingsmenuadvanced_tab" ><a class="" href="#" title="Open Advanced Menu" onclick="display_settings_tab(3)">Advanced</a></li>
+			</ul></div>
 
-				<!--basic settings menu top half-->
-				<div id="settingsmenubasic1" class="settingsmenu" style="padding-bottom: 0px;" onchange="setting_tweaked()">
+			<div class="aidgpopuplistheader settingsbody">
+
+				<!-- format settings menu -->
+				<div id="settingsmenuformat" class="settingsmenu hidden" onchange="setting_tweaked()">
 					<div class="settingitem">
 						<div class="settinglabel">
-							<div class="justifyleft settingsmall">Quick Presets <span class="helpicon">?<span class="helptext">Pick from an easy selection of curated generation presets, or configure your own.</span></span></div>
-							<select class="form-control" id="presets" style="height:24px;padding:0;margin:0px 0 0;" onchange="toggle_preset()">
-								<option value="1" title="Known Working Settings">[Default]</option>
+							<div class="justifyleft settingsmall">Usage Mode <span class="helpicon">?<span class="helptext">Story Mode is best for novel style writing. Adventure Mode is best for Interactive Fiction RPGs. Chat Mode is best for chat conversations with the AI. Instruct mode is for giving the AI ChatGPT styled tasks.</span></span></div>
+							<select title="Usage Mode Selection" class="form-control" id="opmode" style="height:26px;padding:0;margin:0px 0 0;width:calc(100%);" onchange="toggle_opmode()">
+								<option value="4">Instruct Mode</option>
+								<option value="1">Story Mode</option>
+								<option value="2">Adventure Mode</option>
+								<option value="3">Chat Mode</option>
 							</select>
+							<div id="opmodedesc" class="settingsdesctxt"></div>
 						</div>
 					</div>
+					<div class="settingitem">
+						<div id="uipicker" class="settinglabel">
+							<div class="justifyleft settingsmall">UI Style Select <span class="helpicon">?<span class="helptext">Select your preferred UI style, which affects text formatting and display. Some UIs are only available for specific modes.</span></span></div>
+							<select title="UI Style Selection" class="form-control" id="gui_type" style="height:26px;padding:0;margin:0px 0 0;" onchange="toggle_uistyle()">
+								<option id="uipicker_classic" value="0">Classic Theme</option>
+								<option id="uipicker_messenger" value="1">Messenger Theme</option>
+								<option id="uipicker_aesthetic" value="2">Aesthetic Theme</option>
+								<option id="uipicker_corpo" value="3">Corpo Theme</option>
+							</select>
+							<button type="button" class="btn btn-primary" id="btn_aesthetics" onclick="openAestheticUISettingsMenu()" style="border-color: #bbbbbb; width:100%; height:30px; padding:0px 8px; margin: 3px 0 3px 0;">⚙️ Customize</button>
+							<div id="guitypedesc" class="settingsdesctxt"></div>
+						</div>
+					</div>
+
+					<div class="settingitem wide" id="instructtagsection">
+						<div class="settinglabel">
+							<div id="instructsection_basic" class="settinglabel" style="width:100%">
+								<div class="justifyleft settingsmall">Instruct Tag Preset <span class="helpicon">?<span class="helptext">Quickly select between common instruct tag formats. Different models are trained with different tags.</span></span></div>
+								<select title="Instruct Tag Preset" class="form-control" id="instruct_tag_format" style="height:26px;padding:0;margin:0px 0 0;width:100%" onchange="toggle_instruct_tag_format()">
+								</select>
+							</div>
+						</div>
+
+						<div class="settinglabel" style="margin-top: 4px;">
+							<div class="settinglabel" style="width:100%">
+								<div class="justifyleft settingsmall" style="width:100%">Instruct Tag Format <span class="helpicon">?<span class="helptext">Specify the exact text formatting used for instruct mode.</span></span></div>
+							</div>
+							<div class="justifyleft" style="display: flex; width: 100%; font-size: 12px; margin:2px">
+								<div style="width:100px">System Tag <span class="helpicon">?<span class="helptext">The sequence to start the system prompt</span></span></div>
+								<input class="settinglabel miniinput" title="System Tag" style="width:calc(100% - 100px)" type="text" placeholder="(Unused)" value="" id="instruct_systag" onchange="edit_instruct_tag_format()">
+							</div>
+							<div class="justifyleft" style="display: flex; width: 100%; font-size: 12px; margin:2px">
+								<div style="width:100px">Sys. Prompt <span class="helpicon">?<span class="helptext">A fixed system message sent at the very start to guide the AI behavior. Usually NOT needed</span></span></div>
+								<textarea class="settinglabel miniinput" title="System Prompt" style="resize:vertical;width:calc(100% - 100px)" rows="1" type="text" placeholder="(Unused)" value="" id="instruct_sysprompt" onchange="edit_instruct_tag_format()"></textarea>
+							</div>
+							<div class="justifyleft" style="display: flex; width: 100%; font-size: 12px; margin:2px">
+								<div style="width:100px">User Tag <span class="helpicon">?<span class="helptext">The sequence to start an instruction prompt</span></span></div>
+								<input class="settinglabel miniinput" title="User Tag" style="width:calc(100% - 100px)" type="text" placeholder="\\n### Instruction:\\n" value="" id="instruct_starttag" onchange="edit_instruct_tag_format()" title="The sequence to start an instruction prompt">
+							</div>
+							<div class="justifyleft" style="display: flex; width: 100%; font-size: 12px; margin:2px">
+								<div style="width:100px">Assistant Tag <span class="helpicon">?<span class="helptext">The sequence to start an assistant response</span></span></div>
+								<input class="settinglabel miniinput" title="Assistant Tag" style="width:calc(100% - 100px)" type="text" placeholder="\\n### Response:\\n" value="" id="instruct_endtag" onchange="edit_instruct_tag_format()" title="The sequence to end an instruction prompt">
+							</div>
+						</div>
+					</div>
+
+					<div class="settingitem wide" id="chatnamessection">
+						<div class="settinglabel" style="padding-top: 3px;">
+							<div style="display:flex;width:100%;">
+								<div class="settinglabel settingcell" style="padding-bottom:0px">
+									<div  class="justifyleft settingsmall" style="width:100%">Your Name <span class="helpicon">?<span class="helptext">The name the AI will see you as</span></span></div>
+								</div>
+								<div class="settinglabel settingcell" style="padding-bottom:0px">
+									<div class="justifyleft settingsmall" style="width:100%">AI Name <span class="helpicon">?<span class="helptext">Name of the person(s) you want to chat with. Multiple opponents can be specified, creating a group chat, separate their names using multiple lines.</span></span></div>
+								</div>
+							</div>
+							<div style="display:flex;width:100%;">
+								<div class="settinglabel settingcell">
+									<div class="justifyleft settingsmall" style="width:100%">
+									<input class="settinglabel miniinput" style="height:18px;" type="text" placeholder="(Enter Name)" value="" id="chatname" title="The name that you will be chatting as">
+									</div>
+								</div>
+								<div class="settinglabel settingcell">
+									<div class="justifyleft settingsmall" style="width:100%">
+									<textarea class="settinglabel miniinput" style="resize: none;overflow:hidden;" id="chatopponent" placeholder="(Auto)" rows="1" wrap="off" title="The name of the person you want to chat with" oninput="handle_bot_name_input()" onchange="handle_bot_name_onchange()"></textarea>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="settinglabel" style="width:100%">
+							<button type="button" class="btn btn-primary" style="padding:2px 4px;margin:2px;margin-left:auto;font-size:11px;" onclick="add_another_participant()">Add Another Participant</button>
+						</div>
+					</div>
+
+					<div class="settingitem">
+						<div class="settinglabel">
+							<div class="justifyleft settingsmall">Multiline Replies <span class="helpicon">?<span
+							class="helptext">Whether to allow multiple lines in AI responses (Chat/Adventure). Disable this if the AI starts generating rubbish.</span></span> </div>
+							<input type="checkbox" title="Multiline Replies" id="multiline_replies" style="margin:0px 0px 0px auto;">
+						</div>
+						<div class="settinglabel">
+							<div class="justifyleft settingsmall">Continue Bot Replies <span class="helpicon">?<span
+							class="helptext">Allow incomplete AI chat mode replies, which can be continued by pressing submit again. Not recommended for newbies.</span></span></div>
+							<input type="checkbox" title="Continue Bot Replies" id="allow_continue_chat" style="margin:0px 0px 0px auto;">
+						</div>
+					</div>
+
+					<div class="settingitem">
+						<div class="settinglabel">
+							<div class="justifyleft settingsmall">Chat PrePrompt <span class="helpicon">?<span
+								class="helptext">Modifies the context, injecting tokens to improve chat quality for new chats.</span></span> </div>
+							<input type="checkbox" title="Chat PrePrompt" id="chat_context_mod" style="margin:0px 0px 0px auto;">
+						</div>
+						<div class="settinglabel">
+							<div class="justifyleft settingsmall">Adventure PrePrompt <span class="helpicon">?<span
+								class="helptext">Modifies the context, injecting tokens to improve adventure quality for new adventures.</span></span> </div>
+							<input type="checkbox" title="Adventure PrePrompt" id="adventure_context_mod" style="margin:0px 0px 0px auto;">
+						</div>
+					</div>
+
+					<div class="settingitem">
+						<div class="settinglabel">
+							<div class="justifyleft settingsmall">Enable Markdown <span class="helpicon">?<span
+								class="helptext">Allows the UI to use markdown formatting such as quotes and code blocks.</span></span></div>
+								<input type="checkbox" title="Enabled Markdown" id="instruct_has_markdown" style="margin:0px 0px 0px auto;">
+						</div>
+						<div class="settinglabel">
+							<div class="justifyleft settingsmall">Trim Sentences <span class="helpicon">?<span
+								class="helptext">Trims incomplete sentences in AI output.</span></span></div>
+							<input type="checkbox" title="Trim Sentences" id="trimsentences" style="margin:0px 0px 0px auto;">
+						</div>
+						<div class="settinglabel">
+							<div class="justifyleft settingsmall">Trim Whitespace <span class="helpicon">?<span
+								class="helptext">Removes trailing whitespace in AI output.</span></span></div>
+							<input type="checkbox" title="Trim White Space" id="trimwhitespace" style="margin:0px 0px 0px auto;">
+						</div>
+						<div class="settinglabel">
+							<div class="justifyleft settingsmall">Compress Newlines <span class="helpicon">?<span
+								class="helptext">Compresses multiple newlines into one newline in AI output.</span></span></div>
+							<input type="checkbox" title="Compress Newlines" id="compressnewlines" style="margin:0px 0px 0px auto;">
+						</div>
+					</div>
+
+					<div class="settingitem">
+						<div class="settinglabel">
+							<div class="justifyleft settingsmall">Inject Timestamps <span class="helpicon">?<span
+								class="helptext">Injects timestamps into context (Chat/Instruct), allowing the AI to have a sense of time.</span></span></div>
+							<input type="checkbox" title="Inject Timestamps" id="inject_timestamps" style="margin:0px 0px 0px auto;">
+						</div>
+						<div class="settinglabel">
+							<div class="justifyleft settingsmall">Inject ChatNames <span class="helpicon">?<span
+								class="helptext">Appends chat names after every instruct tag, a hybrid chat mode.</span></span></div>
+							<input type="checkbox" title="Inject ChatNames" id="inject_chatnames_instruct" style="margin:0px 0px 0px auto;" onchange="toggle_include_chatnames()">
+						</div>
+						<div class="settinglabel">
+							<div class="justifyleft settingsmall">Assistant Jailbreak <span class="helpicon">?<span
+								class="helptext">Automatically injects a jailbreak message after every instruct query, to make the AI more likely to obey you.</span></span></div>
+							<input type="checkbox" title="Assistant Jailbreak" id="inject_jailbreak_instruct" style="margin:0px 0px 0px auto;">
+						</div>
+
+					</div>
+				</div>
+
+				<!-- sampler settings menu-->
+				<div id="settingsmenusamplers" class="settingsmenu hidden" onchange="setting_tweaked()">
+					<div class="settingitem wide">
+						<div class="settinglabel">
+							<div class="justifyleft settingsmall">Sampler Preset <span class="helpicon">?<span class="helptext">Pick from an easy selection of curated generation presets, or configure your own.</span></span></div>
+							<select title="Sampler Preset" class="form-control" id="samplerpresets" style="height:26px;padding:0;margin:0px 0 0; width:100%;" onchange="toggle_preset()">
+								<option value="1" title="Select a Preset">[Default]</option>
+							</select>
+						</div>
+						<div id="presetsdesc" class="settingsdesctxt"></div>
+					</div>
+
+					<div class="settingitem">
+						<div class="settinglabel">
+							<div class="justifyleft settingsmall">Context Size <span class="helpicon">?<span class="helptext">Maximum number of context tokens submitted to the AI. Must exceed max output tokens. Can be further increased by editing the textbox. Older models stop at 2048, newer ones can do 4096 or greater.</span></span></div>
+							<input title="Context Size" inputmode="numeric" class="justifyright flex-push-right settingsmall widerinput" id="max_context_length" oninput="
+						   document.getElementById('max_context_length_slide').value = this.value;">
+						</div>
+						<div><input type="range" class="form-range airange" min="512" max="2048" step="8" id="max_context_length_slide" oninput="
+						   document.getElementById('max_context_length').value = this.value;"></div>
+						<div class="settingminmax">
+							<div class="justifyleft">512</div>
+							<div class="justifyright" id="max_context_length_slide_label">2048</div>
+						</div>
+						<div id="auto_ctxlen_panel" class="settinglabel">
+							<div class="justifyleft settingsmall" title="Automatically lowers settings if incompatible with existing workers">Auto-Adjust Limits </div>
+						   <input title="Auto-Adjust Context Limits" type="checkbox" id="auto_ctxlen" style="margin:0px 0 0;">
+						</div>
+					</div>
+
+					<div class="settingitem">
+						<div class="settinglabel">
+							<div class="justifyleft settingsmall">Max Output <span class="helpicon">?<span
+										class="helptext">Number of tokens the AI should generate. Higher numbers will take longer to generate.</span></span></div>
+							<input title="Max Output" inputmode="numeric" class="justifyright flex-push-right settingsmall" id="max_length" oninput="
+						   document.getElementById('max_length_slide').value = this.value;">
+						</div>
+						<div><input type="range" class="form-range airange" min="16" max="512" step="2"	id="max_length_slide" oninput="
+						   document.getElementById('max_length').value = this.value;"></div>
+						<div class="settingminmax">
+							<div class="justifyleft">16</div>
+							<div class="justifyright">512</div>
+						</div>
+						<div id="auto_genamt_panel" class="settinglabel">
+							<div class="justifyleft settingsmall" title="Automatically lowers settings if incompatible with existing workers">Auto-Adjust Limits </div>
+						   <input title="Auto-Adjust Length Limits" type="checkbox" id="auto_genamt" style="margin:0px 0 0;">
+						</div>
+					</div>
+
 					<div class="settingitem">
 						<div class="settinglabel">
 							<div class="justifyleft settingsmall">Temperature <span class="helpicon">?<span
 										class="helptext">Randomness of sampling. High values can increase creativity but
 										may make text less sensible. Lower values will make text more predictable but
 										can become repetitious.</span></span></div>
-							<input inputmode="decimal" class="justifyright flex-push-right settingsmall" id="temperature" value=0.5
-								oninput="
-						   document.getElementById('temperature_slide').value = this.value;">
+							<input title="Temperature" inputmode="decimal" class="justifyright flex-push-right settingsmall" id="temperature" value=0.5
+								oninput="document.getElementById('temperature_slide').value = this.value;">
 						</div>
 						<div><input type="range" class="form-range airange" min="0.1" max="2" step="0.01"
 								id="temperature_slide" oninput="
@@ -16827,370 +17268,227 @@ Current version indicated by LITEVER below.
 
 					<div class="settingitem">
 						<div class="settinglabel">
-							<div class="justifyleft settingsmall">Max Ctx. Tokens <span class="helpicon">?<span class="helptext">Max
-										number of context tokens submitted to the AI. Must exceed Amount to Generate. Can be further increased by editing the textbox. Older models stop at 2048, newer ones can do 4096 or greater.</span></span></div>
-							<input inputmode="numeric" class="justifyright flex-push-right settingsmall widerinput" id="max_context_length"
-								value=1024 oninput="
-						   document.getElementById('max_context_length_slide').value = this.value;">
+							<div class="justifyleft settingsmall">Repetition Penalty <span class="helpicon">?<span
+										class="helptext">Used to penalize words that were already generated or belong to
+										the context (too high causes incoherence!).</span></span></div>
+							<input title="Repetition Penalty" inputmode="decimal" class="justifyright flex-push-right settingsmall" id="rep_pen" oninput="
+						   document.getElementById('rep_pen_slide').value = this.value;">
 						</div>
-						<div><input type="range" class="form-range airange" min="512" max="2048" step="8"
-								id="max_context_length_slide" oninput="
-						   document.getElementById('max_context_length').value = this.value;"></div>
+						<div><input type="range" class="form-range airange" min="1" max="2" step="0.01"
+								id="rep_pen_slide" oninput="document.getElementById('rep_pen').value = this.value;"></div>
 						<div class="settingminmax">
-							<div class="justifyleft">512</div>
-							<div class="justifyright" id="max_context_length_slide_label">2048</div>
-						</div>
-						<div id="auto_ctxlen_panel" class="settinglabel">
-							<div class="justifyleft settingsmall" title="Automatically lowers settings if incompatible with existing workers">Auto-Adjust Limits </div>
-						   <input type="checkbox" id="auto_ctxlen" style="margin:0px 0 0;">
-						</div>
-					</div>
-
-					<br>
-					<div class="settingitem">
-						<div class="settinglabel">
-							<div class="justifyleft settingsmall">Amount to Gen. <span class="helpicon">?<span
-										class="helptext">Number of tokens the AI should generate. Higher numbers will
-										take longer to generate.</span></span></div>
-							<input inputmode="numeric" class="justifyright flex-push-right settingsmall" id="max_length" value=80
-								oninput="
-						   document.getElementById('max_length_slide').value = this.value;">
-						</div>
-						<div><input type="range" class="form-range airange" min="16" max="512" step="2"
-								id="max_length_slide" oninput="
-						   document.getElementById('max_length').value = this.value;"></div>
-						<div class="settingminmax">
-							<div class="justifyleft">16</div>
-							<div class="justifyright">512</div>
-						</div>
-						<div id="auto_genamt_panel" class="settinglabel">
-							<div class="justifyleft settingsmall" title="Automatically lowers settings if incompatible with existing workers">Auto-Adjust Limits </div>
-						   <input type="checkbox" id="auto_genamt" style="margin:0px 0 0;">
+							<div class="justifyleft">1</div>
+							<div class="justifyright">2</div>
 						</div>
 					</div>
 
 					<div class="settingitem">
 						<div class="settinglabel">
-							<div class="justifyleft settingsmall">Top p Sampling <span class="helpicon">?<span class="helptext">Used
-										to discard unlikely text in the sampling process. Lower values will make text
+							<div class="justifyleft settingsmall">Top-P Sampling <span class="helpicon">?<span class="helptext">Used
+										to discard unlikely text in a nucleus sampling process. Lower values will make text
 										more predictable but can become repetitious. Set to 1 to deactivate it.</span></span></div>
-							<input inputmode="decimal" class="justifyright flex-push-right settingsmall" id="top_p" value=80 oninput="
+							<input title="Top-P Sampling" inputmode="decimal" class="justifyright flex-push-right settingsmall" id="top_p" oninput="
 						   document.getElementById('top_p_slide').value = this.value;">
 						</div>
 						<div><input type="range" class="form-range airange" min="0" max="1" step="0.01" id="top_p_slide"
-								oninput="
-						   document.getElementById('top_p').value = this.value;"></div>
+								oninput="document.getElementById('top_p').value = this.value;"></div>
 						<div class="settingminmax">
 							<div class="justifyleft">0</div>
 							<div class="justifyright">1</div>
 						</div>
 					</div>
 
-
-
 					<div class="settingitem">
 						<div class="settinglabel">
-							<div class="justifyleft settingsmall">Repetition Penalty <span class="helpicon">?<span
-										class="helptext">Used to penalize words that were already generated or belong to
-										the context (Going over 1.2 breaks 6B models).</span></span></div>
-							<input inputmode="decimal" class="justifyright flex-push-right settingsmall" id="rep_pen" value=80
-								oninput="
-						   document.getElementById('rep_pen_slide').value = this.value;">
+							<div class="justifyleft settingsmall">Top-K Sampling <span class="helpicon">?<span class="helptext">Top-K Sampling. Discards all but the K most likely tokens. Set 0 to Deactivate.</span></span></div>
+							<input title="Top-K Sampling"inputmode="decimal" class="justifyright flex-push-right settingsmall" id="top_k" oninput="
+						   document.getElementById('top_k_slide').value = this.value;">
 						</div>
-						<div><input type="range" class="form-range airange" min="1" max="3" step="0.01"
-								id="rep_pen_slide" oninput="
-						   document.getElementById('rep_pen').value = this.value;"></div>
+						<div><input type="range" class="form-range airange" min="0" max="100" step="1" id="top_k_slide"
+								oninput="document.getElementById('top_k').value = this.value;"></div>
 						<div class="settingminmax">
-							<div class="justifyleft">1</div>
-							<div class="justifyright">3</div>
+							<div class="justifyleft">0</div>
+							<div class="justifyright">1</div>
 						</div>
 					</div>
 
-
-				</div>
-				<!-- basic settings menu bottom half-->
-				<div id="settingsmenubasic2" class="settingsmenu" style="padding-top: 0px;">
-
-
-					<div class="settingitem">
+					<div class="settingitem wide">
 						<div class="settinglabel">
-							<div class="justifyleft settingsmall">Format <span class="helpicon">?<span class="helptext">Story Mode is best for novel style writing. Adventure Mode is best for Interactive Fiction RPGs. Chat Mode is best for chat conversations with the AI. Instruct mode is for giving the AI ChatGPT styled tasks.</span></span></div>
-							<select class="form-control" id="opmode" style="height:24px;padding:0;margin:0px 0 0;" onchange="toggle_opmode()">
-								<option value="4">Instruct Mode</option>
-								<option value="1">Story Mode</option>
-								<option value="2">Adventure Mode</option>
-								<option value="3">Chat Mode</option>
-							</select>
-
-						<div id="uipicker" class="settinglabel" style="padding-top: 3px;">
-							<div class="settinglabel">
-								<div class="justifyleft settingsmall" title="">UI Style Select <span class="helpicon">?<span class="helptext">Select your preferred UI style, which affects text formatting and display. Some UIs are only available for specific modes.</span></span></div>
-								<select class="form-control" id="gui_type" style="height:24px;padding:0;margin:0px 0 0; width:calc( 100% - 30px );" onchange="toggle_uistyle()">
-									<option id="uipicker_classic" value="0">Classic</option>
-									<option id="uipicker_messenger" value="1">Messenger</option>
-									<option id="uipicker_aesthetic" value="2">Aesthetic</option>
-									<option id="uipicker_corpo" value="3">Corpo</option>
-								</select>
-								<button type="button" class="btn btn-primary" id="btn_aesthetics" onclick="openAestheticUISettingsMenu()" style="height: 24px; padding: 0px 2px; margin: 0px 0px 0px 3px;">⚙️</button>
-							</div>
-						</div>
-
-						<div id="chatnamesection1" class="settinglabel hidden" style="padding-top: 3px;">
-							<div class="settinglabel">
-							<div class="justifyleft settingsmall">Chat PrePrompt <span class="helpicon">?<span
-								class="helptext">Modifies the context, injecting tokens to improve chat quality for new chats.</span></span> </div>
-							<input type="checkbox" id="chat_context_mod" style="margin:0px 0 0;">
-							</div>
-							<div class="settinglabel">
-								<div class="justifyleft settingsmall">Inject Timestamps <span class="helpicon">?<span
-									class="helptext">Injects timestamps into context, allowing the AI to have a sense of time.</span></span></div>
-								<input type="checkbox" id="inject_timestamps_chat" style="margin:0px 0 0;">
-							</div>
-						</div>
-						<div id="adventuresection1" class="settinglabel hidden" style="padding-top: 3px;">
-							<div class="settinglabel">
-							<div class="justifyleft settingsmall">Adventure PrePrompt <span class="helpicon">?<span
-								class="helptext">Modifies the context, injecting tokens to improve adventure quality for new adventures.</span></span> </div>
-							<input type="checkbox" id="adventure_context_mod" style="margin:0px 0 0;">
-							</div>
-						</div>
-						<div id="instructsection1" class="settinglabel hidden" style="padding-top: 3px;">
-							<div class="justifyleft settingsmall">Enable Markdown <span class="helpicon">?<span
-								class="helptext">Allows the UI to use markdown formatting such as quotes and code blocks.</span></span>
-								<input type="checkbox" id="instruct_has_markdown" style="margin:0px 0 0;">
-							</div>
-							<div class="settinglabel">
-								<div class="justifyleft settingsmall">Inject Timestamps <span class="helpicon">?<span
-									class="helptext">Injects timestamps into context, allowing the AI to have a sense of time.</span></span></div>
-								<input type="checkbox" id="inject_timestamps_instruct" style="margin:0px 0 0;">
-							</div>
-							<div class="settinglabel">
-								<div class="justifyleft settingsmall">Inject ChatNames <span class="helpicon">?<span
-									class="helptext">Appends chat names after every instruct tag, a hybrid chat mode.</span></span></div>
-								<input type="checkbox" id="inject_chatnames_instruct" style="margin:0px 0 0;" onchange="toggle_include_chatnames()">
-							</div>
-							<div class="settinglabel">
-								<div class="justifyleft settingsmall">Assistant Jailbreak <span class="helpicon">?<span
-									class="helptext">Automatically injects a jailbreak message after every query to make the AI more likely to obey you.</span></span></div>
-								<input type="checkbox" id="inject_jailbreak_instruct" style="margin:0px 0 0;">
-							</div>
-						</div>
-						</div>
-					</div>
-
-					<div class="settingitem">
-					<div class="settinglabel">
-
-						<div id="adventuresection2" class="settinglabel hidden" style="padding-top: 3px;">
-							<div class="settinglabel">
-								<div class="justifyleft settingsmall">Multiline Replies <span class="helpicon">?<span
-									class="helptext">Whether to allow multiple lines in AI responses. Disable this if the AI starts generating rubbish.</span></span></div>
-								<input type="checkbox" id="multiline_replies_adventure" style="margin:0px 0 0;">
-							</div>
-						</div>
-						<div id="instructsection2" class="settinglabel hidden" style="padding-top: 3px;">
-							<div class="justifyleft settingsmall">Instruct Tag Preset <span class="helpicon">?<span class="helptext">Quickly select between common instruct tag formats. Different models are trained with different tags.</span></span></div>
-							<select class="form-control" id="instruct_tag_format" style="font-size:10px;height:18px;padding:0;margin:0px 0 0;" onchange="toggle_instruct_tag_format()">
-								<option value="0" selected>[Custom]</option>
-								<option value="1">Alpaca</option>
-								<option value="2">Vicuna</option>
-								<option value="3">Metharme</option>
-								<option value="4">Llama 2 Chat</option>
-								<option value="5">Q & A</option>
-								<option value="6">ChatML</option>
-								<option value="7">KoboldAI Format</option>
-								<option value="8">CommandR</option>
-								<option value="9">Llama 3 Chat</option>
-								<option value="10">Phi-3</option>
-								<option value="11">Gemma-2</option>
-								<option value="12">Mistral</option>
-							</select>
-
-							<table class="settingsmall text-center" style="font-size:9px; border-spacing: 3px 2px;	border-collapse: separate;">
-								<tr>
-									<th>Sys. Seq.<span class="helpicon">?<span class="helptext">The sequence to start the system prompt</span></span></th>
-									<th>Sys. Prompt<span class="helpicon">?<span class="helptext">A fixed system message sent at the very start to guide the AI behavior. Usually NOT needed.</span></span></th>
-								</tr>
-								<tr>
-								<td><input class="settinglabel miniinput" type="text" placeholder="(Optional)" value="" id="instruct_systag" onchange="edit_instruct_tag_format()"></td>
-								<td><input class="settinglabel miniinput" type="text" placeholder="(Optional)" value="" id="instruct_sysprompt" onchange="edit_instruct_tag_format()"></td>
-								</tr>
-
-								<tr>
-									<th>Start Seq.<span class="helpicon">?<span class="helptext">The sequence to start an instruction prompt</span></span></th>
-									<th>End Seq.<span class="helpicon">?<span class="helptext">The sequence to end an instruction prompt</span></span></th>
-								</tr>
-								<tr>
-								<td><input class="settinglabel miniinput" type="text" placeholder="\\n### Instruction:\\n" value="" id="instruct_starttag" onchange="edit_instruct_tag_format()" title="The sequence to start an instruction prompt"></td>
-								<td><input class="settinglabel miniinput" type="text" placeholder="\\n### Response:\\n" value="" id="instruct_endtag" onchange="edit_instruct_tag_format()" title="The sequence to end an instruction prompt"></td>
-								</tr>
-							</table>
-						</div>
-						<div id="chatinstructsharedsection2" class="settinglabel hidden" style="padding-top: 3px;">
-							<table class="settingsmall text-center" style="border-spacing: 4px 2px;	border-collapse: separate;">
-								<tr>
-								<th>Your Name</th>
-								<th>AI Name <span class="helpicon">?<span class="helptext">Name of the person(s) you want to chat with. Multiple opponents can be specified, creating a group chat, separate their names using multiple lines.</span></span></th>
-								</tr>
-								<tr>
-								<td style="vertical-align: top;"><input class="settinglabel miniinput" style="height:18px;" type="text" placeholder="(Enter Name)" value="" id="chatname" title="The name that you will be chatting as"></td>
-								<td style="vertical-align: top;"><textarea class="settinglabel miniinput" style="resize: none;overflow:hidden;" id="chatopponent" placeholder="(Auto)" rows="1" wrap="off" title="The name of the person you want to chat with" oninput="handle_bot_name_input()" onchange="handle_bot_name_onchange()"></textarea></td>
-								</tr>
-							  </table>
-						</div>
-						<div id="chatnamesection2" class="settinglabel hidden" style="padding-top: 3px;">
-							<div class="settinglabel">
-							<div class="justifyleft settingsmall">Multiline Replies <span class="helpicon">?<span
-								class="helptext">Whether to allow multiple lines in AI responses. Disable this if the AI starts generating rubbish.</span></span> </div>
-							<input type="checkbox" id="multiline_replies" style="margin:0px 0 0;">
-							</div>
-							<div class="settinglabel">
-							<div class="justifyleft settingsmall">Continue Bot Replies <span class="helpicon">?<span
-								class="helptext">Allow incomplete AI chat replies, which can be continued by pressing submit again. Not recommended for newbies.</span></span></div>
-							<input type="checkbox" id="allow_continue_chat" style="margin:0px 0 0;">
-							</div>
-							<button type="button" class="btn btn-primary" style="padding:2px 3px;margin-top:2px;font-size:11px;" onclick="add_another_participant()">Add Another Participant</button>
-						</div>
-					</div>
-					</div>
-				</div>
-
-				<!--advanced settings menu top-->
-				<div id="settingsmenuadvanced1" class="settingsmenu hidden" style="padding-bottom: 0px;" onchange="setting_tweaked()">
-					<div class="settingitem">
-						<div class="settinglabel">
-
 							<div class="justifyleft settingsmall">Advanced Sampler Config <span class="helpicon">?<span class="helptext">These settings control alternative samplers configurations. They are inactive by default, you usually do not need to change them.</span></span></div>
-							<table class="settingsmall text-center" style="border-spacing: 3px 2px;
-							border-collapse: separate;">
-								<tr>
-								  <th title="Top-K Sampling. 0 to Deactivate.">Top-K</th>
-								  <th title="Top-A Sampling. 0 to Deactivate.">Top-A</th>
-								  <th title="Typical Sampling. 1 to Deactivate.">Typ.</th>
-								  <th title="Tail-Free Sampling. 1 to Deactivate.">TFS</th>
-								</tr>
-								<tr>
-								<td><input class="" type="text" inputmode="decimal" placeholder="0" value="0"
-								id="top_k"></td>
-								<td><input class="" type="text" inputmode="decimal" placeholder="0" value="0"
-								id="top_a"></td>
-								<td><input class="" type="text" inputmode="decimal" placeholder="0" value="0"
-								id="typ_s"></td>
-								<td><input class="" type="text" inputmode="decimal" placeholder="0" value="0"
-								id="tfs_s"></td>
-								</tr>
-
-								<tr>
-								<th title="Sampler Seed. -1 to Deactivate.">Seed</th>
-								<th title="Min-P Sampling. 0 to Deactivate.">Min-P</th>
-								<th title="Presence Penalty. 0 to Deactivate.">PrPen.</th>
-								<th title="DynaTemp Configs. Range 0 to Deactivate.">DyTmp.</th>
-								</tr>
-								<tr>
-
-								<td><input class="" type="text" inputmode="decimal" placeholder="0" value="0"
-								id="sampler_seed"></td>
-								<td><input class="" type="text" inputmode="decimal" placeholder="0" value="0"
-								id="min_p"></td>
-								<td><input class="" type="text" inputmode="decimal" placeholder="0" value="0"
-								id="presence_penalty"></td>
-								<td><button type="button" class="btn btn-primary" style="padding:1px 3px;font-size:8px;" onclick="show_dynatemp()"><span id="dynatemp_overview">OFF</span></button></td>
-								</tr>
-
-
-							  </table>
-
 						</div>
-					</div>
-
-					<div class="settingitem">
-						<div class="settinglabel">
-
-							<div class="justifyleft settingsmall">Mirostat (If supported) <span class="helpicon">?<span class="helptext">Replaces your samplers with mirostat, an alternative sampling method. May not be available depending on backend, not supported on Horde.</span></span></div>
-							<div id="mirosupporteddiv">
-								<table class="settingsmall text-center" style="border-spacing: 3px 2px;
-								border-collapse: separate;">
-									<tr>
-									<th title="Mirostat Type 0/1/2">Mode</th>
-									<th title="Mirostat Tau Value">Tau</th>
-									<th title="Mirostat Eta Value">Eta</th>
-									</tr>
-									<tr>
-									<td><select style="padding:1px; height:auto; width: 27px; appearance: none; font-size: 7pt;" class="form-control" id="miro_type">
-										<option value="0">Off</option>
-										<option value="1">1</option>
-										<option value="2">2</option>
-									</select></td>
-									<td><input class="" type="text" placeholder="0.0" value="0.0"
-									id="miro_tau"></td>
-									<td><input class="" type="text" placeholder="0.0" value="0.0"
-									id="miro_eta"></td>
-									</tr>
-								</table>
+						<div style="display:flex;width:100%;">
+							<div class="settinglabel settingcell">
+								<div title="Top-A Sampling. 0 to Deactivate." class="justifyleft settingsmall" style="width:100%">Top-A</div>
+								<div class="justifyleft settingsmall" style="width:100%">
+								<input title="Top-A Sampling" class="settinglabel miniinput" type="text" inputmode="decimal" placeholder="0" value="0" id="top_a"></div>
 							</div>
-							<div id="mirounsupporteddiv" class="color_red" style="font-weight:bold;padding:3px;font-size:12px">Mirostat Not Supported</div>
-							<div class="settinglabel">
-								<div class="justifyleft settingsmall">User Mods <span class="helpicon">?<span class="helptext">Allows you to load third-party user created mods (caution).</span></span></div>
-								<button id="loadusermod" type="button" class="btn btn-primary" style="padding:2px 3px;margin-top:2px;font-size:11px;" onclick="apply_user_mod()">Apply User Mod</button>
+							<div class="settinglabel settingcell">
+								<div title="Typical Sampling. 1 to Deactivate." class="justifyleft settingsmall" style="width:100%">Typical</div>
+								<div class="justifyleft settingsmall" style="width:100%">
+								<input title="Typical Sampling"class="settinglabel miniinput" type="text" inputmode="decimal" placeholder="0" value="0" id="typ_s"></div>
+							</div>
+							<div class="settinglabel settingcell">
+								<div title="Tail-Free Sampling. 1 to Deactivate." class="justifyleft settingsmall" style="width:100%">TFS</div>
+								<div class="justifyleft settingsmall" style="width:100%">
+								<input title="Tail-Free Sampling" class="settinglabel miniinput" type="text" inputmode="decimal" placeholder="0" value="0" id="tfs_s"></div>
+							</div>
+							<div class="settinglabel settingcell">
+								<div title="Min-P Sampling. 0 to Deactivate." class="justifyleft settingsmall" style="width:100%">Min-P</div>
+								<div class="justifyleft settingsmall" style="width:100%">
+								<input title="Min-P Sampling" class="settinglabel miniinput" type="text" inputmode="decimal" placeholder="0" value="0" id="min_p"></div>
+							</div>
+							<div class="settinglabel settingcell">
+								<div title="Presence Penalty. 0 to Deactivate." class="justifyleft settingsmall" style="width:100%">Pr. Pen.</div>
+								<div class="justifyleft settingsmall" style="width:100%">
+								<input title="Presence Penalty" class="settinglabel miniinput" type="text" inputmode="decimal" placeholder="0" value="0" id="presence_penalty"></div>
 							</div>
 						</div>
-					</div>
-
-					<div class="settingitem">
-						<div class="settinglabel">
-							<table class="settingsmall text-center" style="border-spacing: 3px 2px;
-							border-collapse: separate;">
-								<tr>
-								  <th title="Repetition Penalty Range">RpRng.</th>
-								  <th title="Repetition Penalty Slope">RpSlp.</th>
-								  <th style="width:80px;">Smp.Order <span class="helpicon">?<span
-									class="helptext">The order by which all 7 samplers are applied, separated by commas. 0=top_k, 1=top_a, 2=top_p, 3=tfs, 4=typ, 5=temp, 6=rep_pen</span></span></th>
-								</tr>
-								<tr>
-								<td><input class="" type="text" placeholder="0" value="0"
-								id="rep_pen_range" title="Repetition Penalty Range"></td>
-								<td><input class="" type="text" placeholder="0" value="0"
-								id="rep_pen_slope" title="Repetition Penalty Slope"></td>
-								<td><input class="" type="text" placeholder="CSV" value="" id="sampler_order" style="width:70px;" title="Valid values are: 0=top_k, 1=top_a, 2=top_p, 3=tfs, 4=typ, 5=temp, 6=rep_pen" onblur="validate_samplers()"></td>
-								</tr>
-							  </table>
+						<div style="display:flex;width:100%;">
+							<div class="settinglabel settingcell">
+								<div title="Sampler Seed. -1 to Deactivate." class="justifyleft settingsmall" style="width:100%">Seed</div>
+								<div class="justifyleft settingsmall" style="width:100%">
+								<input title="Sampler Seed" class="settinglabel miniinput" type="text" inputmode="decimal" placeholder="0" value="0" id="sampler_seed"></div>
+							</div>
+							<div class="settinglabel settingcell">
+								<div title="Repetition Penalty Range" class="justifyleft settingsmall" style="width:100%">Rp.Range</div>
+								<div class="justifyleft settingsmall" style="width:100%">
+								<input title="Repetition Penalty Range" class="settinglabel miniinput" type="text" inputmode="decimal" placeholder="0" value="0" id="rep_pen_range"></div>
+							</div>
+							<div class="settinglabel settingcell">
+								<div title="Repetition Penalty Slope" class="justifyleft settingsmall" style="width:100%">Rp.Slope</div>
+								<div class="justifyleft settingsmall" style="width:100%">
+								<input title="Repetition Penalty Slope" class="settinglabel miniinput" type="text" inputmode="decimal" placeholder="0" value="0" id="rep_pen_slope"></div>
+							</div>
+							<div class="settinglabel settingcell">
+								<div title="Smoothing Factor" class="justifyleft settingsmall" style="width:100%">Smooth.F</div>
+								<div class="justifyleft settingsmall" style="width:100%">
+								<input title="Smoothing Factor" class="settinglabel miniinput" type="text" inputmode="decimal" placeholder="0" value="0" id="smoothing_factor"></div>
+							</div>
+							<div class="settinglabel settingcell">
+								<div title="DynaTemp Configs. Range 0 to Deactivate." class="justifyleft settingsmall" style="width:100%">DyTemp</div>
+								<div class="justifyleft settingsmall" style="width:100%">
+								<button title="Dynamic Temperature Configuration" type="button" class="btn btn-primary" style="padding:2px 4px;font-size:9px;" onclick="show_dynatemp()"><span id="dynatemp_overview">OFF</span></button>
+								</div>
+							</div>
 						</div>
 
-					</div>
+						<div style="display:flex;width:100%;">
+							<div class="settinglabel settingcell">
+								<div class="justifyleft settingsmall">EOS Token Ban <span class="helpicon">?<span
+									class="helptext">Allow the End-Of-Stream (EOS) token and potentially other restricted special tokens to be generated.</span></span></div>
+									<select title="EOS Token Banning Behavior" style="padding:1px; height:auto; margin:0px 0px 0px auto;" class="form-control" id="eos_ban_mode">
+									<option value="0">Auto</option>
+									<option value="1">Unban</option>
+									<option value="2">Ban</option>
+									<option value="3">Bypass</option>
+								</select>
+							</div>
+							<div class="settinglabel settingcell">
+								<div title="Sampler Order" class="justifyleft settingsmall" style="width:100%">Sampler Order <span class="helpicon">?<span class="helptext">
+								The order by which all 7 samplers are applied, separated by commas. 0=top_k, 1=top_a, 2=top_p, 3=tfs, 4=typ, 5=temp, 6=rep_pen</span></span></div>
+								<div class="justifyleft settingsmall" style="width:100%;">
+								<input title="Sampler Order List" class="settinglabel miniinput" type="text" placeholder="CSV" value="" id="sampler_order" title="Valid values are: 0=top_k, 1=top_a, 2=top_p, 3=tfs, 4=typ, 5=temp, 6=rep_pen" onblur="validate_samplers()"></div>
+							</div>
+						</div>
 
-					<div class="settingitem">
-						<div class="settinglabel">
-							<div class="justifyleft settingsmall">Additional Configs <span class="helpicon">?<span class="helptext">Grammar Sampling (KCPP) - Allows you to constrain output to fit specific structures. Resets grammar state every generation unless Retain is checked.</span></span></div>
-							<button id="setgrammar" type="button" class="btn btn-primary" style="padding:2px 3px;margin-top:2px;font-size:11px;" onclick="selectGrammar()">Set Grammar</button>
-							<div class="settingsmall" style="padding:2px 3px;margin-top:4px;" title="Do not reset grammar on generate. May not work with multiple users.">Retain </div>
-						   	<input type="checkbox" id="grammar_retain_state" style="padding:2px 3px;margin-top:6px;height: max-content;">
+						<div style="display:flex;width:100%;">
+							<div class="settinglabel settingcell">
+								<div title="Mirostat" class="justifyleft settingsmall" style="width:100%">Mirostat <span class="helpicon">?<span class="helptext">
+									Replaces your samplers with mirostat, an alternative sampling method. May not be available depending on backend, not supported on Horde.</span></span></div>
+									<div class="justifyleft settingsmall" style="width:100%">
+									<div id="mirosupporteddiv" style="display:flex;">
+										<div class="settinglabel settingcell">
+											<div title="Mirostat Type 0/1/2" class="justifyleft settingsmall" style="width:100%">Mode</div>
+											<div class="justifyleft settingsmall" style="width:100%">
+											<select title="Mirostat Mode" style="padding:1px; height:auto; appearance: none; font-size: 7pt;" class="form-control" id="miro_type">
+												<option value="0">Off</option>
+												<option value="1">1</option>
+												<option value="2">2</option>
+											</select>
+											</div>
+										</div>
+										<div class="settinglabel settingcell">
+											<div title="Mirostat Tau Value" class="justifyleft settingsmall" style="width:100%">Tau</div>
+											<div class="justifyleft settingsmall" style="width:100%">
+											<input title="Mirostat Tau" class="settinglabel miniinput" type="text" inputmode="decimal" placeholder="0.0" value="0.0" id="miro_tau"></div>
+										</div>
+										<div class="settinglabel settingcell">
+											<div title="Mirostat Eta Value" class="justifyleft settingsmall" style="width:100%">Eta</div>
+											<div class="justifyleft settingsmall" style="width:100%">
+											<input title="Mirostat Eta" class="settinglabel miniinput" type="text" inputmode="decimal" placeholder="0.0" value="0.0" id="miro_eta"></div>
+										</div>
+									</div>
+									<div id="mirounsupporteddiv" class="color_red" style="font-weight:bold;padding:3px;font-size:12px">Mirostat Not Supported</div>
+									</div>
+							</div>
+
+							<div class="settinglabel settingcell">
+								<div class="justifyleft settingsmall">DRY (If supported) <span class="helpicon">?<span class="helptext">An advanced multi-token repetition penalty. May not be available depending on backend, not supported on Horde.</span></span></div>
+								<div id="drysupporteddiv">
+								<div style="display:flex">
+									<div class="settinglabel settingcell">
+										<div title="DRY Multiplier" class="justifyleft settingsmall" style="width:100%">Mult.</div>
+										<div class="justifyleft settingsmall" style="width:100%">
+										<input title="DRY Multiplier" class="settinglabel miniinput" type="text" inputmode="decimal" placeholder="0.0" value="0.0" id="dry_multiplier"></div>
+									</div>
+									<div class="settinglabel settingcell">
+										<div title="DRY Base Value" class="justifyleft settingsmall" style="width:100%">Base</div>
+										<div class="justifyleft settingsmall" style="width:100%">
+										<input title="DRY Base Balue" class="settinglabel miniinput" type="text" inputmode="decimal" placeholder="0.0" value="0.0" id="dry_base"></div>
+									</div>
+									<div class="settinglabel settingcell">
+										<div title="DRY Allowed Length" class="justifyleft settingsmall" style="width:100%">A.Len</div>
+										<div class="justifyleft settingsmall" style="width:100%">
+										<input title="DRY Allowed Length" class="settinglabel miniinput" type="text" inputmode="decimal" placeholder="0.0" value="0.0" id="dry_allowed_length"></div>
+									</div>
+								</div>
+								<button id="setbreakers" type="button" class="btn btn-primary" style="width:100%; padding:2px 3px;margin-top:2px;font-size:11px;" onclick="setDryBreakers()">Seq. Breaks</button>
+								</div>
+								<div id="dryunsupporteddiv" class="color_red" style="font-weight:bold;padding:3px;font-size:12px">DRY Not Supported</div>
+							</div>
+
+
+							<div class="settinglabel settingcell">
+								<div title="Grammar" class="justifyleft settingsmall" style="width:100%">Grammar <span class="helpicon">?<span class="helptext">
+									Grammar Sampling (KCPP) - Allows you to constrain output to fit specific structures. Resets grammar state every generation unless Retain is checked.</span></span></div>
+								<div class="justifyleft settingsmall" style="height: 30px;width:100%;display: flex;">
+									<button title="Set Grammar GBNF" id="setgrammar" type="button" class="btn btn-primary" style="padding:2px 3px;margin-top:2px;font-size:11px;" onclick="selectGrammar()">GBNF</button>
+									<div style="display:flex;">
+									<div class="settingsmall" style="padding:2px 3px;margin-left:2px;margin-top:6px;" title="Do not reset grammar on generate. May not work with multiple users.">Retain </div>
+									<input title="Retain Grammar State" type="checkbox" id="grammar_retain_state" style="padding:2px 3px;margin-top:8px;height: max-content;">
+									</div>
+								</div>
+							</div>
+
 						</div>
 					</div>
 				</div>
-				<!--advanced settings menu bottom-->
-				<div id="settingsmenuadvanced2" class="settingsmenu hidden" style="padding-top: 0px;" onchange="">
+
+
+				<!-- media settings menu-->
+				<div id="settingsmenumedia" class="settingsmenu hidden" onchange="setting_tweaked()">
 					<div class="settingitem">
 						<div class="settinglabel">
 							<div class="justifyleft settingsmall">Generate Images <span class="helpicon">?<span class="helptext">Use the AI Horde or a local A1111 instance to insert AI generated images into your story.</span></span></div>
 						</div>
-							<select class="form-control" id="generate_images_mode" style="height:20px;padding:0;margin:0px 0 0;" onchange="toggle_generate_images_mode(true)">
+							<select title="Generate Images" class="form-control" id="generate_images_mode" style="height:20px;padding:0;margin:0px 0 0;" onchange="toggle_generate_images_mode(true)">
 								<option value="0">[Disabled]</option>
 								<option value="1">AI Horde</option>
 								<option value="2">Local A1111</option>
 								<option value="3">OpenAI DALL-E</option>
 							</select>
 							<div id="generate_images_model_container" class="hidden">
-								<select class="form-control" id="generate_images_model" style="font-size: 12px;height:20px;padding:2px;margin:0px 0 0;" onblur="validate_sd_model()" title="Select a stable diffusion model to generate images with">
+								<select class="form-control" id="generate_images_model" style="font-size: 12px;height:20px;padding:2px;margin:0px 0 0;" onblur="validate_sd_model()" title="Stable Diffusion Model Selection">
 								</select>
 								<button id="generate_images_horde_setkey" type="button" class="btn btn-primary" style="width:100%; padding:2px 3px;margin-top:2px;font-size:11px;" onclick="set_horde_key()">Set Horde Key</button>
 								<div class="settinglabel">
 									<div class="justifyleft settingsmall"  title="If NSFW is disabled, explicit images will be censored">Allow NSFW </div>
-								<input type="checkbox" id="img_allownsfw" style="margin:0px 0 0;">
+								<input title="Allow NSFW Images" type="checkbox" id="img_allownsfw" style="margin:0px 0 0;">
 								</div>
 							</div>
 
 							<div id="generate_images_local_model_container" class="settinglabel hidden">
-							<select class="form-control" id="generate_images_local_model" style="height:20px;padding:0;margin:0px 0 0; width:calc(100% - 30px)">
+							<select title="Select Image Model" class="form-control" id="generate_images_local_model" style="height:20px;padding:0;margin:0px 0 0; width:calc(100% - 30px)">
 								<option value="">[None]</option>
 							</select>
 							<button type="button" class="btn btn-primary" onclick="set_a1111_endpoint()" style="height: 20px; padding: 0px 2px; margin: 0px 0px 0px 3px;">⚙️</button>
@@ -17211,15 +17509,12 @@ Current version indicated by LITEVER below.
 								<tr><td>
 								<div class="settinglabel">
 									<div class="justifyleft settingsmall"  title="Automatically generates images periodically as you write">Autogenerate </div>
-								   <input type="checkbox" id="img_autogen" style="margin:0px 0 0;">
+								   <input title="Autogenerate Images" type="checkbox" id="img_autogen" style="margin:0px 0 0;">
 								</div>
 								<div class="settinglabel">
 									<div class="justifyleft settingsmall"  title="Includes images when saving to json file">Save Images </div>
-								   <input type="checkbox" id="save_images" style="margin:0px 0 0;">
+								   <input title="Save Images in File" type="checkbox" id="save_images" style="margin:0px 0 0;">
 								</div>
-								</td>
-								<td class="settingsmall">
-									<button type="button" class="btn btn-primary" onclick="selectImgStyle()" style="font-size:11px; padding: 0px 4px; margin: 0px 1px 0px 1px;">Setup<br>🎨</button>
 								</td>
 								</tr>
 								</table>
@@ -17228,10 +17523,10 @@ Current version indicated by LITEVER below.
 
 					<div class="settingitem">
 						<div class="settinglabel">
-							<div class="justifyleft settingsmall">TTS <span class="helpicon">?<span class="helptext">Enable Text-To-Speech to have your story automatically read to you.</span></span></div>
-							<select class="form-control" id="ttsselect" style="font-size:12px;height:20px;padding:0;margin:0px 0 0;width:calc(100% - 32px);" onchange="toggle_tts_mode()">
+							<div class="justifyleft settingsmall" style="width: 100%;">TTS <span class="helpicon">?<span class="helptext">Enable Text-To-Speech to have your story automatically read to you.</span></span></div>
+							<select title="Text To Speech" class="form-control" id="ttsselect" style="font-size:12px;height:20px;padding:0;margin:0px 0 0;width:calc(100% - 35px);" onchange="toggle_tts_mode()">
 							</select>
-							<button id="test_tts" type="button" class="bg_green btn btn-primary" style="height:20px; width:30px; padding:2px 3px;font-size:11px;" onclick="test_tts()">Test</button>
+							<button id="test_tts" type="button" class="bg_green btn btn-primary" style="height:20px; width:30px; padding:2px 3px;font-size:11px; margin-left: 2px;" onclick="test_tts()">Test</button>
 							<div id="xtts_container" class="settinglabel hidden">
 								<table width="100%"><tr>
 								<td><button id="xtts_url" type="button" class="btn btn-primary" style="width:100%; padding:2px 3px;margin-top:2px;font-size:11px;" onclick="set_xtts_url()">Set URL</button></td>
@@ -17244,36 +17539,96 @@ Current version indicated by LITEVER below.
 						</div>
 						<div class="settinglabel">
 							<div class="justifyleft settingsmall"  title="If unchecked, only speak AI replies, not other text.">Narrate Both Sides </div>
-						   <input type="checkbox" id="narrate_both_sides" style="margin:0px 0 0;">
+						   <input title="Narrate Both Sides" type="checkbox" id="narrate_both_sides" style="margin:0px 0px 0px auto;">
 						</div>
 						<div class="settinglabel">
 							<div class="justifyleft settingsmall"  title="If unchecked, only speak AI replies, not other text.">Narrate Only Dialog </div>
-						   <input type="checkbox" id="narrate_only_dialog" style="margin:0px 0 0;">
+						   <input title="Narrate Only Dialog" type="checkbox" id="narrate_only_dialog" style="margin:0px 0px 0px auto;">
 						</div>
 						<div class="settinglabel">
 							<div class="justifyleft settingsmall"  title="Play a sound when generation is complete">Beep on Done </div>
-						   <input type="checkbox" id="beep_on" style="margin:0px 0 0;">
+						   <input title="Beep On Done" type="checkbox" id="beep_on" style="margin:0px 0px 0px auto;">
 						</div>
 						<div class="settinglabel">
 							<div class="justifyleft settingsmall"  title="Show notification when generation is complete">Notify on Done </div>
-						   <input type="checkbox" id="notify_on" style="margin:0px 0 0;">
+						   <input title="Notify On Done" type="checkbox" id="notify_on" style="margin:0px 0px 0px auto;">
 						</div>
-						<div class="settinglabel">
-							<div class="justifyleft settingsmall" title="">Speech Ctrl. <span class="helpicon">?<span
-							class="helptext">Requires KoboldCpp with Whisper model loaded. Enables Speech-To-Text voice input. Automatically listens for speech in 'On' mode (Voice Detection), or use Push-To-Talk (PTT).</span></span></div>
-							<select style="padding:1px; height:auto; width: 60px; appearance: none; font-size: 6pt; margin:0px 0px 0px auto;" class="form-control" id="voice_typing_mode">
+
+						<div class="settinglabel" style="margin-top: 5px;">
+							<div class="justifyleft settingsmall">Speech Control <span class="helpicon">?<span class="helptext">Requires KoboldCpp with Whisper model loaded. Enables Speech-To-Text voice input. Automatically listens for speech in 'On' mode (Voice Detection), or use Push-To-Talk (PTT).</span></span></div>
+							<select title="Speech Control Mode" style="padding:1px; height:auto; font-size: 8pt;" class="form-control" id="voice_typing_mode">
 								<option value="0">Off</option>
 								<option value="1">Detect Voice</option>
 								<option value="2">Push-To-Talk</option>
 							</select>
 						</div>
+						<div class="inlinelabel" style="font-size: 11px;">
+							<div class="justifyleft" style="padding:4px">Voice Delay: </div>
+							<input title="Voice Delay Milliseconds" type="text" inputmode="decimal" value="300" id="voice_end_delay" style="width:40px">
+						</div>
 					</div>
+
+
+					<div class="settingitem wide">
+						<div style="font-size:12px;">
+							<div class="settingsdesctxt">Style tags to use for generating images:<br>(E.g. Sketch, Realistic, Anime, 3D Render, Drawing)<br></div>
+							<input class="settinglabel miniinput" type="text" placeholder="Default Style" value="" id="imagestyleinput">
+							<div class="aidgpopuplistheader anotelabel">Negative Prompt<br></div>
+							<input title="Negative Prompt" class="settinglabel miniinput" type="text" placeholder="Default Negative Prompt. Put &quot;none&quot; to skip" value="" id="negpromptinput">
+
+							<div class="inlinelabel">
+								<div class="justifyleft" style="padding:4px">Number of Steps: </div>
+								<input title="Number of Steps" type="text" inputmode="decimal" id="img_steps" style="width:60px">
+							</div>
+							<div class="inlinelabel">
+								<div class="justifyleft" style="padding:4px">Cfg. Scale: </div>
+								<input title="Cfg. Scale" type="text" inputmode="decimal" id="img_cfgscale" style="width:60px">
+							</div>
+							<div class="inlinelabel">
+								<div class="justifyleft" style="padding:4px">Sampler: </div>
+								<select title="Image Sampler" style="padding:1px; font-size:12px; height:20px; width: 100px;" class="form-control" id="img_sampler">
+									<option value="Euler a">Euler A</option>
+									<option value="Euler">Euler</option>
+									<option value="Heun">Heun</option>
+									<option value="DPM2">DPM2</option>
+									<option value="LCM">LCM</option>
+									<option value="DPM++ 2M">DPM++ 2M</option>
+								</select>
+							</div>
+							<div class="inlinelabel">
+								<div class="justifyleft" style="padding:4px">Aspect Ratio <span class="helpicon">?
+									<span class="helptext">Square is recommended. Changing aspect ratio will affect the resolution used to generate. This may impact quality or memory usage.</span>
+								</span>: </div>
+								<select title="Image Aspect Ratio" style="padding:1px; font-size:12px; height:20px; width: 100px;" class="form-control" id="img_aspect">
+									<option value="0">Square</option>
+									<option value="1">Portrait</option>
+									<option value="2">Landscape</option>
+								</select>
+							</div>
+							<div class="inlinelabel">
+								<div class="justifyleft" style="padding:4px">Img2Img Strength <span class="helpicon">?
+									<span class="helptext">Higher values lead to a more different image.</span>
+								</span>: </div>
+								<input title="Img2Img Strength" type="text" inputmode="decimal" id="img_img2imgstr" style="width:60px">
+							</div>
+							<div class="inlinelabel">
+								<div class="justifyleft" style="padding:4px">Save Higher-Res <span class="helpicon">?
+									<span class="helptext">This option will result in larger save files which may be slower. Changing this setting only applies to NEW images.</span>
+								</span>: </div>
+								<input title="Save Higher-Res Images" type="checkbox" id="img_allowhd" style="margin:0px 0 0;">
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!--advanced settings menu top-->
+				<div id="settingsmenuadvanced" class="settingsmenu hidden" onchange="setting_tweaked()">
 
 					<div class="settingitem">
 						<div class="settinglabel">
-							<div class="justifyleft settingsmall" id="tokenstreaminglabel" title="">Token Streaming <span class="helpicon">?<span
+							<div class="justifyleft settingsmall" id="tokenstreaminglabel">Token Streaming <span class="helpicon">?<span
 								class="helptext">Use token streaming for partial responses. SSE is smoother but less well-supported. Poll is chunkier but more reliable. Not available on Horde.</span></span></div>
-						   <select style="padding:1px; height:auto; width: 34px; appearance: none; font-size: 7pt; margin:0px 0px 0px auto;" class="form-control" id="tokenstreammode">
+						   <select title="Token Streaming" style="padding:1px; height:auto; width: 34px; appearance: none; font-size: 7pt; margin:0px 0px 0px auto;" class="form-control" id="tokenstreammode">
 								<option value="0">Off</option>
 								<option value="1">Poll</option>
 								<option value="2">SSE</option>
@@ -17282,7 +17637,7 @@ Current version indicated by LITEVER below.
 
 						<div id="idlesection" class="settinglabel">
 							<div class="justifyleft settingsmall" title="Allow the AI to send more responses if you are idle.">Idle Responses&nbsp;</div>
-							<select style="padding:1px; height:auto; width: 27px; appearance: none; font-size: 7pt; margin:0px 0px 0px auto;" class="form-control" id="idle_responses">
+							<select title="Idle Responses" style="padding:1px; height:auto; width: 27px; appearance: none; font-size: 7pt; margin:0px 0px 0px auto;" class="form-control" id="idle_responses">
 								<option value="0">Off</option>
 								<option value="1">1x</option>
 								<option value="2">2x</option>
@@ -17291,7 +17646,7 @@ Current version indicated by LITEVER below.
 								<option value="8">8x</option>
 								<option value="10">10x</option>
 							</select>
-							<select style="padding:1px; height:auto; width: 27px; appearance: none; font-size: 7pt;" class="form-control" id="idle_duration">
+							<select title="Idle Responses Duration" style="padding:1px; height:auto; width: 27px; appearance: none; font-size: 7pt;" class="form-control" id="idle_duration">
 								<option value="15">15s</option>
 								<option value="30">30s</option>
 								<option value="60">60s</option>
@@ -17302,90 +17657,67 @@ Current version indicated by LITEVER below.
 							</select>
 						</div>
 
-
-						<div class="settinglabel">
-							<div class="justifyleft settingsmall" title="">Trim Sentences <span class="helpicon">?<span
-								class="helptext">Trims incomplete sentences in AI output.</span></span></div>
-						   <input type="checkbox" id="trimsentences" style="margin:0px 0px 0px auto;">
-						</div>
-						<div class="settinglabel">
-							<div class="justifyleft settingsmall" title="">Trim Whitespace <span class="helpicon">?<span
-								class="helptext">Removes trailing whitespace in AI output.</span></span></div>
-						   <input type="checkbox" id="trimwhitespace" style="margin:0px 0px 0px auto;">
-						</div>
-						<div class="settinglabel">
-							<div class="justifyleft settingsmall" title="">Compress Newlines <span class="helpicon">?<span
-								class="helptext">Compresses multiple newlines into one newline in AI output.</span></span></div>
-						   <input type="checkbox" id="compressnewlines" style="margin:0px 0px 0px auto;">
-						</div>
-						<div class="settinglabel">
-							<div class="justifyleft settingsmall" title="">EOS Token Ban <span class="helpicon">?<span
-								class="helptext">Allow the End-Of-Stream (EOS) token and potentially other restricted special tokens to be generated.</span></span></div>
-						   <select style="padding:1px; height:auto; width: 34px; appearance: none; font-size: 7pt; margin:0px 0px 0px auto;" class="form-control" id="eos_ban_mode">
-								<option value="0">Auto</option>
-								<option value="1">Unban</option>
-								<option value="2">Ban</option>
-								<option value="3">Bypass</option>
-							</select>
-						</div>
 						<div class="settinglabel">
 							<div class="justifyleft settingsmall">Never Escape HTML <span class="helpicon">?<span
 								class="helptext">Avoids escaping any HTML tags, allowing HTML injections. Not recommended!</span></span></div>
-						   <input type="checkbox" id="no_escape_html" style="margin:0px 0px 0px auto;">
+						   <input title="Never Escape HTML" type="checkbox" id="no_escape_html" style="margin:0px 0px 0px auto;">
 						</div>
 						<div class="settinglabel">
 							<div class="justifyleft settingsmall">Placeholder Tags <span class="helpicon">?<span
 								class="helptext">If enabled, uses universal {{user}} and {{[INPUT]}} placeholders that get swapped on submit. If disabled, uses plaintext chat or instruct tags verbatim.</span></span></div>
-						   <input type="checkbox" id="placeholder_tags" style="margin:0px 0px 0px auto;">
+						   <input title="Placeholder Tags" type="checkbox" id="placeholder_tags" style="margin:0px 0px 0px auto;">
 						</div>
 						<div class="settinglabel">
 							<div class="justifyleft settingsmall">Render Sp.Tags <span class="helpicon">?<span
 								class="helptext">If enabled, renders special tags like EOS and padding tokens. Not recommended.</span></span></div>
-						   <input type="checkbox" id="render_special_tags" style="margin:0px 0px 0px auto;">
+						   <input title="Render Special Tags" type="checkbox" id="render_special_tags" style="margin:0px 0px 0px auto;">
 						</div>
 						<div class="settinglabel">
 							<div class="justifyleft settingsmall">Run In Background <span class="helpicon">?<span
 								class="helptext">Prevents the browser from suspending KoboldAI Lite by playing a silent audio track. This setting cannot be saved.</span></span></div>
-						   <input type="checkbox" id="run_in_background" style="margin:0px 0px 0px auto;">
+						   <input title="Run In Background" type="checkbox" id="run_in_background" style="margin:0px 0px 0px auto;">
+						</div>
+						<div class="settinglabel">
+							<div class="justifyleft settingsmall">User Mods <span class="helpicon">?<span class="helptext">Allows you to load third-party user created mods (caution).</span></span></div>
+							<button id="loadusermod" type="button" class="btn btn-primary" style="padding:2px 3px;margin-top:2px;font-size:11px;margin:0px 0px 0px auto;" onclick="apply_user_mod()">Apply User Mod</button>
 						</div>
 					</div>
-
 
 					<div class="settingitem">
 						<div class="settinglabel">
 							<div class="justifyleft settingsmall">Autosave Session <span class="helpicon">?<span
 								class="helptext">Autosaves your current story and settings on exit, reloads when you return</span></span></div>
-							<input type="checkbox" id="persist_session" style="margin:0px 0px 0px auto;">
+							<input title="Autosave Session" type="checkbox" id="persist_session" style="margin:0px 0px 0px auto;">
 						</div>
 						<div class="settinglabel">
 							<div class="justifyleft settingsmall">Embed Settings File <span class="helpicon">?<span
 								class="helptext">Includes your current settings when saving or sharing your story</span></span></div>
-						   <input type="checkbox" id="export_settings" style="margin:0px 0px 0px auto;">
+						   <input title="Embed Settings File" type="checkbox" id="export_settings" style="margin:0px 0px 0px auto;">
 						</div>
 						<div class="settinglabel">
 							<div class="justifyleft settingsmall">Rename Save File <span class="helpicon">?<span
 								class="helptext">Prompts to input a different filename when saving file.</span></span></div>
-						   <input type="checkbox" id="prompt_for_savename" style="margin:0px 0px 0px auto;">
+						   <input title="Rename Save File" type="checkbox" id="prompt_for_savename" style="margin:0px 0px 0px auto;">
 						</div>
 						<div class="settinglabel">
 							<div class="justifyleft settingsmall">Show Advanced Load <span class="helpicon">?<span
 								class="helptext">If enabled, allows you to select additional configurations during file load</span></span></div>
-						   <input type="checkbox" id="show_advanced_load" style="margin:0px 0px 0px auto;">
+						   <input title="Show Advanced Load" type="checkbox" id="show_advanced_load" style="margin:0px 0px 0px auto;">
 						</div>
 						<div class="settinglabel">
 							<div class="justifyleft settingsmall">Autoscroll Text <span class="helpicon">?<span
 								class="helptext">Automatically scrolls the text window down when new text is generated</span></span></div>
-						   <input type="checkbox" id="autoscroll" style="margin:0px 0px 0px auto;">
+						   <input title="Autoscroll Text" type="checkbox" id="autoscroll" style="margin:0px 0px 0px auto;">
 						</div>
 						<div class="settinglabel">
 							<div class="justifyleft settingsmall">Unlock Scroll Height <span class="helpicon">?<span
 								class="helptext">Unlocks the text viewport, allowing for infinite height without scrolling</span></span></div>
-						   <input type="checkbox" id="printer_view" style="margin:0px 0px 0px auto;">
+						   <input title="Unlock Scroll Height" type="checkbox" id="printer_view" style="margin:0px 0px 0px auto;">
 						</div>
 						<div class="settinglabel">
-							<div class="justifyleft settingsmall" title="">Viewport Width <span class="helpicon">?<span
+							<div class="justifyleft settingsmall">Viewport Width <span class="helpicon">?<span
 								class="helptext">Controls horizontal scaling of the viewport window</span></span></div>
-						   <select style="padding:1px; height:auto; width: 34px; appearance: none; font-size: 7pt; margin:0px 0px 0px auto;" class="form-control" id="viewport_width_mode">
+						   <select title="Viewport Width" style="padding:1px; height:auto; width: 34px; appearance: none; font-size: 7pt; margin:0px 0px 0px auto;" class="form-control" id="viewport_width_mode">
 								<option value="0">Adapt</option>
 								<option value="1">Clamp</option>
 								<option value="2">HDClamp</option>
@@ -17395,20 +17727,24 @@ Current version indicated by LITEVER below.
 						<div class="settinglabel">
 							<div class="justifyleft settingsmall">Inverted Colors <span class="helpicon">?<span
 								class="helptext">Inverts all colors, simple light mode</span></span></div>
-						   <input type="checkbox" id="invert_colors" style="margin:0px 0px 0px auto;">
+						   <input title="Inverted Colors" type="checkbox" id="invert_colors" style="margin:0px 0px 0px auto;">
 						</div>
 						<div class="settinglabel">
 							<input type="file" id="loadbgimg" accept="image/png,image/webp,.webp,.jpg,.jpeg,.png,*.*,*" onchange="load_bg_img(event)" style="display:none;">
 							<div class="justifyleft settingsmall">Background Img</div>
-							<button type="button" class="btn btn-primary bg_green" style="padding:2px 2px;margin:0px 0px 0px auto;font-size:10px;" onclick="load_bgimg_button()">Set</button>
-							<button type="button" class="btn btn-primary bg_red" style="padding:2px 2px;margin:0px 0px 0px 1px;font-size:10px;" onclick="clear_bg_img()">Clear</button>
+							<button title="Set Background Image" type="button" class="btn btn-primary bg_green" style="padding:2px 2px;margin:0px 0px 0px auto;font-size:10px;" onclick="load_bgimg_button()">Set</button>
+							<button title="Remove Background Image" type="button" class="btn btn-primary bg_red" style="padding:2px 2px;margin:0px 0px 0px 1px;font-size:10px;" onclick="clear_bg_img()">Clear</button>
 						</div>
-						<button id="resetallsettings" type="button" class="btn btn-primary bg_red" style="padding:2px 3px;margin-top:2px;font-size:11px;" onclick="reset_all_settings()">Reset ALL Settings</button>
+					</div>
+
+					<div class="settingitem wide">
+						<button title="Reset All Settings" id="resetallsettings" type="button" class="btn btn-primary bg_red" style="padding:2px 3px;margin-top:2px;font-size:11px;" onclick="reset_all_settings()">Reset ALL Settings</button>
 					</div>
 
 				</div>
 
 			</div>
+
 			<div class="popupfooter">
 				<button type="button" class="btn btn-primary" id="btn_settingsaccept"
 					onclick="confirm_settings()">OK</button>
@@ -17437,11 +17773,11 @@ Current version indicated by LITEVER below.
 					<span class="justifyright flex-push-right" >
 						<div class="settinglabel" style="padding-top: 4px;">
 							<div class="justifyleft settingsmall" title="Add newline after injecting memory text">Newline After Memory </div>
-						<input type="checkbox" id="newlineaftermemory" style="margin:0px 0 0;" checked>
+						<input type="checkbox" title="Add Newline After Memory" id="newlineaftermemory" style="margin:0px 0 0;" checked>
 						</div>
 					</span>
 				</div>
-				<textarea class="form-control" id="memorytext" style="height: 120px;"
+				<textarea title="Edit Memory" class="form-control" id="memorytext" style="height: 120px;"
 					placeholder="Edit the memory to be sent with each request to the AI."></textarea>
 				<div class="settinglabel">
 					<div class="justifyleft"><br>Author's Note<span class="helpicon">?<span
@@ -17451,7 +17787,7 @@ Current version indicated by LITEVER below.
 						<button type="button" class="btn btn-primary" style="padding:4px 6px;margin-top:4px;" id="btnautogenmem" onclick="autogenerate_summary_memory()">AutoGenerate Memory</button>
 					</span>
 				</div>
-				<textarea class="form-control" id="anotetext"
+				<textarea title="Edit Author's Note" class="form-control" id="anotetext"
 					placeholder="Author's Note will be inserted close to end of context."></textarea>
 				<br>
 				<div class="settinglabel">
@@ -17463,9 +17799,9 @@ Current version indicated by LITEVER below.
 					</span>
 				</div>
 				<div style="display: flex; column-gap: 4px;">
-				<input class="form-control anotetempbox inlineinput" type="text"
+				<input title="Author's Note Template" class="form-control anotetempbox inlineinput" type="text"
 					placeholder="(the &lt;|&gt; will be replaced with the Author's Note text)" value="" id="anotetemplate">
-					<select style="padding:4px;" class="anotetempscale form-control" id="anote_strength">
+					<select title="Author's Note Strength" style="padding:4px;" class="anotetempscale form-control" id="anote_strength">
 						<option value="480">Weak</option>
 						<option value="320">Medium</option>
 						<option value="160">Strong</option>
@@ -17484,14 +17820,14 @@ Current version indicated by LITEVER below.
 				<div class="settinglabel" style="padding: 4px;">
 					<div class="justifyleft settingsmall">WI Insert Location <span class="helpicon">?<span
 						class="helptext">Controls where the world info should be inserted</span></span></div>
-				<select style="height:16px;padding:0px;margin:0px 4px 0; width:90px;font-size:10px;" class="form-control" id="wi_insertlocation">
+				<select title="World Info Insert Location" style="height:16px;padding:0px;margin:0px 4px 0; width:90px;font-size:10px;" class="form-control" id="wi_insertlocation">
 					<option value="0">After Memory</option>
 					<option value="1">Before A/N</option>
 				</select></div>
 				<div class="settinglabel" style="padding: 4px;">
 					<div class="justifyleft settingsmall">WI Search Depth <span class="helpicon">?<span
 						class="helptext">Controls how far back in the text to search for World Info Keys</span></span></div>
-				<select style="height:16px;padding:0px;margin:0px 4px 0; width:90px;font-size:10px;" class="form-control" id="wi_searchdepth">
+				<select title="World Info Search Depth" style="height:16px;padding:0px;margin:0px 4px 0; width:90px;font-size:10px;" class="form-control" id="wi_searchdepth">
 					<option value="0">Full Context</option>
 					<option value="4096">Last 4096</option>
 					<option value="2048">Last 2048</option>
@@ -17502,11 +17838,11 @@ Current version indicated by LITEVER below.
 
 
 				<div style="float:right;">
-					<input class="settinglabel miniinput" style="margin: 3px; width: 90px;" type="text" placeholder="Quick Search" value="" id="wiquicksearch" oninput="wi_quick_search()">
+					<input title="World Info Quick Search" class="settinglabel miniinput" style="margin: 3px; width: 90px;" type="text" placeholder="Quick Search" value="" id="wiquicksearch" oninput="wi_quick_search()">
 				</div>
 				<div class="settinglabel" style="padding: 4px;">
 					<div class="justifyleft settingsmall" title="Controls whether the world info keys are matched in a case-sensitive way.">Case Sensitive Keys </div>
-				<input type="checkbox" id="case_sensitive_wi" style="margin:0px 0 0;">
+				<input title="World Info Case Sensitive" type="checkbox" id="case_sensitive_wi" style="margin:0px 0 0;">
 				</div>
 			</div>
 
@@ -17515,13 +17851,13 @@ Current version indicated by LITEVER below.
 					class="helptext">Triggers the text generator to stop generating early if this sequence appears, in addition to default stop sequences. If you want multiple sequences, separate them with the following delimiter: ||$||</span></span></div>
 					<div class="color_red hidden" id="noextrastopseq">Stop Sequences may be unavailable.</div>
 					<div style="display: flex; column-gap: 4px; margin-bottom: 4px;">
-					<input class="form-control stopseqbox inlineinput" type="text" placeholder="None" value="" id="extrastopseq">
+					<input title="Extra Stopping Sequences" class="form-control stopseqbox inlineinput" type="text" placeholder="None" value="" id="extrastopseq">
 					<button type="button" class="btn btn-primary" style="width:90px;padding:6px 6px;" onclick="add_stop_seq()">Add New</button>
 				</div>
 
 				<div style="padding:3px;" class="justifyleft settinglabel">Logit Biases <span class="helpicon">?<span
 					class="helptext">Specify a dictionary of token IDs to modify the probability of occuring.</span></span>
-					<button type="button" class="btn btn-primary" style="font-size:12px;padding:2px 2px;" onclick="expand_tokens_section('expandlogitbias')">Expand Section</button>
+					<button type="button" title="Logit Biases" class="btn btn-primary" style="font-size:12px;padding:2px 2px;" onclick="expand_tokens_section('expandlogitbias')">Expand Section</button>
 				</div>
 				<div id="expandlogitbias" class="hidden">
 					<div class="color_red hidden" id="nologitbias">Logit bias may be unavailable.</div>
@@ -17542,7 +17878,7 @@ Current version indicated by LITEVER below.
 
 				<div style="padding:3px;" class="justifyleft settinglabel">Token Filter <span class="helpicon">?<span
 					class="helptext">Outright removal for ANY tokens containing a specific substring from model vocab. If you want multiple sequences, separate them with the following delimiter: ||$||</span></span>
-					<button type="button" class="btn btn-primary" style="font-size:12px;padding:2px 2px;" onclick="expand_tokens_section('expandtokenbans')">Expand Section</button>
+					<button type="button" title="Token Filter" class="btn btn-primary" style="font-size:12px;padding:2px 2px;" onclick="expand_tokens_section('expandtokenbans')">Expand Section</button>
 				</div>
 				<div id="expandtokenbans" class="hidden">
 					<div class="color_red hidden" id="notokenbans">Token filter may be unavailable.</div>
@@ -17555,7 +17891,7 @@ Current version indicated by LITEVER below.
 
 				<div style="padding:3px;" class="justifyleft settinglabel">Regex Replace <span class="helpicon">?<span
 					class="helptext">Allows transforming incoming text with regex patterns, modifying all matches. Replacements will be applied in sequence.</span></span>
-					<button type="button" class="btn btn-primary" style="font-size:12px;padding:2px 2px;" onclick="expand_tokens_section('expandregexreplace')">Expand Section</button>
+					<button type="button" title="Regex Replace" class="btn btn-primary" style="font-size:12px;padding:2px 2px;" onclick="expand_tokens_section('expandregexreplace')">Expand Section</button>
 				</div>
 				<div id="expandregexreplace" class="hidden">
 					<table id="regex_replace_table" class="settinglabel text-center" style="border-spacing: 3px 2px; border-collapse: separate;">
@@ -17564,7 +17900,7 @@ Current version indicated by LITEVER below.
 
 				<div style="padding:3px;" class="justifyleft settinglabel">Placeholder Tags <span class="helpicon">?<span
 					class="helptext">Configure automatic substitutions for placeholders in text.</span></span>
-					<button type="button" class="btn btn-primary" style="font-size:12px;padding:2px 2px;" onclick="expand_tokens_section('expandplaceholdertags')">Expand Section</button>
+					<button type="button" title="Placeholder Tags" class="btn btn-primary" style="font-size:12px;padding:2px 2px;" onclick="expand_tokens_section('expandplaceholdertags')">Expand Section</button>
 				</div>
 				<div id="expandplaceholdertags" class="hidden">
 					<div class="settinglabel justifyleft">Stories can use placeholders like {{user}} and {{[INPUT]}} that require dynamic substitution. If disabled, uses plaintext tags verbatim.</div>
@@ -17686,73 +18022,8 @@ Current version indicated by LITEVER below.
 				<div class="justifyleft" style="padding:4px">DynaTemp-Exponent:</div>
 				<input type="text" oninput="preview_dynatemp(false)" inputmode="decimal" id="dynatemp_exponent" style="width:60px" >
 			</div>
-			<div class="inlinelabel">
-				<div class="justifyleft" style="padding:4px">Smoothing-Factor:</div>
-				<input type="text" oninput="preview_dynatemp(false)" inputmode="decimal" id="smoothing_factor" style="width:60px" >
-			</div>
-
 			<div class="popupfooter">
 				<button type="button" class="btn btn-primary" onclick="confirm_dynatemp()">Ok</button>
-			</div>
-		</div>
-	</div>
-
-	<div class="popupcontainer flex hidden" id="imagestylecontainer">
-		<div class="popupbg flex"></div>
-		<div class="nspopup flexsizesmall higher">
-			<div class="popuptitlebar">
-				<div class="popuptitletext">Image Generation Settings</div>
-			</div>
-			<div class="aidgpopuplistheader anotelabel">Style tags to use for generating images:<br>(E.g. Sketch, Realistic, Anime, 3D Render, Drawing)<br></div>
-			<input class="form-control" type="text" placeholder="Default Style" value="" id="imagestyleinput">
-			<div class="aidgpopuplistheader anotelabel">Negative Prompt<br></div>
-			<input class="form-control" type="text" placeholder="Default Negative Prompt. Put &quot;none&quot; to skip" value="" id="negpromptinput">
-
-			<div class="inlinelabel">
-				<div class="justifyleft" style="padding:4px">Number of Steps: </div>
-				<input type="text" inputmode="decimal" id="img_steps" style="width:60px">
-			</div>
-			<div class="inlinelabel">
-				<div class="justifyleft" style="padding:4px">Cfg. Scale: </div>
-				<input type="text" inputmode="decimal" id="img_cfgscale" style="width:60px">
-			</div>
-			<div class="inlinelabel">
-				<div class="justifyleft" style="padding:4px">Sampler: </div>
-				<select style="padding:1px; height:23px; width: 100px;" class="form-control" id="img_sampler">
-					<option value="Euler a">Euler A</option>
-					<option value="Euler">Euler</option>
-					<option value="Heun">Heun</option>
-					<option value="DPM2">DPM2</option>
-					<option value="LCM">LCM</option>
-					<option value="DPM++ 2M">DPM++ 2M</option>
-				</select>
-			</div>
-			<div class="inlinelabel">
-				<div class="justifyleft" style="padding:4px">Aspect Ratio <span class="helpicon">?
-					<span class="helptext">Square is recommended. Changing aspect ratio will affect the resolution used to generate. This may impact quality or memory usage.</span>
-				</span>: </div>
-				<select style="padding:1px; height:23px; width: 100px;" class="form-control" id="img_aspect">
-					<option value="0">Square</option>
-					<option value="1">Portrait</option>
-					<option value="2">Landscape</option>
-				</select>
-			</div>
-			<div class="inlinelabel">
-				<div class="justifyleft" style="padding:4px">Img2Img Strength <span class="helpicon">?
-					<span class="helptext">Higher values lead to a more different image.</span>
-				</span>: </div>
-				<input type="text" inputmode="decimal" id="img_img2imgstr" style="width:60px">
-			</div>
-			<div class="inlinelabel">
-				<div class="justifyleft" style="padding:4px">Save Higher-Res <span class="helpicon">?
-					<span class="helptext">This option will result in larger save files which may be slower. Changing this setting only applies to NEW images.</span>
-				</span>: </div>
-				<input type="checkbox" id="img_allowhd" style="margin:0px 0 0;">
-			</div>
-
-
-			<div class="popupfooter">
-				<button type="button" class="btn btn-primary" onclick="confirmImgStyle()">Ok</button>
 			</div>
 		</div>
 	</div>
@@ -17776,7 +18047,7 @@ Current version indicated by LITEVER below.
 				<button type="button" class="btn btn-primary bg_green" onclick="add_img_btn_paste()">Paste from Clipboard</button>
 			</div>
 			<div class="aidgpopuplistheader anotelabel">
-				<button type="button" class="btn btn-primary" onclick="hide_popups();display_settings();selectImgStyle();">Customize Settings</button>
+				<button type="button" class="btn btn-primary" onclick="hide_popups();display_settings();display_settings_tab(2);">Customize Settings</button>
 			</div>
 			<div class="aidgpopuplistheader anotelabel hidden" id="btn_open_stableui">
 				<button type="button" class="btn btn-primary bg_purple" onclick="go_to_stableui()">Go To StableUI</button>
