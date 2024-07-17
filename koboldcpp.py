@@ -1743,46 +1743,42 @@ def show_gui():
     window_reference_height = None
     previous_event_width = None
     previous_event_height = None
+
     def on_resize(event):
         if not event.widget.master:
-            nonlocal window_reference_width, window_reference_height, previous_event_width,previous_event_height
+            nonlocal window_reference_width, window_reference_height, previous_event_width, previous_event_height
+            
             if not window_reference_width and not window_reference_height:
                 window_reference_width = event.width
                 window_reference_height = event.height
                 previous_event_width = window_reference_width
                 previous_event_height = window_reference_height
-            else:
-                new_width = event.width
-                new_height = event.height
-                incr_w = new_width/window_reference_width
-                incr_h = new_height/window_reference_height
-                smallratio = min(incr_w,incr_h)
-                smallratio = round(smallratio,2)
-                if new_width != previous_event_width or new_height!=previous_event_height:
-                    lastpos = root.geometry()
-                    lparr = lastpos.split('+', 1)
-                    lastpos = ("+"+str(lparr[1])) if (len(lparr)==2) else ""
-                    previous_event_width = new_width
-                    previous_event_height = new_height
-                    windowwidth = math.floor(original_windowwidth*smallratio)
-                    windowwidth = max(256, min(1024, windowwidth))
-                    windowheight = math.floor(original_windowheight*smallratio)
-                    windowheight = max(256, min(1024, windowheight))
-                    root.geometry(str(windowwidth) + "x" + str(windowheight) + str(lastpos))
-                    ctk.set_widget_scaling(smallratio)
-                    changerunmode(1,1,1)
-                    togglerope(1,1,1)
-                    toggleflashattn(1,1,1)
-                    togglectxshift(1,1,1)
-                    togglehorde(1,1,1)
-                    togglesdquant(1,1,1)
-                    toggletaesd(1,1,1)
-
-    if sys.platform=="darwin":
-        root.resizable(False,False)
+            elif event.width != previous_event_width or event.height != previous_event_height:
+                incr_w = event.width / window_reference_width
+                incr_h = event.height / window_reference_height
+                smallratio = round(min(incr_w, incr_h), 2)
+                
+                lastpos = root.geometry().split('+', 1)
+                lastpos = f"+{lastpos[1]}" if len(lastpos) == 2 else ""
+                
+                previous_event_width = event.width
+                previous_event_height = event.height
+                
+                windowwidth = max(256, min(1024, math.floor(original_windowwidth * smallratio)))
+                windowheight = max(256, min(1024, math.floor(original_windowheight * smallratio)))
+                
+                root.geometry(f"{windowwidth}x{windowheight}{lastpos}")
+                ctk.set_widget_scaling(smallratio)
+                
+                for func in [changerunmode, togglerope, toggleflashattn, togglectxshift, togglehorde, togglesdquant, toggletaesd]:
+                    func(1, 1, 1)
+    
+    if sys.platform == "darwin":
+        root.resizable(False, False)
     else:
-        root.resizable(True,True)
+        root.resizable(True, True)
         root.bind("<Configure>", on_resize)
+    
     global using_gui_launcher
     using_gui_launcher = True
 
