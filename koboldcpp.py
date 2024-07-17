@@ -751,28 +751,27 @@ def whisper_load_model(model_filename):
     global args
     inputs = whisper_load_model_inputs()
     inputs.debugmode = args.debugmode
-    inputs.executable_path = (getdirpath()+"/").encode("UTF-8")
+    inputs.executable_path = (getdirpath() + "/").encode("UTF-8")
     inputs.model_filename = model_filename.encode("UTF-8")
     inputs = set_backend_props(inputs)
-    ret = handle.whisper_load_model(inputs)
-    return ret
+    return handle.whisper_load_model(inputs)
 
 def whisper_generate(genparams):
     global args
-    is_quiet = True if (args.quiet or args.debugmode == -1) else False
+    is_quiet = args.quiet or args.debugmode == -1
     prompt = genparams.get("prompt", "")
     audio_data = genparams.get("audio_data", "")
+    
     if audio_data.startswith("data:audio"):
         audio_data = audio_data.split(",", 1)[1]
+    
     inputs = whisper_generation_inputs()
     inputs.prompt = prompt.encode("UTF-8")
     inputs.audio_data = audio_data.encode("UTF-8")
     inputs.quiet = is_quiet
+    
     ret = handle.whisper_generate(inputs)
-    outstr = ""
-    if ret.status==1:
-        outstr = ret.data.decode("UTF-8","ignore")
-    return outstr
+    return ret.data.decode("UTF-8", "ignore") if ret.status == 1 else ""
 
 #################################################################
 ### A hacky simple HTTP server simulating a kobold api by Concedo
