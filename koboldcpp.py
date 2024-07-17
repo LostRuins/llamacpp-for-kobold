@@ -403,15 +403,9 @@ def set_backend_props(inputs):
     return inputs
 
 def end_trim_to_sentence(input_text):
-    enders = ['.', '!', '?', '*', '"', ')', '}', '`', ']', ';', '…']
-    last = -1
-    for ender in enders:
-        last = max(last, input_text.rfind(ender))
-    nl = input_text.rfind("\n")
-    last = max(last, nl)
-    if last > 0:
-        return input_text[:last + 1].strip()
-    return input_text.strip()
+    enders = ['.', '!', '?', '*', '"', ')', '}', '`', ']', ';', '…', '\n']
+    last = max((input_text.rfind(ender) for ender in enders), default=-1)
+    return input_text[:last + 1].strip() if last > 0 else input_text.strip()
 
 def tryparseint(value):
     try:
