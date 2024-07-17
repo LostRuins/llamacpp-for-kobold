@@ -2441,15 +2441,18 @@ def show_gui():
     quick_mmq_box = makecheckbox(quick_tab,  "Use QuantMatMul (mmq)", mmq_var, 4,1,tooltiptxt="Enable MMQ mode instead of CuBLAS for prompt processing. Read the wiki. Speed may vary.")
 
     # quick boxes
-    quick_boxes = {"Launch Browser": launchbrowser , "Disable MMAP":disablemmap,"Use ContextShift":contextshift,"Remote Tunnel":remotetunnel,"Use FlashAttention":flashattention,"Quiet Mode":quietmode}
-    quick_boxes_desc = {"Launch Browser": "Launches your default browser after model loading is complete",
-    "Disable MMAP":"Avoids using mmap to load models if enabled",
-    "Use ContextShift":"Uses Context Shifting to reduce reprocessing.\nRecommended. Check the wiki for more info.",
-    "Remote Tunnel":"Creates a trycloudflare tunnel.\nAllows you to access koboldcpp from other devices over an internet URL.",
-    "Use FlashAttention":"Enable flash attention for GGUF models.",
-    "Quiet Mode":"Prevents all generation related terminal output from being displayed."}
-    for idx, name, in enumerate(quick_boxes):
-        makecheckbox(quick_tab, name, quick_boxes[name], int(idx/2) +20, idx%2,tooltiptxt=quick_boxes_desc[name])
+    quick_boxes = {
+        "Launch Browser": {"variable": launchbrowser, "description": "Launches your default browser after model loading is complete"},
+        "Disable MMAP": {"variable": disablemmap, "description": "Avoids using mmap to load models if enabled"},
+        "Use ContextShift": {"variable": contextshift, "description": "Uses Context Shifting to reduce reprocessing.\nRecommended. Check the wiki for more info."},
+        "Remote Tunnel": {"variable": remotetunnel, "description": "Creates a trycloudflare tunnel.\nAllows you to access koboldcpp from other devices over an internet URL."},
+        "Use FlashAttention": {"variable": flashattention, "description": "Enable flash attention for GGUF models."},
+        "Quiet Mode": {"variable": quietmode, "description": "Prevents all generation related terminal output from being displayed."}
+    }
+    
+    for idx, (name, properties) in enumerate(quick_boxes.items()):
+        makecheckbox(quick_tab, name, properties["variable"], int(idx/2) + 20, idx % 2, tooltiptxt=properties["description"])
+    
     # context size
     makeslider(quick_tab, "Context Size:", contextsize_text, context_var, 0, len(contextsize_text)-1, 30, width=280, set=5,tooltip="What is the maximum context size to support. Model specific. You cannot exceed it.\nLarger contexts require more memory, and not all models support it.")
 
