@@ -1871,7 +1871,7 @@ def show_gui():
     ctk.set_appearance_mode("dark")
     root = ctk.CTk()
     root.geometry(str(windowwidth) + "x" + str(windowheight))
-    root.title("KoboldCpp v"+KcppVersion)
+    root.title(f"KoboldCpp v{KcppVersion}")
 
     gtooltip_box = None
     gtooltip_label = None
