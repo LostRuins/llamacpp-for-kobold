@@ -780,29 +780,28 @@ def whisper_generate(genparams):
 
 # Used to parse json for openai tool calls
 def extract_json_from_string(input_string):
-    parsed_json = None
-    try: # First check if model exported perfect json
-        parsed_json = json.loads(input_string)
-        return parsed_json
-    except Exception as e:
-        pass
-    try: # Next check if all we need is to add brackets to make it perfect json
-        parsed_json = json.loads(f"[{input_string}]")
-        return parsed_json
-    except Exception as e:
-        pass
+    # First check if model exported perfect json
     try:
-        # Now use regular expression to match JSON objects or arrays in case part is valid json and part is not
-        json_pattern = r'(\{.*?\}|\[.*?\])'  # was json_pattern = r'(\{.*\}|\[.*\])'
-        potential_jsons = re.findall(json_pattern, input_string, re.DOTALL)
-        for potential_json in potential_jsons:
-            try:
-                parsed_json = json.loads(potential_json)
-                return parsed_json
-            except Exception as e:
-                continue
-    except Exception as e:
+        return json.loads(input_string)
+    except json.JSONDecodeError:
         pass
+
+    # Next check if all we need is to add brackets to make it perfect json
+    try:
+        return json.loads(f"[{input_string}]")
+    except json.JSONDecodeError:
+        pass
+
+    # Now use regular expression to match JSON objects or arrays in case part is valid json and part is not
+    json_pattern = r'(\{.*?\}|\[.*?\])'
+    potential_jsons = re.findall(json_pattern, input_string, re.DOTALL)
+    
+    for potential_json in potential_jsons:
+        try:
+            return json.loads(potential_json)
+        except json.JSONDecodeError:
+            continue
+
     return []
 
 def transform_genparams(genparams, api_format):
