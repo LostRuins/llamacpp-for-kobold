@@ -2003,106 +2003,95 @@ quick_tab = tabcontent["Quick Launch"]
 
     # decided to follow yellowrose's and kalomaze's suggestions, this function will automatically try to determine GPU identifiers
     # run in new thread so it doesnt block. does not return anything, instead overwrites specific values and redraws GUI
-    def auto_gpu_heuristics():
-        import subprocess
-        FetchedCUdevices = []
-        FetchedCUdeviceMem = []
-        AMDgpu = None
-        try: # Get OpenCL GPU names on windows using a special binary. overwrite at known index if found.
-            basepath = os.path.abspath(os.path.dirname(__file__))
-            output = ""
-            data = None
-            try:
-                output = subprocess.run(["clinfo","--json"], capture_output=True, text=True, check=True, encoding='utf-8').stdout
-                data = json.loads(output)
-            except Exception as e1:
-                output = subprocess.run([((os.path.join(basepath, "winclinfo.exe")) if os.name == 'nt' else "clinfo"),"--json"], capture_output=True, text=True, check=True, creationflags=subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS, encoding='utf-8').stdout
-                data = json.loads(output)
-            plat = 0
-            dev = 0
-            lowestclmem = 0
-            for platform in data["devices"]:
-                dev = 0
-                for device in platform["online"]:
-                    dname = device["CL_DEVICE_NAME"]
+def auto_gpu_heuristics():
+    import subprocess, json
+
+    FetchedCUdevices, FetchedCUdeviceMem, AMDgpu = [], [], None
+    
+    def run_subprocess(cmd, **kwargs):
+        return subprocess.run(cmd, capture_output=True, text=True, check=True, encoding='utf-8', **kwargs).stdout
+
+    # Get OpenCL GPU names
+    try:
+        basepath = os.path.abspath(os.path.dirname(__file__))
+        try:
+            output = run_subprocess(["clinfo", "--json"])
+        except Exception:
+            output = run_subprocess([os.path.join(basepath, "winclinfo.exe") if os.name == 'nt' else "clinfo", "--json"],
+                                    creationflags=subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS)
+        
+        data = json.loads(output)
+        lowestclmem = float('inf')
+        for plat, platform in enumerate(data["devices"]):
+            for dev, device in enumerate(platform["online"]):
+                idx = plat + dev * 2
+                if idx < len(CLDevices):
+                    CLDevicesNames[idx] = device["CL_DEVICE_NAME"]
                     dmem = int(device["CL_DEVICE_GLOBAL_MEM_SIZE"])
-                    idx = plat+dev*2
-                    if idx<len(CLDevices):
-                        CLDevicesNames[idx] = dname
-                        lowestclmem = dmem if lowestclmem==0 else (dmem if dmem<lowestclmem else lowestclmem)
-                    dev += 1
-                plat += 1
-            MaxMemory[0] = lowestclmem
-        except Exception as e:
+                    lowestclmem = min(lowestclmem, dmem)
+        MaxMemory[0] = lowestclmem if lowestclmem != float('inf') else 0
+    except Exception:
+        pass
+
+    # Get NVIDIA or AMD GPU names
+    try:
+        output = run_subprocess(['nvidia-smi', '--query-gpu=name,memory.total', '--format=csv,noheader'])
+        FetchedCUdevices = [line.split(",")[0].strip() for line in output.splitlines()]
+        FetchedCUdeviceMem = [line.split(",")[1].split()[0].strip() for line in output.splitlines()]
+    except Exception:
+        try:
+            output = run_subprocess(['rocminfo'])
+            device_name = None
+            for line in output.splitlines():
+                line = line.strip()
+                if line.startswith("Marketing Name:"):
+                    device_name = line.split(":", 1)[1].strip()
+                elif line.startswith("Device Type:") and "GPU" in line and device_name:
+                    FetchedCUdevices.append(device_name)
+                    AMDgpu = True
+                elif line.startswith("Device Type:") and "GPU" not in line:
+                    device_name = None
+            
+            if FetchedCUdevices:
+                getamdvram = run_subprocess(['rocm-smi', '--showmeminfo', 'vram', '--csv'])
+                FetchedCUdeviceMem = [line.split(",")[1].strip() for line in getamdvram.splitlines()[1:] if line.strip()]
+        except Exception:
             pass
 
-        try: # Get NVIDIA GPU names
-            output = subprocess.run(['nvidia-smi','--query-gpu=name,memory.total','--format=csv,noheader'], capture_output=True, text=True, check=True, encoding='utf-8').stdout
-            FetchedCUdevices = [line.split(",")[0].strip() for line in output.splitlines()]
-            FetchedCUdeviceMem = [line.split(",")[1].strip().split(" ")[0].strip() for line in output.splitlines()]
-        except Exception as e:
-            pass
+    # Get Vulkan names
+    try:
+        output = run_subprocess(['vulkaninfo', '--summary'])
+        devicelist = [line.split("=")[1].strip() for line in output.splitlines() if "deviceName" in line]
+        devicetypes = [line.split("=")[1].strip() for line in output.splitlines() if "deviceType" in line]
+        
+        for idx, dname in enumerate(devicelist[:len(VKDevicesNames)]):
+            VKDevicesNames[idx] = dname
+        
+        if len(devicetypes) == len(devicelist):
+            for idx, dvtype in enumerate(devicetypes[:len(VKIsDGPU)]):
+                VKIsDGPU[idx] = int(dvtype == "PHYSICAL_DEVICE_TYPE_DISCRETE_GPU")
+    except Exception:
+        pass
 
-        if len(FetchedCUdevices)==0:
-            try: # Get AMD ROCm GPU names
-                output = subprocess.run(['rocminfo'], capture_output=True, text=True, check=True, encoding='utf-8').stdout
-                device_name = None
-                for line in output.splitlines(): # read through the output line by line
-                    line = line.strip()
-                    if line.startswith("Marketing Name:"): device_name = line.split(":", 1)[1].strip() # if we find a named device, temporarily save the name
-                    elif line.startswith("Device Type:") and "GPU" in line and device_name is not None: # if the following Device Type is a GPU (not a CPU) then add it to devices list
-                        FetchedCUdevices.append(device_name)
-                        AMDgpu = True
-                    elif line.startswith("Device Type:") and "GPU" not in line: device_name = None
-                if FetchedCUdevices:
-                    getamdvram = subprocess.run(['rocm-smi', '--showmeminfo', 'vram', '--csv'], capture_output=True, text=True, check=True, encoding='utf-8').stdout # fetch VRAM of devices
-                    FetchedCUdeviceMem = [line.split(",")[1].strip() for line in getamdvram.splitlines()[1:] if line.strip()]
-            except Exception as e:
-                pass
+    for idx, device in enumerate(FetchedCUdevices[:4]):
+        CUDevicesNames[idx] = device
+        mem = int(FetchedCUdeviceMem[idx])
+        MaxMemory[0] = max(MaxMemory[0], mem if AMDgpu else mem * 1024 * 1024)
 
-        try: # Get Vulkan names
-            output = subprocess.run(['vulkaninfo','--summary'], capture_output=True, text=True, check=True, encoding='utf-8').stdout
-            devicelist = [line.split("=")[1].strip() for line in output.splitlines() if "deviceName" in line]
-            devicetypes = [line.split("=")[1].strip() for line in output.splitlines() if "deviceType" in line]
-            idx = 0
-            for dname in devicelist:
-                if idx<len(VKDevicesNames):
-                    VKDevicesNames[idx] = dname
-                    idx += 1
-            if len(devicetypes) == len(devicelist):
-                idx = 0
-                for dvtype in devicetypes:
-                    if idx<len(VKIsDGPU):
-                        VKIsDGPU[idx] = (1 if dvtype=="PHYSICAL_DEVICE_TYPE_DISCRETE_GPU" else 0)
-                        idx += 1
-        except Exception as e:
-            pass
+    global exitcounter, runmode_untouched
+    if exitcounter < 100 and MaxMemory[0] > 3500000000 and runmode_untouched:
+        if "Use CuBLAS" in runopts and CUDevicesNames[0]:
+            runopts_var.set("Use CuBLAS")
+        elif "Use hipBLAS (ROCm)" in runopts:
+            runopts_var.set("Use hipBLAS (ROCm)")
+    elif exitcounter < 100 and 1 in VKIsDGPU and runmode_untouched and "Use Vulkan" in runopts:
+        for i, is_dgpu in enumerate(VKIsDGPU):
+            if is_dgpu:
+                runopts_var.set("Use Vulkan")
+                gpu_choice_var.set(str(i + 1))
+                break
 
-        for idx in range(0,4):
-            if(len(FetchedCUdevices)>idx):
-                CUDevicesNames[idx] = FetchedCUdevices[idx]
-                if AMDgpu:
-                    MaxMemory[0] = max(int(FetchedCUdeviceMem[idx]),MaxMemory[0])
-                else:
-                    MaxMemory[0] = max(int(FetchedCUdeviceMem[idx])*1024*1024,MaxMemory[0])
-
-        #autopick cublas if suitable, requires at least 3.5GB VRAM to auto pick
-        global exitcounter, runmode_untouched
-        #we do not want to autoselect hip/cublas if the user has already changed their desired backend!
-        if exitcounter < 100 and MaxMemory[0]>3500000000 and (("Use CuBLAS" in runopts and CUDevicesNames[0]!="") or "Use hipBLAS (ROCm)" in runopts) and (any(CUDevicesNames) or any(CLDevicesNames)) and runmode_untouched:
-            if "Use CuBLAS" in runopts:
-                runopts_var.set("Use CuBLAS")
-            elif "Use hipBLAS (ROCm)" in runopts:
-                runopts_var.set("Use hipBLAS (ROCm)")
-        elif exitcounter < 100 and (1 in VKIsDGPU) and runmode_untouched and "Use Vulkan" in runopts:
-            for i in range(0,len(VKIsDGPU)):
-                if VKIsDGPU[i]==1:
-                    runopts_var.set("Use Vulkan")
-                    gpu_choice_var.set(str(i+1))
-                    break
-
-        changed_gpu_choice_var()
-        return
+    changed_gpu_choice_var()
 
     def on_picked_model_file(filepath):
         if filepath.lower().endswith('.kcpps'):
