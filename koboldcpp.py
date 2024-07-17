@@ -806,149 +806,92 @@ def extract_json_from_string(input_string):
 
 def transform_genparams(genparams, api_format):
     #api format 1=basic,2=kai,3=oai,4=oai-chat,5=interrogate
-    #alias all nonstandard alternative names for rep pen.
-    rp1 = genparams.get('repeat_penalty', 1.0)
-    rp2 = genparams.get('repetition_penalty', 1.0)
-    rp3 = genparams.get('rep_pen', 1.0)
-    rp_max = max(rp1,rp2,rp3)
-    genparams["rep_pen"] = rp_max
+    genparams["rep_pen"] = max(genparams.get('repeat_penalty', 1.0), 
+                               genparams.get('repetition_penalty', 1.0), 
+                               genparams.get('rep_pen', 1.0))
 
-    if api_format==1:
+    if api_format == 1:
         genparams["prompt"] = genparams.get('text', "")
         genparams["top_k"] = int(genparams.get('top_k', 120))
         genparams["max_length"] = genparams.get('max', 150)
 
-    elif api_format==2:
-        if "ignore_eos" in genparams and not ("use_default_badwordsids" in genparams):
+    elif api_format == 2:
+        if "ignore_eos" in genparams and "use_default_badwordsids" not in genparams:
             genparams["use_default_badwordsids"] = genparams.get('ignore_eos', False)
 
-    elif api_format==3 or api_format==4:
-        genparams["max_length"] = genparams.get('max_tokens', (350 if api_format==4 else 150))
-        presence_penalty = genparams.get('presence_penalty', genparams.get('frequency_penalty', 0.0))
-        genparams["presence_penalty"] = presence_penalty
-        # openai allows either a string or a list as a stop sequence
-        if isinstance(genparams.get('stop',[]), list):
-            genparams["stop_sequence"] = genparams.get('stop', [])
-        else:
-            genparams["stop_sequence"] = [genparams.get('stop')]
-
+    elif api_format in (3, 4):
+        genparams["max_length"] = genparams.get('max_tokens', 350 if api_format == 4 else 150)
+        genparams["presence_penalty"] = genparams.get('presence_penalty', genparams.get('frequency_penalty', 0.0))
+        genparams["stop_sequence"] = genparams.get('stop', []) if isinstance(genparams.get('stop', []), list) else [genparams.get('stop')]
         genparams["sampler_seed"] = tryparseint(genparams.get('seed', -1))
         genparams["use_default_badwordsids"] = genparams.get('ignore_eos', False)
         genparams["mirostat"] = genparams.get('mirostat_mode', 0)
 
-        if api_format==4:
-            # translate openai chat completion messages format into one big string.
+        if api_format == 4:
             messages_array = genparams.get('messages', [])
-            default_adapter = {} if chatcompl_adapter is None else chatcompl_adapter
+            default_adapter = chatcompl_adapter or {}
             adapter_obj = genparams.get('adapter', default_adapter)
             messages_string = ""
-            system_message_start = adapter_obj.get("system_start", "\n### Instruction:\n")
-            system_message_end = adapter_obj.get("system_end", "")
-            user_message_start = adapter_obj.get("user_start", "\n### Instruction:\n")
-            user_message_end = adapter_obj.get("user_end", "")
-            assistant_message_start = adapter_obj.get("assistant_start", "\n### Response:\n")
-            assistant_message_end = adapter_obj.get("assistant_end", "")
-            tools_message_start = adapter_obj.get("tools_start", "")
-            tools_message_end = adapter_obj.get("tools_end", "")
             images_added = []
 
-            message_index = 0
-            for message in messages_array:
-                message_index += 1
-                if message['role'] == "system":
-                    messages_string += system_message_start
-                elif message['role'] == "user":
-                    messages_string += user_message_start
-                elif message['role'] == "assistant":
-                    messages_string += assistant_message_start
-                elif message['role'] == "tool":
-                    messages_string += tools_message_start
+            for i, message in enumerate(messages_array, 1):
+                role = message['role']
+                messages_string += adapter_obj.get(f"{role}_start", f"\n### {role.capitalize()}:\n")
+                
+                content = message['content']
+                if isinstance(content, str):
+                    messages_string += content
+                elif isinstance(content, list):
+                    for item in content:
+                        if item['type'] == "text":
+                            messages_string += item['text']
+                        elif item['type'] == "image_url" and item['image_url']['url'].startswith("data:image"):
+                            images_added.append(item['image_url']['url'].split(",", 1)[1])
 
-                # content can be a string or an array of objects
-                curr_content = message['content']
-                if isinstance(curr_content, str):
-                        messages_string += curr_content
-                elif isinstance(curr_content, list): #is an array
-                    for item in curr_content:
-                        if item['type']=="text":
-                                messages_string += item['text']
-                        elif item['type']=="image_url":
-                            if item['image_url'] and item['image_url']['url'] and item['image_url']['url'].startswith("data:image"):
-                                images_added.append(item['image_url']['url'].split(",", 1)[1])
-                # If last message, add any tools calls after message content and before message end token if any
-                if message['role'] == "user" and message_index == len(messages_array):
-                    # Check if user is passing a openai tools array, if so add to end of prompt before assistant prompt unless tool_choice has been set to None
+                if role == "user" and i == len(messages_array):
                     tools_array = genparams.get('tools', [])
-                    if tools_array and len(tools_array) > 0 and genparams.get('tool_choice',None) != None:
+                    if tools_array and genparams.get('tool_choice') is not None:
                         response_array = [{"id": "insert an id for the response", "type": "function", "function": {"name": "insert the name of the function you want to call", "arguments": {"first property key": "first property value", "second property key": "second property value"}}}]
                         json_formatting_instruction = " Use this style of JSON object formatting to give your answer if you think the user is asking you to perform an action: " + json.dumps(response_array, indent=0)
-                        tools_string = json.dumps(tools_array, indent=0)
-                        messages_string += tools_string
-                        specified_function = None
-                        if isinstance(genparams.get('tool_choice'), dict):
-                             try:
-                                specified_function = genparams.get('tool_choice').get('function').get('name')
-                                json_formatting_instruction = f"The user is asking you to use the style of this JSON object formatting to complete the parameters for the specific function named {specified_function} in the following format: " + json.dumps([{"id": "insert an id for the response", "type": "function", "function": {"name": f"{specified_function}", "arguments": {"first property key": "first property value", "second property key": "second property value"}}}], indent=0)
-                             except Exception as e:
-                                # In case of any issues, just revert back to no specified function
-                                pass
-                        messages_string += json_formatting_instruction
+                        messages_string += json.dumps(tools_array, indent=0) + json_formatting_instruction
 
-                        # Set temperature low automatically if function calling
+                        if isinstance(genparams.get('tool_choice'), dict):
+                            try:
+                                specified_function = genparams['tool_choice']['function']['name']
+                                json_formatting_instruction = f"The user is asking you to use the style of this JSON object formatting to complete the parameters for the specific function named {specified_function} in the following format: " + json.dumps([{"id": "insert an id for the response", "type": "function", "function": {"name": specified_function, "arguments": {"first property key": "first property value", "second property key": "second property value"}}}], indent=0)
+                                messages_string += json_formatting_instruction
+                            except Exception:
+                                pass
+
                         genparams["temperature"] = 0.2
                         genparams["using_openai_tools"] = True
-
-                        # Set grammar to llamacpp example grammar to force json response (see https://github.com/ggerganov/llama.cpp/blob/master/grammars/json_arr.gbnf)
                         genparams["grammar"] = r"""
 root   ::= arr
 value  ::= object | array | string | number | ("true" | "false" | "null") ws
-arr  ::=
-  "[\n" ws (
-            value
-    (",\n" ws value)*
-  )? "]"
-object ::=
-  "{" ws (
-            string ":" ws value
-    ("," ws string ":" ws value)*
-  )? "}" ws
-array  ::=
-  "[" ws (
-            value
-    ("," ws value)*
-  )? "]" ws
-string ::=
-  "\"" (
-    [^"\\\x7F\x00-\x1F] |
-    "\\" (["\\bfnrt] | "u" [0-9a-fA-F]{4})
-  )* "\"" ws
+arr  ::= "[\n" ws (value (",\n" ws value)*)? "]"
+object ::= "{" ws (string ":" ws value ("," ws string ":" ws value)*)? "}" ws
+array  ::= "[" ws (value ("," ws value)*)? "]" ws
+string ::= "\"" ([^"\\\x7F\x00-\x1F] | "\\" (["\\bfnrt] | "u" [0-9a-fA-F]{4}))* "\"" ws
 number ::= ("-"? ([0-9] | [1-9] [0-9]{0,15})) ("." [0-9]+)? ([eE] [-+]? [1-9] [0-9]{0,15})? ws
 ws ::= | " " | "\n" [ \t]{0,20}
 """
-                if message['role'] == "system":
-                    messages_string += system_message_end
-                elif message['role'] == "user":
-                    messages_string += user_message_end
-                elif message['role'] == "assistant":
-                    messages_string += assistant_message_end
-                elif message['role'] == "tool":
-                    messages_string += tools_message_end
 
-            messages_string += assistant_message_start
+                messages_string += adapter_obj.get(f"{role}_end", "")
+
+            messages_string += adapter_obj.get("assistant_start", "\n### Response:\n")
             genparams["prompt"] = messages_string
-            if len(images_added)>0:
+            if images_added:
                 genparams["images"] = images_added
-            if len(genparams.get('stop_sequence', []))==0: #only set stop seq if it wont overwrite existing
-                genparams["stop_sequence"] = [user_message_start.strip(),assistant_message_start.strip()]
+            stop_sequence = genparams.get('stop_sequence', [])
+            if not stop_sequence:
+                stop_sequence = [adapter_obj.get("user_start", "\n### Instruction:\n").strip(), adapter_obj.get("assistant_start", "\n### Response:\n").strip()]
             else:
-                genparams["stop_sequence"].append(user_message_start.strip())
-                genparams["stop_sequence"].append(assistant_message_start.strip())
+                stop_sequence.extend([adapter_obj.get("user_start", "\n### Instruction:\n").strip(), adapter_obj.get("assistant_start", "\n### Response:\n").strip()])
+            genparams["stop_sequence"] = stop_sequence
             genparams["trim_stop"] = True
 
-
-    elif api_format==5:
-        firstimg = genparams.get('image', "")
-        genparams["images"] = [firstimg]
+    elif api_format == 5:
+        genparams["images"] = [genparams.get('image', "")]
         genparams["max_length"] = 42
         genparams["prompt"] = "### Instruction: In one sentence, write a descriptive caption for this image.\n### Response:"
 
