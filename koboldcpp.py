@@ -2092,6 +2092,7 @@ def auto_gpu_heuristics():
                 break
 
     changed_gpu_choice_var()
+    return
 
     def on_picked_model_file(filepath):
         if filepath.lower().endswith('.kcpps'):
