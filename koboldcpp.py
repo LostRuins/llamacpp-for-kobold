@@ -2361,23 +2361,21 @@ def show_gui():
         global runmode_untouched
         runmode_untouched = False
         index = runopts_var.get()
-        if index == "Use Vulkan" or index == "Vulkan NoAVX2 (Old CPU)" or index == "Use CLBlast" or index == "CLBlast NoAVX2 (Old CPU)" or index == "Use CuBLAS" or index == "Use hipBLAS (ROCm)":
-            quick_gpuname_label.grid(row=3, column=1, padx=75, sticky="W")
-            gpuname_label.grid(row=3, column=1, padx=75, sticky="W")
-            gpu_selector_label.grid(row=3, column=0, padx = 8, pady=1, stick="nw")
-            quick_gpu_selector_label.grid(row=3, column=0, padx = 8, pady=1, stick="nw")
-            if index == "Use CLBlast" or index == "CLBlast NoAVX2 (Old CPU)":
-                gpu_selector_box.grid(row=3, column=1, padx=8, pady=1, stick="nw")
-                quick_gpu_selector_box.grid(row=3, column=1, padx=8, pady=1, stick="nw")
-                CUDA_gpu_selector_box.grid_remove()
-                CUDA_quick_gpu_selector_box.grid_remove()
-                if gpu_choice_var.get()=="All":
-                    gpu_choice_var.set("1")
-            elif index == "Use Vulkan" or index == "Vulkan NoAVX2 (Old CPU)" or index == "Use CuBLAS" or index == "Use hipBLAS (ROCm)":
-                gpu_selector_box.grid_remove()
-                quick_gpu_selector_box.grid_remove()
-                CUDA_gpu_selector_box.grid(row=3, column=1, padx=8, pady=1, stick="nw")
-                CUDA_quick_gpu_selector_box.grid(row=3, column=1, padx=8, pady=1, stick="nw")
+        if index in ["Use Vulkan", "Vulkan NoAVX2 (Old CPU)", "Use CLBlast", "CLBlast NoAVX2 (Old CPU)", "Use CuBLAS", "Use hipBLAS (ROCm)"]:
+            for label in [quick_gpuname_label, gpuname_label, gpu_selector_label, quick_gpu_selector_label]:
+                label.grid(row=3, column=1 if 'gpuname' in str(label) else 0, padx=75 if 'gpuname' in str(label) else 8, pady=1, sticky="W" if 'gpuname' in str(label) else "nw")
+            
+            if index in ["Use CLBlast", "CLBlast NoAVX2 (Old CPU)"]:
+                for box in [gpu_selector_box, quick_gpu_selector_box]:
+                    box.grid(row=3, column=1, padx=8, pady=1, stick="nw")
+                for box in [CUDA_gpu_selector_box, CUDA_quick_gpu_selector_box]:
+                    box.grid_remove()
+                gpu_choice_var.set("1" if gpu_choice_var.get() == "All" else gpu_choice_var.get())
+            elif index in ["Use Vulkan", "Vulkan NoAVX2 (Old CPU)", "Use CuBLAS", "Use hipBLAS (ROCm)"]:
+                for box in [gpu_selector_box, quick_gpu_selector_box]:
+                    box.grid_remove()
+                for box in [CUDA_gpu_selector_box, CUDA_quick_gpu_selector_box]:
+                    box.grid(row=3, column=1, padx=8, pady=1, stick="nw")
         else:
             quick_gpuname_label.grid_remove()
             gpuname_label.grid_remove()
