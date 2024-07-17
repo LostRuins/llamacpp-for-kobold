@@ -533,25 +533,26 @@ def load_model(model_filename):
     return ret
 
 def generate(prompt, memory="", images=[], max_length=32, max_context_length=512, temperature=0.7, top_k=100, top_a=0.0, top_p=0.92, min_p=0.0, typical_p=1.0, tfs=1.0, rep_pen=1.0, rep_pen_range=128, rep_pen_slope=1.0, presence_penalty=0.0, mirostat=0, mirostat_tau=5.0, mirostat_eta=0.1, dry_multiplier=0.0, dry_base=1.75, dry_allowed_length=2, dry_penalty_last_n=0, dry_sequence_breakers=['\n', ':', '"', '*'], sampler_order=[6,0,1,3,4,2,5], seed=-1, stop_sequence=[], use_default_badwordsids=False, stream_sse=False, grammar='', grammar_retain_state=False, genkey='', trimstop=False, quiet=False, dynatemp_range=0.0, dynatemp_exponent=1.0, smoothing_factor=0.0, logit_biases={}, render_special=False, banned_tokens=[], bypass_eos_token=False):
-    global maxctx, args, currentusergenkey, totalgens, pendingabortkey
+    global maxctx, args, currentusergenkey, totalgens, pendingabortkey, showmaxctxwarning, showsamplerwarning
+
     inputs = generation_inputs()
     inputs.prompt = prompt.encode("UTF-8")
     inputs.memory = memory.encode("UTF-8")
+    
     for n in range(images_max):
-        if not images or n >= len(images):
-            inputs.images[n] = "".encode("UTF-8")
-        else:
-            inputs.images[n] = images[n].encode("UTF-8")
-    if max_length >= (max_context_length-1):
-        max_length = max_context_length-1
+        inputs.images[n] = images[n].encode("UTF-8") if n < len(images) else b""
+
+    if max_length >= (max_context_length - 1):
+        max_length = max_context_length - 1
         print("\nWarning: You are trying to generate with max_length near or exceeding max_context_length. Most of the context will be removed, and your outputs will not be very coherent.")
-    global showmaxctxwarning
+
     if max_context_length > maxctx:
         if showmaxctxwarning:
             print(f"\n(Warning! Request max_context_length={max_context_length} exceeds allocated context size of {maxctx}. It will be reduced to fit. Consider launching with increased --contextsize to avoid errors. This message will only show once per session.)")
             showmaxctxwarning = False
         max_context_length = maxctx
-    inputs.max_context_length = max_context_length   # this will resize the context buffer if changed
+
+    inputs.max_context_length = max_context_length
     inputs.max_length = max_length
     inputs.temperature = temperature
     inputs.top_k = top_k
@@ -574,97 +575,76 @@ def generate(prompt, memory="", images=[], max_length=32, max_context_length=512
     inputs.allow_eos_token = not use_default_badwordsids
     inputs.bypass_eos_token = bypass_eos_token
     inputs.render_special = render_special
-    if mirostat in (1, 2):
-        inputs.mirostat = mirostat
-        inputs.mirostat_tau = mirostat_tau
-        inputs.mirostat_eta = mirostat_eta
-    else:
-        inputs.mirostat = inputs.mirostat_tau = inputs.mirostat_eta = 0
+
+    inputs.mirostat, inputs.mirostat_tau, inputs.mirostat_eta = (mirostat, mirostat_tau, mirostat_eta) if mirostat in (1, 2) else (0, 0, 0)
+
     inputs.dry_multiplier = dry_multiplier
     inputs.dry_base = dry_base
     inputs.dry_allowed_length = dry_allowed_length
     inputs.dry_penalty_last_n = dry_penalty_last_n
-    # Handle dry_sequence_breakers being passed as a json-encoded array of
-    # strings, rather than as an array of strings itself. This is to support
-    # SillyTavern, which passes sequence breakers to Oobabooga that way.
+
     if isinstance(dry_sequence_breakers, str):
         try:
             dry_sequence_breakers = json.loads(dry_sequence_breakers)
         except ValueError as e:
-            print(f"ERROR: dry_sequence_breakers must be an array of strings or a json encoded array of strings. Could not parse '{dry_sequence_breakers}': " + str(e))
+            print(f"ERROR: dry_sequence_breakers must be an array of strings or a json encoded array of strings. Could not parse '{dry_sequence_breakers}': {e}")
             dry_sequence_breakers = []
+
     for n in range(dry_seq_break_max):
-        if n < len(dry_sequence_breakers):
-            inputs.dry_sequence_breakers[n] = dry_sequence_breakers[n].encode("UTF-8")
-        else:
-            inputs.dry_sequence_breakers[n] = "".encode("UTF-8")
+        inputs.dry_sequence_breakers[n] = dry_sequence_breakers[n].encode("UTF-8") if n < len(dry_sequence_breakers) else b""
+
     if sampler_order and 0 < len(sampler_order) <= sampler_order_max:
         try:
-            for i, sampler in enumerate(sampler_order):
-                inputs.sampler_order[i] = sampler
+            inputs.sampler_order[:len(sampler_order)] = sampler_order
             inputs.sampler_len = len(sampler_order)
-            global showsamplerwarning
-            if showsamplerwarning and inputs.mirostat==0 and inputs.sampler_len>0 and (inputs.sampler_order[0]!=6 or inputs.sampler_order[inputs.sampler_len-1]!=5):
+            if showsamplerwarning and inputs.mirostat == 0 and inputs.sampler_len > 0 and (inputs.sampler_order[0] != 6 or inputs.sampler_order[inputs.sampler_len-1] != 5):
                 print("\n(Note: Non-default sampler_order detected. Recommended sampler values are [6,0,1,3,4,2,5]. This message will only show once per session.)")
                 showsamplerwarning = False
         except TypeError as e:
-            print("ERROR: sampler_order must be a list of integers: " + str(e))
-    inputs.seed = seed
-    for n in range(stop_token_max):
-        if not stop_sequence or n >= len(stop_sequence):
-            inputs.stop_sequence[n] = "".encode("UTF-8")
-        elif stop_sequence[n]==None:
-            inputs.stop_sequence[n] = "".encode("UTF-8")
-        else:
-            inputs.stop_sequence[n] = stop_sequence[n].encode("UTF-8")
+            print(f"ERROR: sampler_order must be a list of integers: {e}")
 
-    bias_list = []
-    try:
-        if logit_biases and len(logit_biases) > 0:
-            bias_list = [{"key": key, "value": value} for key, value in logit_biases.items()]
-    except Exception as ex:
-        print(f"Logit bias dictionary is invalid: {ex}")
+    inputs.seed = seed
+
+    for n in range(stop_token_max):
+        inputs.stop_sequence[n] = stop_sequence[n].encode("UTF-8") if stop_sequence and n < len(stop_sequence) and stop_sequence[n] is not None else b""
+
+    bias_list = [{"key": key, "value": value} for key, value in logit_biases.items()] if logit_biases else []
 
     for n in range(logit_bias_max):
         if n >= len(bias_list):
             inputs.logit_biases[n] = logit_bias(-1, 0.0)
         else:
             try:
-                t_id = int(bias_list[n]['key'])
-                bias = float(bias_list[n]['value'])
-                t_id = -1 if t_id < 0 else t_id
-                bias = (bias_max_value if bias > bias_max_value else (bias_min_value if bias < bias_min_value else bias))
+                t_id = max(-1, int(bias_list[n]['key']))
+                bias = max(bias_min_value, min(bias_max_value, float(bias_list[n]['value'])))
                 inputs.logit_biases[n] = logit_bias(t_id, bias)
             except Exception as ex:
                 inputs.logit_biases[n] = logit_bias(-1, 0.0)
-                print(f"Skipped unparsable logit bias:{ex}")
+                print(f"Skipped unparsable logit bias: {ex}")
 
     for n in range(ban_token_max):
-        if not banned_tokens or n >= len(banned_tokens):
-            inputs.banned_tokens[n] = "".encode("UTF-8")
-        else:
-            inputs.banned_tokens[n] = banned_tokens[n].encode("UTF-8")
+        inputs.banned_tokens[n] = banned_tokens[n].encode("UTF-8") if banned_tokens and n < len(banned_tokens) else b""
 
     currentusergenkey = genkey
     totalgens += 1
-    #early exit if aborted
 
-    if pendingabortkey!="" and pendingabortkey==genkey:
+    if pendingabortkey and pendingabortkey == genkey:
         print(f"\nDeferred Abort for GenKey: {pendingabortkey}")
         pendingabortkey = ""
-        return {"text":"","status":-1,"stopreason":-1}
-    else:
-        ret = handle.generate(inputs)
-        outstr = ""
-        if ret.status==1:
-            outstr = ret.text.decode("UTF-8","ignore")
-        if trimstop:
-            for trim_str in stop_sequence:
-                sindex = outstr.find(trim_str)
-                if sindex != -1 and trim_str!="":
-                    outstr = outstr[:sindex]
-        return {"text":outstr,"status":ret.status,"stopreason":ret.stopreason}
+        return {"text": "", "status": -1, "stopreason": -1}
 
+    ret = handle.generate(inputs)
+    outstr = ret.text.decode("UTF-8", "ignore") if ret.status == 1 else ""
+
+    if trimstop:
+        for trim_str in stop_sequence:
+            if trim_str:
+                sindex = outstr.find(trim_str)
+                if sindex != -1:
+                    outstr = outstr[:sindex]
+                    break
+
+    return {"text": outstr, "status": ret.status, "stopreason": ret.stopreason}
 
 def sd_load_model(model_filename,vae_filename,lora_filename):
     global args
