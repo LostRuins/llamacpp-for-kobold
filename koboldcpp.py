@@ -459,34 +459,25 @@ def exit_with_error(code, message, title="Error"):
     sys.exit(code)
 
 def utfprint(str):
-    maxlen = 32000
-    if args.debugmode >= 1:
-        maxlen = 64000
-    strlength = len(str)
-    if strlength > maxlen: #limit max output len
-        str = str[:maxlen] + f"... (+{strlength-maxlen} chars)"
+    maxlen = 64000 if args.debugmode >= 1 else 32000
+    if len(str) > maxlen:
+        str = f"{str[:maxlen]}... (+{len(str)-maxlen} chars)"
     try:
         print(str)
     except UnicodeEncodeError:
-        # Replace or omit the problematic character
-        utf_string = str.encode('ascii', 'ignore').decode('ascii',"ignore")
-        utf_string = utf_string.replace('\a', '') #remove bell characters
+        utf_string = str.encode('ascii', 'ignore').decode('ascii', "ignore").replace('\a', '')
         print(utf_string)
 
 def bring_terminal_to_foreground():
-    if os.name=='nt':
+    if os.name == 'nt':
         ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 9)
         ctypes.windll.user32.SetForegroundWindow(ctypes.windll.kernel32.GetConsoleWindow())
 
-def string_contains_sequence_substring(inputstr,sequences):
-    if inputstr.strip()=="":
+def string_contains_sequence_substring(inputstr, sequences):
+    inputstr = inputstr.strip()
+    if not inputstr:
         return False
-    for s in sequences:
-        if s.strip()=="":
-            continue
-        if s.strip() in inputstr.strip() or inputstr.strip() in s.strip():
-            return True
-    return False
+    return any(s.strip() in inputstr or inputstr in s.strip() for s in sequences if s.strip())
 
 def load_model(model_filename):
     global args
