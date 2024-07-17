@@ -2386,37 +2386,21 @@ def show_gui():
             quick_gpu_selector_box.grid_remove()
             CUDA_quick_gpu_selector_box.grid_remove()
 
-        if index == "Use CuBLAS" or index == "Use hipBLAS (ROCm)":
-            lowvram_box.grid(row=4, column=0, padx=8, pady=1,  stick="nw")
-            mmq_box.grid(row=4, column=1, padx=8, pady=1,  stick="nw")
-            quick_mmq_box.grid(row=4, column=1, padx=8, pady=1,  stick="nw")
-            splitmode_box.grid(row=5, column=1, padx=8, pady=1,  stick="nw")
-            tensor_split_label.grid(row=8, column=0, padx = 8, pady=1, stick="nw")
-            tensor_split_entry.grid(row=8, column=1, padx=8, pady=1, stick="nw")
-        else:
-            lowvram_box.grid_remove()
-            mmq_box.grid_remove()
-            quick_mmq_box.grid_remove()
-            tensor_split_label.grid_remove()
-            tensor_split_entry.grid_remove()
-            splitmode_box.grid_remove()
-
+        cuda_hipblas = ["Use CuBLAS", "Use hipBLAS (ROCm)"]
+        gpu_options = ["Use Vulkan", "Vulkan NoAVX2 (Old CPU)", "Use CLBlast", "CLBlast NoAVX2 (Old CPU)"] + cuda_hipblas
+        
+        for widget in [lowvram_box, mmq_box, quick_mmq_box, splitmode_box, tensor_split_label, tensor_split_entry]:
+            widget.grid(row=4 if widget in [lowvram_box, mmq_box, quick_mmq_box] else 5 if widget == splitmode_box else 8,
+                        column=0 if widget in [lowvram_box, tensor_split_label] else 1,
+                        padx=8, pady=1, stick="nw") if index in cuda_hipblas else widget.grid_remove()
+        
         if index == "Use Vulkan":
-            tensor_split_label.grid(row=8, column=0, padx = 8, pady=1, stick="nw")
+            tensor_split_label.grid(row=8, column=0, padx=8, pady=1, stick="nw")
             tensor_split_entry.grid(row=8, column=1, padx=8, pady=1, stick="nw")
-
-        if index == "Use Vulkan" or index == "Vulkan NoAVX2 (Old CPU)" or index == "Use CLBlast" or index == "CLBlast NoAVX2 (Old CPU)" or index == "Use CuBLAS" or index == "Use hipBLAS (ROCm)":
-            gpu_layers_label.grid(row=6, column=0, padx = 8, pady=1, stick="nw")
-            gpu_layers_entry.grid(row=6, column=1, padx=8, pady=1, stick="nw")
-            quick_gpu_layers_label.grid(row=6, column=0, padx = 8, pady=1, stick="nw")
-            quick_gpu_layers_entry.grid(row=6, column=1, padx=8, pady=1, stick="nw")
-        else:
-            gpu_layers_label.grid_remove()
-            gpu_layers_entry.grid_remove()
-            quick_gpu_layers_label.grid_remove()
-            quick_gpu_layers_entry.grid_remove()
+        
+        for widget in [gpu_layers_label, gpu_layers_entry, quick_gpu_layers_label, quick_gpu_layers_entry]:
+            widget.grid(row=6, column=0 if 'label' in str(widget) else 1, padx=8, pady=1, stick="nw") if index in gpu_options else widget.grid_remove()
         changed_gpu_choice_var()
-
 
     # presets selector
     makelabel(quick_tab, "Presets:", 1,0,"Select a backend to use.\nOpenBLAS and NoBLAS runs purely on CPU only.\nCuBLAS runs on Nvidia GPUs, and is much faster.\nCLBlast works on all GPUs but is somewhat slower.\nNoAVX2 and Failsafe modes support older PCs.")
