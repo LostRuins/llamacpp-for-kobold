@@ -2488,17 +2488,18 @@ def show_gui():
     makelabelentry(hardware_tab, "Threads:" , threads_var, 11, 50,tooltip="How many threads to use.\nRecommended value is your CPU core count, defaults are usually OK.")
 
     # hardware checkboxes
-    hardware_boxes = {"Launch Browser": launchbrowser, "High Priority" : highpriority, "Disable MMAP":disablemmap, "Use mlock":usemlock, "Debug Mode":debugmode, "Keep Foreground":keepforeground}
-    hardware_boxes_desc = {"Launch Browser": "Launches your default browser after model loading is complete",
-    "High Priority": "Increases the koboldcpp process priority.\nMay cause lag or slowdown instead. Not recommended.",
-    "Disable MMAP": "Avoids using mmap to load models if enabled",
-    "Use mlock": "Enables mlock, preventing the RAM used to load the model from being paged out.",
-    "Debug Mode": "Enables debug mode, with extra info printed to the terminal.",
-    "Keep Foreground": "Bring KoboldCpp to the foreground every time there is a new generation."}
-
-    for idx, name, in enumerate(hardware_boxes):
-        makecheckbox(hardware_tab, name, hardware_boxes[name], int(idx/2) +30, idx%2, tooltiptxt=hardware_boxes_desc[name])
-
+    hardware_boxes = {
+        "Launch Browser": {"variable": launchbrowser, "description": "Launches your default browser after model loading is complete"},
+        "High Priority": {"variable": highpriority, "description": "Increases the koboldcpp process priority.\nMay cause lag or slowdown instead. Not recommended."},
+        "Disable MMAP": {"variable": disablemmap, "description": "Avoids using mmap to load models if enabled"},
+        "Use mlock": {"variable": usemlock, "description": "Enables mlock, preventing the RAM used to load the model from being paged out."},
+        "Debug Mode": {"variable": debugmode, "description": "Enables debug mode, with extra info printed to the terminal."},
+        "Keep Foreground": {"variable": keepforeground, "description": "Bring KoboldCpp to the foreground every time there is a new generation."}
+    }
+    
+    for idx, (name, properties) in enumerate(hardware_boxes.items()):
+        makecheckbox(hardware_tab, name, properties["variable"], int(idx/2) + 30, idx % 2, tooltiptxt=properties["description"])
+    
     # blas thread specifier
     makelabelentry(hardware_tab, "BLAS threads:" , blas_threads_var, 14, 50,tooltip="How many threads to use during BLAS processing.\nIf left blank, uses same value as regular thread count.")
     # blas batch size
