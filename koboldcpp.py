@@ -1158,52 +1158,58 @@ def secure_endpoint(self):
     }).encode())
     return False
 
-    def noscript_webui(self):
-        global modelbusy
-        import html
-        import urllib.parse as urlparse
-        parsed_url = urlparse.urlparse(self.path)
-        parsed_dict = urlparse.parse_qs(parsed_url.query)
-        reply = ""
-        status = str(parsed_dict['status'][0]) if 'status' in parsed_dict else "Ready To Generate"
-        prompt = str(parsed_dict['prompt'][0]) if 'prompt' in parsed_dict else ""
-        max_length = int(parsed_dict['max_length'][0]) if 'max_length' in parsed_dict else 100
-        temperature = float(parsed_dict['temperature'][0]) if 'temperature' in parsed_dict else 0.7
-        top_k = int(parsed_dict['top_k'][0]) if 'top_k' in parsed_dict else 100
-        top_p = float(parsed_dict['top_p'][0]) if 'top_p' in parsed_dict else 0.9
-        rep_pen = float(parsed_dict['rep_pen'][0]) if 'rep_pen' in parsed_dict else 1.0
-        use_default_badwordsids = int(parsed_dict['use_default_badwordsids'][0]) if 'use_default_badwordsids' in parsed_dict else 0
-        gencommand = (parsed_dict['generate'][0] if 'generate' in parsed_dict else "")=="Generate"
+def noscript_webui(self):
+    global modelbusy
+    import html
+    import urllib.parse as urlparse
 
-        if modelbusy.locked():
-            status = "Model is currently busy, try again later."
-        elif gencommand:
-            if prompt=="" or max_length<=0:
-                status = "Need a valid prompt and length to generate."
-            else:
-                if max_length>512:
-                    max_length = 512
-                epurl = f"http://localhost:{args.port}"
-                if args.host!="":
-                    epurl = f"http://{args.host}:{args.port}"
-                gen_payload = {"prompt": prompt,"max_length": max_length,"temperature": temperature,"prompt": prompt,"top_k": top_k,"top_p": top_p,"rep_pen": rep_pen,"use_default_badwordsids":use_default_badwordsids}
-                respjson = make_url_request(f'{epurl}/api/v1/generate', gen_payload)
-                reply = html.escape(respjson["results"][0]["text"])
-                status = "Generation Completed"
+    parsed_url = urlparse.urlparse(self.path)
+    parsed_dict = urlparse.parse_qs(parsed_url.query)
 
-            if "generate" in parsed_dict:
-                del parsed_dict["generate"]
-            parsed_dict["prompt"] = prompt + reply
-            parsed_dict["status"] = status
-            updated_query_string = urlparse.urlencode(parsed_dict, doseq=True)
-            updated_path = parsed_url._replace(query=updated_query_string).geturl()
-            self.path = updated_path
+    def get_param(key, default, type_func=str):
+        return type_func(parsed_dict.get(key, [default])[0])
+
+    status = get_param('status', "Ready To Generate")
+    prompt = get_param('prompt', "")
+    max_length = get_param('max_length', 100, int)
+    temperature = get_param('temperature', 0.7, float)
+    top_k = get_param('top_k', 100, int)
+    top_p = get_param('top_p', 0.9, float)
+    rep_pen = get_param('rep_pen', 1.0, float)
+    use_default_badwordsids = get_param('use_default_badwordsids', 0, int)
+    gencommand = get_param('generate', "") == "Generate"
+
+    if modelbusy.locked():
+        status = "Model is currently busy, try again later."
+    elif gencommand:
+        if not prompt or max_length <= 0:
+            status = "Need a valid prompt and length to generate."
+        else:
+            max_length = min(max_length, 512)
+            epurl = f"http://{args.host or 'localhost'}:{args.port}"
+            gen_payload = {
+                "prompt": prompt,
+                "max_length": max_length,
+                "temperature": temperature,
+                "top_k": top_k,
+                "top_p": top_p,
+                "rep_pen": rep_pen,
+                "use_default_badwordsids": use_default_badwordsids
+            }
+            respjson = make_url_request(f'{epurl}/api/v1/generate', gen_payload)
+            reply = html.escape(respjson["results"][0]["text"])
+            status = "Generation Completed"
+
+            parsed_dict["prompt"] = [prompt + reply]
+            parsed_dict["status"] = [status]
+            parsed_dict.pop("generate", None)
+            updated_path = parsed_url._replace(query=urlparse.urlencode(parsed_dict, doseq=True)).geturl()
             self.send_response(302)
-            self.send_header("location", self.path)
+            self.send_header("location", updated_path)
             self.end_headers(content_type='text/html')
             return
 
-        finalhtml = f'''<!doctype html>
+    finalhtml = f'''<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -1231,11 +1237,12 @@ Enter Prompt:<br>
 </form>
 </div>
 </body></html>'''
-        finalhtml = finalhtml.encode('utf-8')
-        self.send_response(200)
-        self.send_header('content-length', str(len(finalhtml)))
-        self.end_headers(content_type='text/html')
-        self.wfile.write(finalhtml)
+
+    finalhtml = finalhtml.encode('utf-8')
+    self.send_response(200)
+    self.send_header('content-length', str(len(finalhtml)))
+    self.end_headers(content_type='text/html')
+    self.wfile.write(finalhtml)
 
     def do_GET(self):
         global embedded_kailite, embedded_kcpp_docs, embedded_kcpp_sdui
