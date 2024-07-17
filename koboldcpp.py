@@ -1915,29 +1915,25 @@ def show_gui():
 
     whisper_model_var = ctk.StringVar()
 
-    def tabbuttonaction(name):
-        for t in tabcontent:
-            if name == t:
-                tabcontent[t].grid(row=0, column=0)
-                navbuttons[t].configure(fg_color="#6f727b")
-            else:
-                tabcontent[t].grid_remove()
-                navbuttons[t].configure(fg_color="transparent")
+def tabbuttonaction(name):
+    for t, content in tabcontent.items():
+        is_active = (name == t)
+        content.grid(row=0, column=0) if is_active else content.grid_remove()
+        navbuttons[t].configure(fg_color="#6f727b" if is_active else "transparent")
 
-    # Dynamically create tabs + buttons based on values of [tabnames]
-    for idx, name in enumerate(tabnames):
-        tabcontent[name] = ctk.CTkFrame(tabcontentframe, width=int(tabcontentframe.cget("width")), height=int(tabcontentframe.cget("height")), fg_color="transparent")
-        tabcontent[name].grid_propagate(False)
-        if idx == 0:
-            tabcontent[name].grid(row=idx, sticky="nsew")
-        ctk.CTkLabel(tabcontent[name], text= name, font=ctk.CTkFont(None, 14, 'bold')).grid(row=0, padx=12, pady = 5, stick='nw')
+# Dynamically create tabs + buttons based on values of [tabnames]
+for idx, name in enumerate(tabnames):
+    tabcontent[name] = ctk.CTkFrame(tabcontentframe, width=int(tabcontentframe.cget("width")), height=int(tabcontentframe.cget("height")), fg_color="transparent")
+    tabcontent[name].grid_propagate(False)
+    if idx == 0:
+        tabcontent[name].grid(row=idx, sticky="nsew")
+    ctk.CTkLabel(tabcontent[name], text=name, font=ctk.CTkFont(None, 14, 'bold')).grid(row=0, padx=12, pady=5, stick='nw')
+    navbuttons[name] = ctk.CTkButton(navbuttonframe, text=name, width=100, corner_radius=0, command=lambda d=name: tabbuttonaction(d), hover_color="#868a94")
+    navbuttons[name].grid(row=idx)
 
-        navbuttons[name] = ctk.CTkButton(navbuttonframe, text=name, width = 100, corner_radius=0 , command = lambda d=name:tabbuttonaction(d), hover_color="#868a94" )
-        navbuttons[name].grid(row=idx)
-
-    tabbuttonaction(tabnames[0])
-    # Quick Launch Tab
-    quick_tab = tabcontent["Quick Launch"]
+tabbuttonaction(tabnames[0])
+# Quick Launch Tab
+quick_tab = tabcontent["Quick Launch"]
 
     # helper functions
     def makecheckbox(parent, text, variable=None, row=0, column=0, command=None, onvalue=1, offvalue=0,tooltiptxt=""):
