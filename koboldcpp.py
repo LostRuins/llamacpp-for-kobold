@@ -1644,21 +1644,22 @@ def is_port_in_use(portNum):
 def RunServerMultiThreaded(addr, port):
     global exitcounter, sslvalid
     global embedded_kailite, embedded_kcpp_docs, embedded_kcpp_sdui
+    
     if is_port_in_use(port):
         print(f"Warning: Port {port} already appears to be in use by another program.")
+    
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    
     if args.ssl and sslvalid:
         import ssl
-        certpath = os.path.abspath(args.ssl[0])
-        keypath = os.path.abspath(args.ssl[1])
+        certpath, keypath = map(os.path.abspath, args.ssl[:2])
         context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         context.load_cert_chain(certfile=certpath, keyfile=keypath)
         sock = context.wrap_socket(sock, server_side=True)
-
+    
     sock.bind((addr, port))
-    numThreads = 20
-    sock.listen(numThreads)
+    sock.listen(20)  # Set numThreads directly in listen()
 
     class Thread(threading.Thread):
         def __init__(self, i):
