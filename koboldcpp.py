@@ -2592,6 +2592,9 @@ def show_gui():
         if usehorde_var.get()==1 and not horde_name_var.get() and model_var.get():
             basefile = os.path.basename(model_var.get())
             horde_name_var.set(sanitize_string(os.path.splitext(basefile)[0]))
+
+    makecheckbox(horde_tab, "Configure for Horde", usehorde_var, 19, command=togglehorde,tooltiptxt="Enable the embedded AI Horde worker.")
+    togglehorde(1,1,1)
     
     # Image Gen Tab
 
