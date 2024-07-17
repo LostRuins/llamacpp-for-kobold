@@ -413,12 +413,12 @@ def tryparseint(value):
     except ValueError:
         return value
 
-def unpack_to_dir(destpath = ""):
+def unpack_to_dir(destpath=""):
     import shutil
     srcpath = os.path.abspath(os.path.dirname(__file__))
-    cliunpack = False if destpath == "" else True
-    print("Attempt to unpack KoboldCpp into directory...")
+    cliunpack = bool(destpath)
 
+    print("Attempt to unpack KoboldCpp into directory...")
     if not cliunpack:
         from tkinter.filedialog import askdirectory
         from tkinter import messagebox
@@ -428,31 +428,24 @@ def unpack_to_dir(destpath = ""):
 
     if os.path.isdir(srcpath) and os.path.isdir(destpath) and not os.listdir(destpath):
         try:
-            if cliunpack:
-                print(f"KoboldCpp will be extracted to {destpath}\nThis process may take several seconds to complete.")
-            else:
-                messagebox.showinfo("Unpack Starting", f"KoboldCpp will be extracted to {destpath}\nThis process may take several seconds to complete.")
+            msg = f"KoboldCpp will be extracted to {destpath}\nThis process may take several seconds to complete."
+            print(msg) if cliunpack else messagebox.showinfo("Unpack Starting", msg)
+
             for item in os.listdir(srcpath):
-                s = os.path.join(srcpath, item)
-                d = os.path.join(destpath, item)
+                s, d = os.path.join(srcpath, item), os.path.join(destpath, item)
                 if os.path.isdir(s):
                     shutil.copytree(s, d, False, None)
                 else:
                     shutil.copy2(s, d)
-            if cliunpack:
-                print(f"KoboldCpp successfully extracted to {destpath}")
-            else:
-                messagebox.showinfo("KoboldCpp Unpack Success", f"KoboldCpp successfully extracted to {destpath}")
+
+            success_msg = f"KoboldCpp successfully extracted to {destpath}"
+            print(success_msg) if cliunpack else messagebox.showinfo("KoboldCpp Unpack Success", success_msg)
         except Exception as e:
-            if cliunpack:
-                print(f"An error occurred while unpacking: {e}")
-            else:
-                messagebox.showerror("Error", f"An error occurred while unpacking: {e}")
+            error_msg = f"An error occurred while unpacking: {e}"
+            print(error_msg) if cliunpack else messagebox.showerror("Error", error_msg)
     else:
-        if cliunpack:
-            print(f"The target folder is not empty or invalid. Please select an empty folder.")
-        else:
-            messagebox.showwarning("Invalid Selection", "The target folder is not empty or invalid. Please select an empty folder.")
+        invalid_msg = "The target folder is not empty or invalid. Please select an empty folder."
+        print(invalid_msg) if cliunpack else messagebox.showwarning("Invalid Selection", invalid_msg)
 
 def exit_with_error(code, message, title="Error"):
     global guimode
