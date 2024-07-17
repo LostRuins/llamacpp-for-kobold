@@ -2332,15 +2332,11 @@ def show_gui():
         else:
             smartcontextbox.grid_remove()
 
-        if contextshift.get()==0 and flashattention.get()==1:
-            qkvslider.grid()
-            qkvlabel.grid()
-            noqkvlabel.grid_remove()
-        else:
-            qkvslider.grid_remove()
-            qkvlabel.grid_remove()
-            noqkvlabel.grid()
-
+        show_qkv = contextshift.get() == 0 and flashattention.get() == 1
+        for widget in [qkvslider, qkvlabel]:
+            widget.grid() if show_qkv else widget.grid_remove()
+        noqkvlabel.grid_remove() if show_qkv else noqkvlabel.grid()
+    
     def toggleflashattn(a,b,c):
         if contextshift.get()==0 and flashattention.get()==1:
             qkvslider.grid()
