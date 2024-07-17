@@ -1138,29 +1138,25 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             print(e)
 
-    def secure_endpoint(self): #returns false if auth fails. caller should exit
-        #handle password stuff
-        if password and password !="":
-            auth_header = None
-            auth_ok = False
-            if 'Authorization' in self.headers:
-                auth_header = self.headers['Authorization']
-            elif 'authorization' in self.headers:
-                auth_header = self.headers['authorization']
-            if auth_header != None and auth_header.startswith('Bearer '):
-                token = auth_header[len('Bearer '):].strip()
-                if token==password:
-                    auth_ok = True
-            if auth_ok==False:
-                self.send_response(401)
-                self.end_headers(content_type='application/json')
-                self.wfile.write(json.dumps({"detail": {
-                        "error": "Unauthorized",
-                        "msg": "Authentication key is missing or invalid.",
-                        "type": "unauthorized",
-                    }}).encode())
-                return False
+def secure_endpoint(self):
+    if not password:
         return True
+
+    auth_header = self.headers.get('Authorization') or self.headers.get('authorization')
+    
+    if auth_header and auth_header.startswith('Bearer ') and auth_header[7:].strip() == password:
+        return True
+
+    self.send_response(401)
+    self.end_headers(content_type='application/json')
+    self.wfile.write(json.dumps({
+        "detail": {
+            "error": "Unauthorized",
+            "msg": "Authentication key is missing or invalid.",
+            "type": "unauthorized",
+        }
+    }).encode())
+    return False
 
     def noscript_webui(self):
         global modelbusy
