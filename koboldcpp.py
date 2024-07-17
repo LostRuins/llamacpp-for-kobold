@@ -1785,16 +1785,16 @@ def show_gui():
     # trigger empty tooltip then remove it
     def show_tooltip(event, tooltip_text=None):
         nonlocal gtooltip_box, gtooltip_label
-        if not gtooltip_box and not gtooltip_label:
+        
+        if not gtooltip_box:
             gtooltip_box = ctk.CTkToplevel(root)
             gtooltip_box.configure(fg_color="#ffffe0")
             gtooltip_box.withdraw()
             gtooltip_box.overrideredirect(True)
-            gtooltip_label = ctk.CTkLabel(gtooltip_box, text=tooltip_text, text_color="#000000", fg_color="#ffffe0")
+            gtooltip_label = ctk.CTkLabel(gtooltip_box, text_color="#000000", fg_color="#ffffe0")
             gtooltip_label.pack(expand=True, padx=2, pady=1)
-        else:
-            gtooltip_label.configure(text=tooltip_text)
-
+        
+        gtooltip_label.configure(text=tooltip_text)
         x, y = root.winfo_pointerxy()
         gtooltip_box.wm_geometry(f"+{x + 10}+{y + 10}")
         gtooltip_box.deiconify()
