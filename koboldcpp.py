@@ -2113,14 +2113,10 @@ def show_gui():
 
 
     def makelabelentry(parent, text, var, row=0, width=50, padx=8, singleline=False, tooltip=""):
-        label = makelabel(parent, text, row,0,tooltip)
-        entry = ctk.CTkEntry(parent, width=width, textvariable=var) #you cannot set placeholder text for SHARED variables
-        if singleline:
-            entry.grid(row=row, column=0, padx=padx, stick="nw")
-        else:
-            entry.grid(row=row, column=1, padx=padx, stick="nw")
+        label = makelabel(parent, text, row, 0, tooltip)
+        entry = ctk.CTkEntry(parent, width=width, textvariable=var)
+        entry.grid(row=row, column=(0 if singleline else 1), padx=padx, sticky="nw")
         return entry, label
-
 
     def makefileentry(parent, text, searchtext, var, row=0, width=200, filetypes=[], onchoosefile=None, singlerow=False, singlecol=True, tooltiptxt=""):
         label = makelabel(parent, text, row,0,tooltiptxt,columnspan=3)
