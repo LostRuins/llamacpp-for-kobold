@@ -387,39 +387,17 @@ def set_backend_props(inputs):
     if args.useclblast:
         clblastids = 100 + int(args.useclblast[0])*10 + int(args.useclblast[1])
     inputs.clblast_info = clblastids
-
-    # we must force an explicit tensor split
-    # otherwise the default will divide equally and multigpu crap will slow it down badly
     inputs.cublas_info = 0
-
     if not args.tensor_split:
-        if (args.usecublas and "0" in args.usecublas):
-            os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-            os.environ["HIP_VISIBLE_DEVICES"] = "0"
-        elif (args.usecublas and "1" in args.usecublas):
-            os.environ["CUDA_VISIBLE_DEVICES"] = "1"
-            os.environ["HIP_VISIBLE_DEVICES"] = "1"
-        elif (args.usecublas and "2" in args.usecublas):
-            os.environ["CUDA_VISIBLE_DEVICES"] = "2"
-            os.environ["HIP_VISIBLE_DEVICES"] = "2"
-        elif (args.usecublas and "3" in args.usecublas):
-            os.environ["CUDA_VISIBLE_DEVICES"] = "3"
-            os.environ["HIP_VISIBLE_DEVICES"] = "3"
+        if args.usecublas and any(d in args.usecublas for d in "0123"):
+            device = next(d for d in "0123" if d in args.usecublas)
+            os.environ["CUDA_VISIBLE_DEVICES"] = device
+            os.environ["HIP_VISIBLE_DEVICES"] = device
     else:
-        if (args.usecublas and "0" in args.usecublas):
-            inputs.cublas_info = 0
-        elif (args.usecublas and "1" in args.usecublas):
-            inputs.cublas_info = 1
-        elif (args.usecublas and "2" in args.usecublas):
-            inputs.cublas_info = 2
-        elif (args.usecublas and "3" in args.usecublas):
-            inputs.cublas_info = 3
-
-    if args.usevulkan: #is an empty array if using vulkan without defined gpu
-        s = ""
-        for l in range(0,len(args.usevulkan)):
-            s += str(args.usevulkan[l])
-        inputs.vulkan_info = s.encode("UTF-8")
+        if args.usecublas:
+            inputs.cublas_info = next((int(d) for d in "0123" if d in args.usecublas), 0)
+    if args.usevulkan:
+        inputs.vulkan_info = "".join(map(str, args.usevulkan)).encode("UTF-8")
     else:
         inputs.vulkan_info = "".encode("UTF-8")
     return inputs
