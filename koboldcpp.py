@@ -935,17 +935,15 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
             return None
 
     async def generate_text(self, genparams, api_format, stream_flag):
-        global friendlymodelname, chatcompl_adapter, currfinishreason
+        global friendlymodelname, chatcompl_adapter, currfinishreason, last_non_horde_req_time
         is_quiet = args.quiet
         currfinishreason = "null"
-
-        def run_blocking():  # api format 1=basic,2=kai,3=oai,4=oai-chat
-            # flag instance as non-idle for a while
-            washordereq = genparams.get('genkey', '').startswith('HORDEREQ_')
-            if not washordereq:
-                global last_non_horde_req_time
+    
+        def run_blocking():
+            nonlocal last_non_horde_req_time
+            if not genparams.get('genkey', '').startswith('HORDEREQ_'):
                 last_non_horde_req_time = time.time()
-
+    
             return generate(
                 prompt=genparams.get('prompt', ""),
                 memory=genparams.get('memory', ""),
@@ -977,7 +975,7 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                 use_default_badwordsids=genparams.get('use_default_badwordsids', False),
                 stream_sse=stream_flag,
                 grammar=genparams.get('grammar', ''),
-                grammar_retain_state = genparams.get('grammar_retain_state', False),
+                grammar_retain_state=genparams.get('grammar_retain_state', False),
                 genkey=genparams.get('genkey', ''),
                 trimstop=genparams.get('trim_stop', False),
                 quiet=is_quiet,
@@ -989,48 +987,32 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                 banned_tokens=genparams.get('banned_tokens', []),
                 bypass_eos_token=genparams.get('bypass_eos', False),
             )
-
-        genout = {"text": "", "status": -1, "stopreason": -1}
-        if stream_flag:
-            loop = asyncio.get_event_loop()
-            executor = ThreadPoolExecutor()
-            genout = await loop.run_in_executor(executor, run_blocking)
-        else:
-            genout = run_blocking()
-
+    
+        genout = await asyncio.get_event_loop().run_in_executor(ThreadPoolExecutor(), run_blocking) if stream_flag else run_blocking()
+    
         recvtxt = genout['text']
-        currfinishreason = ("length" if (genout['stopreason'] != 1) else "stop")
-
-        # flag instance as non-idle for a while
-        washordereq = genparams.get('genkey', '').startswith('HORDEREQ_')
-        if not washordereq:
-            global last_non_horde_req_time
+        currfinishreason = "length" if genout['stopreason'] != 1 else "stop"
+    
+        if not genparams.get('genkey', '').startswith('HORDEREQ_'):
             last_non_horde_req_time = time.time()
-
+    
         if (args.debugmode != -1 and not is_quiet) or args.debugmode >= 1:
             utfprint("\nOutput: " + recvtxt)
-
-        if api_format == 1:
-            res = {"data": {"seqs": [recvtxt]}}
-        elif api_format == 3:
-            res = {"id": "cmpl-1", "object": "text_completion", "created": 1, "model": friendlymodelname,
-                   "usage": {"prompt_tokens": 100, "completion_tokens": 100, "total_tokens": 200},
-                   "choices": [{"text": recvtxt, "index": 0, "finish_reason": currfinishreason}]}
-        elif api_format == 4:
-            using_openai_tools = genparams.get('using_openai_tools', False)
-            tool_calls = []
-            if using_openai_tools:
-                tool_calls = extract_json_from_string(recvtxt)
-                if tool_calls and len(tool_calls)>0:
-                    recvtxt = None
-            res = {"id": "chatcmpl-1", "object": "chat.completion", "created": 1, "model": friendlymodelname,
-                   "usage": {"prompt_tokens": 100, "completion_tokens": 100, "total_tokens": 200},
-                   "choices": [{"index": 0, "message": {"role": "assistant", "content": recvtxt, "tool_calls": tool_calls}, "finish_reason": currfinishreason}]}
-        elif api_format == 5:
-            res = {"caption": end_trim_to_sentence(recvtxt)}
-        else:
-            res = {"results": [{"text": recvtxt, "finish_reason": currfinishreason}]}
-
+    
+        res = {
+            1: {"data": {"seqs": [recvtxt]}},
+            3: {"id": "cmpl-1", "object": "text_completion", "created": 1, "model": friendlymodelname,
+                "usage": {"prompt_tokens": 100, "completion_tokens": 100, "total_tokens": 200},
+                "choices": [{"text": recvtxt, "index": 0, "finish_reason": currfinishreason}]},
+            4: {"id": "chatcmpl-1", "object": "chat.completion", "created": 1, "model": friendlymodelname,
+                "usage": {"prompt_tokens": 100, "completion_tokens": 100, "total_tokens": 200},
+                "choices": [{"index": 0, "message": {"role": "assistant", "content": recvtxt, "tool_calls": extract_json_from_string(recvtxt) if genparams.get('using_openai_tools', False) else []}, "finish_reason": currfinishreason}]},
+            5: {"caption": end_trim_to_sentence(recvtxt)}
+        }.get(api_format, {"results": [{"text": recvtxt, "finish_reason": currfinishreason}]})
+    
+        if api_format == 4 and genparams.get('using_openai_tools', False) and res["choices"][0]["message"]["tool_calls"]:
+            res["choices"][0]["message"]["content"] = None
+    
         try:
             return res
         except Exception as e:
