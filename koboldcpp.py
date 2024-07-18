@@ -3648,34 +3648,19 @@ def main(launch_args,start_server=True):
             print(f"Warning: Chat Completions Adapter invalid or not found.")
 
     # handle model downloads if needed
-    if args.model_param and args.model_param!="":
-        if args.model_param.endswith("?download=true"):
-            args.model_param = args.model_param.replace("?download=true","")
-        if (args.model_param.startswith("http://") or args.model_param.startswith("https://")) and (args.model_param.endswith(".gguf") or args.model_param.endswith(".bin")):
-            dlfile = download_model_from_url(args.model_param)
-            if dlfile:
-                args.model_param = dlfile
-    if args.sdmodel and args.sdmodel!="":
-        if args.sdmodel.endswith("?download=true"):
-            args.sdmodel = args.sdmodel.replace("?download=true","")
-        if (args.sdmodel.startswith("http://") or args.sdmodel.startswith("https://")) and (args.sdmodel.endswith(".gguf") or args.sdmodel.endswith(".safetensors")):
-            dlfile = download_model_from_url(args.sdmodel)
-            if dlfile:
-                args.sdmodel = dlfile
-    if args.mmproj and args.mmproj!="":
-        if args.mmproj.endswith("?download=true"):
-            args.mmproj = args.mmproj.replace("?download=true","")
-        if (args.mmproj.startswith("http://") or args.mmproj.startswith("https://")) and (args.mmproj.endswith(".gguf")):
-            dlfile = download_model_from_url(args.mmproj)
-            if dlfile:
-                args.mmproj = dlfile
-    if args.whispermodel and args.whispermodel!="":
-        if args.whispermodel.endswith("?download=true"):
-            args.whispermodel = args.whispermodel.replace("?download=true","")
-        if (args.whispermodel.startswith("http://") or args.whispermodel.startswith("https://")) and (args.whispermodel.endswith(".gguf") or args.whispermodel.endswith(".bin")):
-            dlfile = download_model_from_url(args.whispermodel)
-            if dlfile:
-                args.whispermodel = dlfile
+    for arg_name in ['model_param', 'sdmodel', 'mmproj', 'whispermodel']:
+        arg_value = getattr(args, arg_name)
+        if arg_value and arg_value != "":
+            if arg_value.endswith("?download=true"):
+                arg_value = arg_value[:-14]  # Remove "?download=true"
+            
+            is_url = arg_value.startswith(("http://", "https://"))
+            valid_extensions = (".gguf", ".bin", ".safetensors")
+            
+            if is_url and arg_value.endswith(valid_extensions):
+                dlfile = download_model_from_url(arg_value)
+                if dlfile:
+                    setattr(args, arg_name, dlfile)
 
     # sanitize and replace the default vanity name. remember me....
     if args.model_param and args.model_param!="":
