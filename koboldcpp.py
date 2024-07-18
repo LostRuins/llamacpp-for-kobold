@@ -557,37 +557,36 @@ def string_contains_sequence_substring(inputstr,sequences):
 import struct
 
 def read_gguf_metadata(file_path):
-    chunk_size = 8192  # read only first 8kb of file
-    try:
-        def read_gguf_key(keyname,data,maxval):
-            keylen = len(keyname)
-            index = data.find(keyname)  # Search for the magic number, Read 2 chunks of 4 byte numbers
-            if index != -1 and index + keylen + 8 <= chunk_size:
-                start_index = index + keylen
-                first_value_bytes = data[start_index:start_index + 4]
-                second_value_bytes = data[start_index + 4:start_index + 8]
-                # Unpack each 4 bytes as an unsigned int32 in little-endian format
-                value1 = struct.unpack('<I', first_value_bytes)[0] #4 means its a uint32
-                value2 = struct.unpack('<I', second_value_bytes)[0]
-                if value1 == 4 and value2 > 0 and value2 <= maxval:
-                    return value2 #contains the desired value
-                return 0
-            else:
-                return 0 #not found
+    CHUNK_SIZE = 8192  # read only first 8kb of file
+    MIN_FILE_SIZE = 10000  # ignore files under 10kb
 
-        fsize = os.path.getsize(file_path)
-        if fsize < 10000: #ignore files under 10kb
+    def read_gguf_key(keyname, data, maxval):
+        index = data.find(keyname)  # Search for the magic number
+        if index != -1 and index + len(keyname) + 8 <= CHUNK_SIZE:
+            start_index = index + len(keyname)
+            # Read 2 chunks of 4 byte numbers
+            # Unpack each 4 bytes as an unsigned int32 in little-endian format
+            value1, value2 = struct.unpack('<II', data[start_index:start_index + 8])
+            if value1 == 4 and 0 < value2 <= maxval:
+                return value2  # contains the desired value
+        return 0  # not found
+
+    try:
+        if os.path.getsize(file_path) < MIN_FILE_SIZE:  # ignore files under 10kb
             return None
+
         with open(file_path, 'rb') as f:
             file_header = f.read(4)
-            if file_header != b'GGUF': #file is not GGUF
+            if file_header != b'GGUF':  # file is not GGUF
                 return None
-            data = f.read(chunk_size)
-            layercount = read_gguf_key(b'.block_count',data,512)
-            head_count_kv = read_gguf_key(b'.attention.head_count_kv',data,8192)
-            key_length = read_gguf_key(b'.attention.key_length',data,8192)
-            val_length = read_gguf_key(b'.attention.value_length',data,8192)
-            return [layercount,head_count_kv, max(key_length,val_length)]
+            
+            data = f.read(CHUNK_SIZE)
+            layercount = read_gguf_key(b'.block_count', data, 512)
+            head_count_kv = read_gguf_key(b'.attention.head_count_kv', data, 8192)
+            key_length = read_gguf_key(b'.attention.key_length', data, 8192)
+            val_length = read_gguf_key(b'.attention.value_length', data, 8192)
+
+            return [layercount, head_count_kv, max(key_length, val_length)]
     except Exception as ex:
         return None
 
