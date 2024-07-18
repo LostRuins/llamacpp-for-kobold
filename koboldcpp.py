@@ -3839,26 +3839,25 @@ def main(launch_args,start_server=True):
             if not loadok:
                 exitcounter = 999
                 exit_with_error(3,"Could not load image model: " + imgmodel)
-
-    #handle whisper model
-    if args.whispermodel and args.whispermodel!="":
+    
+    # handle whisper model
+    if args.whispermodel:
         whispermodel = args.whispermodel
-        if not whispermodel or not os.path.exists(whispermodel):
+        if not os.path.exists(whispermodel):
             if args.ignoremissing:
                 print(f"Ignoring missing whisper model file: {whispermodel}")
                 args.whispermodel = None
             else:
                 exitcounter = 999
-                exit_with_error(2,f"Cannot find whisper model file: {whispermodel}")
+                exit_with_error(2, f"Cannot find whisper model file: {whispermodel}")
         else:
             whispermodel = os.path.abspath(whispermodel)
             fullwhispermodelpath = whispermodel
             loadok = whisper_load_model(whispermodel)
-            print("Load Whisper Model OK: " + str(loadok))
+            print(f"Load Whisper Model OK: {loadok}")
             if not loadok:
                 exitcounter = 999
-                exit_with_error(3,"Could not load whisper model: " + whispermodel)
-
+                exit_with_error(3, f"Could not load whisper model: {whispermodel}")
 
     #load embedded lite
     try:
