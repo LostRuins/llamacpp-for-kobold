@@ -3052,39 +3052,41 @@ def show_gui():
             wb.open("https://github.com/LostRuins/koboldcpp/wiki")
         except:
             print("Cannot launch help in browser.")
+
     def display_updates():
         try:
-            import webbrowser as wb
-            wb.open("https://github.com/LostRuins/koboldcpp/releases/latest")
+            import webbrowser
+            webbrowser.open("https://github.com/LostRuins/koboldcpp/releases/latest")
         except:
             print("Cannot launch updates in browser.")
-
-    ctk.CTkButton(tabs , text = "Launch", fg_color="#2f8d3c", hover_color="#2faa3c", command = guilaunch, width=80, height = 35 ).grid(row=1,column=1, stick="se", padx= 25, pady=5)
-
-    ctk.CTkButton(tabs , text = "Update", fg_color="#9900cc", hover_color="#aa11dd", command = display_updates, width=90, height = 35 ).grid(row=1,column=0, stick="sw", padx= 5, pady=5)
-    ctk.CTkButton(tabs , text = "Save", fg_color="#084a66", hover_color="#085a88", command = save_config_gui, width=60, height = 35 ).grid(row=1,column=1, stick="sw", padx= 5, pady=5)
-    ctk.CTkButton(tabs , text = "Load", fg_color="#084a66", hover_color="#085a88", command = load_config_gui, width=60, height = 35 ).grid(row=1,column=1, stick="sw", padx= 70, pady=5)
-    ctk.CTkButton(tabs , text = "Help", fg_color="#992222", hover_color="#bb3333", command = display_help, width=60, height = 35 ).grid(row=1,column=1, stick="sw", padx= 135, pady=5)
-
-    # start a thread that tries to get actual gpu names and layer counts
+    
+    buttons = [
+        ("Launch", "#2f8d3c", "#2faa3c", guilaunch, 80, 1, 1, "se", 25),
+        ("Update", "#9900cc", "#aa11dd", display_updates, 90, 1, 0, "sw", 5),
+        ("Save", "#084a66", "#085a88", save_config_gui, 60, 1, 1, "sw", 5),
+        ("Load", "#084a66", "#085a88", load_config_gui, 60, 1, 1, "sw", 70),
+        ("Help", "#992222", "#bb3333", display_help, 60, 1, 1, "sw", 135)
+    ]
+    
+    for text, fg, hover, command, width, row, col, stick, padx in buttons:
+        ctk.CTkButton(tabs, text=text, fg_color=fg, hover_color=hover, command=command, 
+                      width=width, height=35).grid(row=row, column=col, sticky=stick, padx=padx, pady=5)
+    
     gpuinfo_thread = threading.Thread(target=auto_set_backend_gui)
-    gpuinfo_thread.start() #submit job in new thread so nothing is waiting
-
-    # runs main loop until closed or launch clicked
+    gpuinfo_thread.start()
+    
     root.mainloop()
-
-    if nextstate==0:
+    
+    if nextstate == 0:
         exitcounter = 999
         print("Exiting by user request.")
         sys.exit(0)
     else:
-        # processing vars
         kcpp_exporting_template = False
         export_vars()
-
-        if not args.model_param and not args.sdmodel and not args.whispermodel:
+        if not any([args.model_param, args.sdmodel, args.whispermodel]):
             exitcounter = 999
-            exit_with_error(2,"No text or image model file was selected. Exiting.")
+            exit_with_error(2, "No text or image model file was selected. Exiting.")
 
 def show_gui_msgbox(title,message):
     print(title + ": " + message, flush=True)
