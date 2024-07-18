@@ -3419,69 +3419,51 @@ def setuptunnel(has_sd):
 
 def unload_libs():
     global handle
+    if not handle:
+        return
+
     OS = platform.system()
     dll_close = None
+
+    def setup_dll_close(lib, func_name="dlclose"):
+        nonlocal dll_close
+        dll_close = getattr(lib, func_name)
+        dll_close.argtypes = [ctypes.c_void_p]
+        dll_close.restype = ctypes.c_int
+
     if OS == "Windows":  # pragma: Windows
         from ctypes import wintypes
         dll_close = ctypes.windll.kernel32.FreeLibrary
         dll_close.argtypes = [wintypes.HMODULE]
         dll_close.restype = ctypes.c_int
     elif OS == "Darwin":
-        try:
-            try:  # macOS 11 (Big Sur). Possibly also later macOS 10s.
-                stdlib = ctypes.CDLL("libc.dylib")
+        for lib_name in ["libc.dylib", "libSystem", "/usr/lib/system/libsystem_c.dylib"]:
+            try:
+                setup_dll_close(ctypes.CDLL(lib_name))
+                break
             except OSError:
-                stdlib = ctypes.CDLL("libSystem")
-        except OSError:
-            # Older macOSs. Not only is the name inconsistent but it's
-            # not even in PATH.
-            stdlib = ctypes.CDLL("/usr/lib/system/libsystem_c.dylib")
-        dll_close = stdlib.dlclose
-        dll_close.argtypes = [ctypes.c_void_p]
-        dll_close.restype = ctypes.c_int
+                continue
     elif OS == "Linux":
         try:
-            stdlib = ctypes.CDLL("")
+            setup_dll_close(ctypes.CDLL(""))
         except OSError:
-            stdlib = ctypes.CDLL("libc.so") # Alpine Linux.
-        dll_close = stdlib.dlclose
-        dll_close.argtypes = [ctypes.c_void_p]
-        dll_close.restype = ctypes.c_int
+            setup_dll_close(ctypes.CDLL("libc.so"))  # Alpine Linux
     elif sys.platform == "msys":
-        # msys can also use `ctypes.CDLL("kernel32.dll").FreeLibrary()`.
-        stdlib = ctypes.CDLL("msys-2.0.dll")
-        dll_close = stdlib.dlclose
-        dll_close.argtypes = [ctypes.c_void_p]
-        dll_close.restype = ctypes.c_int
+        setup_dll_close(ctypes.CDLL("msys-2.0.dll"))
     elif sys.platform == "cygwin":
-        stdlib = ctypes.CDLL("cygwin1.dll")
-        dll_close = stdlib.dlclose
-        dll_close.argtypes = [ctypes.c_void_p]
-        dll_close.restype = ctypes.c_int
+        setup_dll_close(ctypes.CDLL("cygwin1.dll"))
     elif OS == "FreeBSD":
-        # FreeBSD uses `/usr/lib/libc.so.7` where `7` is another version number.
-        # It is not in PATH but using its name instead of its path is somehow the
-        # only way to open it. The name must include the .so.7 suffix.
-        stdlib = ctypes.CDLL("libc.so.7")
-        dll_close = stdlib.close
+        setup_dll_close(ctypes.CDLL("libc.so.7"), "close")
 
-    if handle and dll_close:
+    if dll_close:
         print("Unloading Libraries...")
         dll_close(handle._handle)
-        del handle.load_model
-        del handle.generate
-        del handle.new_token
-        del handle.get_stream_count
-        del handle.has_finished
-        del handle.get_last_eval_time
-        del handle.get_last_process_time
-        del handle.get_last_token_count
-        del handle.get_last_seed
-        del handle.get_total_gens
-        del handle.get_last_stop_reason
-        del handle.abort_generate
-        del handle.token_count
-        del handle.get_pending_output
+        for attr in ['load_model', 'generate', 'new_token', 'get_stream_count', 'has_finished',
+                     'get_last_eval_time', 'get_last_process_time', 'get_last_token_count',
+                     'get_last_seed', 'get_total_gens', 'get_last_stop_reason', 'abort_generate',
+                     'token_count', 'get_pending_output']:
+            delattr(handle, attr)
+        global handle
         del handle
         handle = None
 
