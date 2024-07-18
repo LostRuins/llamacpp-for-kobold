@@ -590,37 +590,33 @@ def read_gguf_metadata(file_path):
     except Exception as ex:
         return None
 
-def autoset_gpu_layers(filepath,ctxsize,gpumem): #shitty algo to determine how many layers to use
+def autoset_gpu_layers(filepath, ctxsize, gpumem):  # shitty algo to determine how many layers to use
     try:
-        layerlimit = 0
         fsize = os.path.getsize(filepath)
-        if fsize>10000000: #dont bother with models < 10mb
-            cs = ctxsize
-            mem = gpumem
-            csmul = 1.0
-            if cs and cs > 8192:
-                csmul = 1.4
-            elif cs and cs > 4096:
-                csmul = 1.2
-            elif cs and cs > 2048:
-                csmul = 1.1
-            if mem < fsize*1.6*csmul:
-                ggufmeta = read_gguf_metadata(filepath)
-                if not ggufmeta or ggufmeta[0]==0: #fail to read or no layers
-                    sizeperlayer = fsize*csmul*0.052
-                    layerlimit = int(min(200,mem/sizeperlayer))
-                else:
-                    layers = ggufmeta[0]
-                    headcount = ggufmeta[1]
-                    headkvlen = (ggufmeta[2] if ggufmeta[2] > 0 else 128)
-                    ratio = mem/(fsize*csmul*1.5)
-                    if headcount > 0:
-                        ratio = max(ratio,mem/(fsize*1.34 + (layers*headcount*headkvlen*cs*4.25)))
-                    layerlimit = int(ratio*layers)
-            else:
-                layerlimit = 200 # assume full offload
-        return layerlimit
-    except Exception as ex:
+        if fsize <= 10000000:  # dont bother with models < 10mb
+            return 0
+
+        cs = ctxsize
+        mem = gpumem
+        csmul = 1.0 + (0.4 if cs > 8192 else 0.2 if cs > 4096 else 0.1 if cs > 2048 else 0)
+
+        if mem >= fsize * 1.6 * csmul:
+            return 200  # assume full offload
+
+        ggufmeta = read_gguf_metadata(filepath)
+        if not ggufmeta or ggufmeta[0] == 0:  # fail to read or no layers
+            sizeperlayer = fsize * csmul * 0.052
+            return int(min(200, mem / sizeperlayer))
+
+        layers, headcount, headkvlen = ggufmeta
+        headkvlen = max(headkvlen, 128)
+        ratio = mem / (fsize * csmul * 1.5)
+        if headcount > 0:
+            ratio = max(ratio, mem / (fsize * 1.34 + (layers * headcount * headkvlen * cs * 4.25)))
+
+        return int(ratio * layers)
+
+    except Exception:
         return 0
 
 def fetch_gpu_properties(testCL,testCU,testVK):
