@@ -136,5 +136,17 @@ koboldcpp_hipblas.dll
 bin/
 conda/
 
+#windows
+api-ms*.dll
+libcrypto-1_1.dll
+libffi-7.dll
+libssl-1_1.dll
+msys-2.0.dll
+python3.dll
+python38.dll
+tcl86t.dll
+tk86t.dll
+ucrtbase.dll
+
 # Jetbrains idea folder
 .idea/

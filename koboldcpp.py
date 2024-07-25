@@ -262,13 +262,13 @@ lib_vulkan = pick_existant_file("koboldcpp_vulkan.dll","koboldcpp_vulkan.so")
 lib_vulkan_noavx2 = pick_existant_file("koboldcpp_vulkan_noavx2.dll","koboldcpp_vulkan_noavx2.so")
 libname = ""
 lib_option_pairs = [
-    (lib_openblas, "Use OpenBLAS"),
-    (lib_default, "Use No BLAS"),
-    (lib_clblast, "Use CLBlast"),
-    (lib_cublas, "Use CuBLAS"),
-    (lib_hipblas, "Use hipBLAS (ROCm)"),
-    (lib_vulkan, "Use Vulkan"),
-    (lib_noavx2, "NoAVX2 Mode (Old CPU)"),
+    (lib_openblas, "（CPU）OpenBLAS"),
+    (lib_default,"（CPU）不使用BLAS"),
+    (lib_clblast,"（不推荐，显卡）CLBlast"),
+    (lib_cublas, "（N卡）CuBLAS"),
+    (lib_hipblas, "（A卡）hipBLAS"),
+    (lib_vulkan, "(新显卡通用，不推荐) Vulkan"),
+    (lib_noavx2, "NoAVX2 Mode (老 CPU)"),
     (lib_clblast_noavx2, "CLBlast NoAVX2 (Old CPU)"),
     (lib_vulkan_noavx2, "Vulkan NoAVX2 (Old CPU)"),
     (lib_failsafe, "Failsafe Mode (Old CPU)")]
@@ -709,11 +709,11 @@ def fetch_gpu_properties(testCL,testCU,testVK):
 def auto_set_backend_cli():
     print("\nA .kcppt template was selected from CLI - automatically selecting your backend...")
     fetch_gpu_properties(False,True,True)
-    if exitcounter < 100 and MaxMemory[0]>3500000000 and (("Use CuBLAS" in runopts and CUDevicesNames[0]!="") or "Use hipBLAS (ROCm)" in runopts) and any(CUDevicesNames):
-        if "Use CuBLAS" in runopts or "Use hipBLAS (ROCm)" in runopts:
+    if exitcounter < 100 and MaxMemory[0]>3500000000 and (("（N卡）CuBLAS" in runopts and CUDevicesNames[0]!="") or "（A卡）hipBLAS" in runopts) and any(CUDevicesNames):
+        if "（N卡）CuBLAS" in runopts or "（A卡）hipBLAS" in runopts:
             args.usecublas = ["normal","mmq"]
             print("Auto Selected CUDA Backend...\n")
-    elif exitcounter < 100 and (1 in VKIsDGPU) and "Use Vulkan" in runopts:
+    elif exitcounter < 100 and (1 in VKIsDGPU) and "(新显卡通用，不推荐) Vulkan" in runopts:
         for i in range(0,len(VKIsDGPU)):
             if VKIsDGPU[i]==1:
                 args.usevulkan = []
@@ -2153,7 +2153,7 @@ def show_gui():
 
     tabs = ctk.CTkFrame(root, corner_radius = 0, width=windowwidth, height=windowheight-50)
     tabs.grid(row=0, stick="nsew")
-    tabnames= ["Quick Launch", "Hardware", "Tokens", "Model Files", "Network", "Horde Worker","Image Gen","Audio","Extra"]
+    tabnames= ["快速启动", "硬件设置", "上下文设置", "模型文件设置", "网络设置", "Horde Worker","图像生成设置","音频设置","其他设置"]
     navbuttons = {}
     navbuttonframe = ctk.CTkFrame(tabs, width=100, height=int(tabs.cget("height")))
     navbuttonframe.grid(row=0, column=0, padx=2,pady=2)
@@ -2166,10 +2166,10 @@ def show_gui():
     tabcontent = {}
     # slider data
     blasbatchsize_values = ["-1", "32", "64", "128", "256", "512", "1024", "2048"]
-    blasbatchsize_text = ["Don't Batch BLAS","32","64","128","256","512","1024","2048"]
+    blasbatchsize_text = ["不使用批次BLAS","32","64","128","256","512","1024","2048"]
     contextsize_text = ["256", "512", "1024", "2048", "3072", "4096", "6144", "8192", "12288", "16384", "24576", "32768", "49152", "65536", "98304", "131072"]
     antirunopts = [opt.replace("Use ", "") for lib, opt in lib_option_pairs if not (opt in runopts)]
-    quantkv_text = ["F16 (Off)","8-Bit","4-Bit"]
+    quantkv_text = ["F16 (不使用)","8-Bit","4-Bit"]
 
     if not any(runopts):
         exitcounter = 999
@@ -2261,7 +2261,7 @@ def show_gui():
 
     tabbuttonaction(tabnames[0])
     # Quick Launch Tab
-    quick_tab = tabcontent["Quick Launch"]
+    quick_tab = tabcontent["快速启动"]
 
     # helper functions
     def makecheckbox(parent, text, variable=None, row=0, column=0, command=None, onvalue=1, offvalue=0,tooltiptxt=""):
@@ -2337,19 +2337,19 @@ def show_gui():
             fetch_gpu_properties(True,True,True)
         #autopick cublas if suitable, requires at least 3.5GB VRAM to auto pick
         #we do not want to autoselect hip/cublas if the user has already changed their desired backend!
-        if exitcounter < 100 and MaxMemory[0]>3500000000 and (("Use CuBLAS" in runopts and CUDevicesNames[0]!="") or "Use hipBLAS (ROCm)" in runopts) and (any(CUDevicesNames) or any(CLDevicesNames)) and runmode_untouched:
-            if "Use CuBLAS" in runopts:
-                runopts_var.set("Use CuBLAS")
+        if exitcounter < 100 and MaxMemory[0]>3500000000 and (("（N卡）CuBLAS" in runopts and CUDevicesNames[0]!="") or "（A卡）hipBLAS" in runopts) and (any(CUDevicesNames) or any(CLDevicesNames)) and runmode_untouched:
+            if "（N卡）CuBLAS" in runopts:
+                runopts_var.set("（N卡）CuBLAS")
                 gpu_choice_var.set("1")
                 print("Auto Selected CUDA Backend...\n")
-            elif "Use hipBLAS (ROCm)" in runopts:
-                runopts_var.set("Use hipBLAS (ROCm)")
+            elif "（A卡）hipBLAS" in runopts:
+                runopts_var.set("（A卡）hipBLAS")
                 gpu_choice_var.set("1")
                 print("Auto Selected HIP Backend...\n")
-        elif exitcounter < 100 and (1 in VKIsDGPU) and runmode_untouched and "Use Vulkan" in runopts:
+        elif exitcounter < 100 and (1 in VKIsDGPU) and runmode_untouched and "(新显卡通用，不推荐) Vulkan" in runopts:
             for i in range(0,len(VKIsDGPU)):
                 if VKIsDGPU[i]==1:
-                    runopts_var.set("Use Vulkan")
+                    runopts_var.set("(新显卡通用，不推荐) Vulkan")
                     gpu_choice_var.set(str(i+1))
                     print("Auto Selected Vulkan Backend...\n")
                     break
@@ -2393,10 +2393,10 @@ def show_gui():
             try:
                 s = int(gpu_choice_var.get())-1
                 v = runopts_var.get()
-                if v == "Use Vulkan" or v == "Vulkan NoAVX2 (Old CPU)":
+                if v == "(新显卡通用，不推荐) Vulkan" or v == "Vulkan NoAVX2 (Old CPU)":
                     quick_gpuname_label.configure(text=VKDevicesNames[s])
                     gpuname_label.configure(text=VKDevicesNames[s])
-                elif v == "Use CLBlast" or v == "CLBlast NoAVX2 (Old CPU)":
+                elif v =="（不推荐，显卡）CLBlast" or v == "CLBlast NoAVX2 (Old CPU)":
                     quick_gpuname_label.configure(text=CLDevicesNames[s])
                     gpuname_label.configure(text=CLDevicesNames[s])
                 else:
@@ -2446,19 +2446,19 @@ def show_gui():
         global runmode_untouched
         runmode_untouched = False
         index = runopts_var.get()
-        if index == "Use Vulkan" or index == "Vulkan NoAVX2 (Old CPU)" or index == "Use CLBlast" or index == "CLBlast NoAVX2 (Old CPU)" or index == "Use CuBLAS" or index == "Use hipBLAS (ROCm)":
+        if index == "(新显卡通用，不推荐) Vulkan" or index == "Vulkan NoAVX2 (Old CPU)" or index =="（不推荐，显卡）CLBlast" or index == "CLBlast NoAVX2 (Old CPU)" or index == "（N卡）CuBLAS" or index == "（A卡）hipBLAS":
             quick_gpuname_label.grid(row=3, column=1, padx=75, sticky="W")
             gpuname_label.grid(row=3, column=1, padx=75, sticky="W")
             gpu_selector_label.grid(row=3, column=0, padx = 8, pady=1, stick="nw")
             quick_gpu_selector_label.grid(row=3, column=0, padx = 8, pady=1, stick="nw")
-            if index == "Use CLBlast" or index == "CLBlast NoAVX2 (Old CPU)":
+            if index =="（不推荐，显卡）CLBlast" or index == "CLBlast NoAVX2 (Old CPU)":
                 gpu_selector_box.grid(row=3, column=1, padx=8, pady=1, stick="nw")
                 quick_gpu_selector_box.grid(row=3, column=1, padx=8, pady=1, stick="nw")
                 CUDA_gpu_selector_box.grid_remove()
                 CUDA_quick_gpu_selector_box.grid_remove()
                 if gpu_choice_var.get()=="All":
                     gpu_choice_var.set("1")
-            elif index == "Use Vulkan" or index == "Vulkan NoAVX2 (Old CPU)" or index == "Use CuBLAS" or index == "Use hipBLAS (ROCm)":
+            elif index == "(新显卡通用，不推荐) Vulkan" or index == "Vulkan NoAVX2 (Old CPU)" or index == "（N卡）CuBLAS" or index == "（A卡）hipBLAS":
                 gpu_selector_box.grid_remove()
                 quick_gpu_selector_box.grid_remove()
                 CUDA_gpu_selector_box.grid(row=3, column=1, padx=8, pady=1, stick="nw")
@@ -2473,7 +2473,7 @@ def show_gui():
             quick_gpu_selector_box.grid_remove()
             CUDA_quick_gpu_selector_box.grid_remove()
 
-        if index == "Use CuBLAS" or index == "Use hipBLAS (ROCm)":
+        if index == "（N卡）CuBLAS" or index == "（A卡）hipBLAS":
             lowvram_box.grid(row=4, column=0, padx=8, pady=1,  stick="nw")
             mmq_box.grid(row=4, column=1, padx=8, pady=1,  stick="nw")
             quick_mmq_box.grid(row=4, column=1, padx=8, pady=1,  stick="nw")
@@ -2488,11 +2488,11 @@ def show_gui():
             tensor_split_entry.grid_remove()
             splitmode_box.grid_remove()
 
-        if index == "Use Vulkan":
+        if index == "(新显卡通用，不推荐) Vulkan":
             tensor_split_label.grid(row=8, column=0, padx = 8, pady=1, stick="nw")
             tensor_split_entry.grid(row=8, column=1, padx=8, pady=1, stick="nw")
 
-        if index == "Use Vulkan" or index == "Vulkan NoAVX2 (Old CPU)" or index == "Use CLBlast" or index == "CLBlast NoAVX2 (Old CPU)" or index == "Use CuBLAS" or index == "Use hipBLAS (ROCm)":
+        if index == "(新显卡通用，不推荐) Vulkan" or index == "Vulkan NoAVX2 (Old CPU)" or index =="（不推荐，显卡）CLBlast" or index == "CLBlast NoAVX2 (Old CPU)" or index == "（N卡）CuBLAS" or index == "（A卡）hipBLAS":
             gpu_layers_label.grid(row=6, column=0, padx = 8, pady=1, stick="nw")
             gpu_layers_entry.grid(row=6, column=1, padx=8, pady=1, stick="nw")
             quick_gpu_layers_label.grid(row=6, column=0, padx = 8, pady=1, stick="nw")
@@ -2506,7 +2506,7 @@ def show_gui():
 
 
     # presets selector
-    makelabel(quick_tab, "Presets:", 1,0,"Select a backend to use.\nOpenBLAS and NoBLAS runs purely on CPU only.\nCuBLAS runs on Nvidia GPUs, and is much faster.\nCLBlast works on all GPUs but is somewhat slower.\nNoAVX2 and Failsafe modes support older PCs.")
+    makelabel(quick_tab, "硬件预设:", 1,0,"Select a backend to use.\nOpenBLAS and NoBLAS runs purely on CPU only.\nCuBLAS runs on Nvidia GPUs, and is much faster.\nCLBlast works on all GPUs but is somewhat slower.\nNoAVX2 and Failsafe modes support older PCs.")
 
     runoptbox = ctk.CTkComboBox(quick_tab, values=runopts, width=180,variable=runopts_var, state="readonly")
     runoptbox.grid(row=1, column=1,padx=8, stick="nw")
@@ -2522,33 +2522,33 @@ def show_gui():
     quick_gpuname_label = ctk.CTkLabel(quick_tab, text="")
     quick_gpuname_label.grid(row=3, column=1, padx=75, sticky="W")
     quick_gpuname_label.configure(text_color="#ffff00")
-    quick_gpu_layers_entry,quick_gpu_layers_label = makelabelentry(quick_tab,"GPU Layers:", gpulayers_var, 6, 50,tooltip="How many layers to offload onto the GPU.\nVRAM intensive, usage increases with model and context size.\nRequires some trial and error to find the best fit value.\n\nCommon values for total layers, accuracy not guaranteed.\n\nLlama/Mistral 7b/8b: 33\nSolar 10.7b/11b: 49\nLlama 13b: 41\nLlama 20b(stack): 63\nLlama/Yi 34b: 61\nMixtral 8x7b: 33\nLlama 70b: 81")
-    quick_mmq_box = makecheckbox(quick_tab,  "Use QuantMatMul (mmq)", mmq_var, 4,1,tooltiptxt="Enable MMQ mode instead of CuBLAS for prompt processing. Read the wiki. Speed may vary.")
+    quick_gpu_layers_entry,quick_gpu_layers_label = makelabelentry(quick_tab,"加载到GPU的层数:", gpulayers_var, 6, 50,tooltip="How many layers to offload onto the GPU.\nVRAM intensive, usage increases with model and context size.\nRequires some trial and error to find the best fit value.\n\nCommon values for total layers, accuracy not guaranteed.\n\nLlama/Mistral 7b/8b: 33\nSolar 10.7b/11b: 49\nLlama 13b: 41\nLlama 20b(stack): 63\nLlama/Yi 34b: 61\nMixtral 8x7b: 33\nLlama 70b: 81")
+    quick_mmq_box = makecheckbox(quick_tab,  "（乱码时取消勾选）使用 QuantMatMul (mmq)", mmq_var, 4,1,tooltiptxt="Enable MMQ mode instead of CuBLAS for prompt processing. Read the wiki. Speed may vary.")
 
     # quick boxes
     quick_boxes = {
-        "Launch Browser": [launchbrowser, "Launches your default browser after model loading is complete"],
-        "Disable MMAP": [disablemmap,  "Avoids using mmap to load models if enabled"],
-        "Use ContextShift": [contextshift, "Uses Context Shifting to reduce reprocessing.\nRecommended. Check the wiki for more info."],
+        "加载完后自动启动浏览器": [launchbrowser, "Launches your default browser after model loading is complete"],
+        "不使用 MMAP": [disablemmap,  "Avoids using mmap to load models if enabled"],
+        "缓存上一次的上下文": [contextshift, "Uses Context Shifting to reduce reprocessing.\nRecommended. Check the wiki for more info."],
         "Remote Tunnel": [remotetunnel,  "Creates a trycloudflare tunnel.\nAllows you to access koboldcpp from other devices over an internet URL."],
-        "Use FlashAttention": [flashattention, "Enable flash attention for GGUF models."],
-        "Quiet Mode": [quietmode, "Prevents all generation related terminal output from being displayed."]
+        "（提高速度）使用 FA": [flashattention, "Enable flash attention for GGUF models."],
+        "静默模式": [quietmode, "Prevents all generation related terminal output from being displayed."]
     }
 
     for idx, (name, properties) in enumerate(quick_boxes.items()):
         makecheckbox(quick_tab, name, properties[0], int(idx/2) + 20, idx % 2, tooltiptxt=properties[1])
 
     # context size
-    makeslider(quick_tab, "Context Size:", contextsize_text, context_var, 0, len(contextsize_text)-1, 30, width=280, set=5,tooltip="What is the maximum context size to support. Model specific. You cannot exceed it.\nLarger contexts require more memory, and not all models support it.")
+    makeslider(quick_tab, "上下文长度:", contextsize_text, context_var, 0, len(contextsize_text)-1, 30, width=280, set=5,tooltip="What is the maximum context size to support. Model specific. You cannot exceed it.\nLarger contexts require more memory, and not all models support it.")
 
     # load model
-    makefileentry(quick_tab, "Model:", "Select GGML Model File", model_var, 40, 280, onchoosefile=on_picked_model_file,tooltiptxt="Select a GGUF or GGML model file on disk to be loaded.")
+    makefileentry(quick_tab, "模型文件:", "选择.gguf 或 .bin结尾的模型文件", model_var, 40, 280, onchoosefile=on_picked_model_file,tooltiptxt="Select a GGUF or GGML model file on disk to be loaded.")
 
     # Hardware Tab
-    hardware_tab = tabcontent["Hardware"]
+    hardware_tab = tabcontent["硬件设置"]
 
     # presets selector
-    makelabel(hardware_tab, "Presets:", 1,0,"Select a backend to use.\nOpenBLAS and NoBLAS runs purely on CPU only.\nCuBLAS runs on Nvidia GPUs, and is much faster.\nCLBlast works on all GPUs but is somewhat slower.\nNoAVX2 and Failsafe modes support older PCs.")
+    makelabel(hardware_tab, "硬件预设:", 1,0,"Select a backend to use.\nOpenBLAS and NoBLAS runs purely on CPU only.\nCuBLAS runs on Nvidia GPUs, and is much faster.\nCLBlast works on all GPUs but is somewhat slower.\nNoAVX2 and Failsafe modes support older PCs.")
     runoptbox = ctk.CTkComboBox(hardware_tab, values=runopts,  width=180,variable=runopts_var, state="readonly")
     runoptbox.grid(row=1, column=1,padx=8, stick="nw")
     runoptbox.set(runopts[0]) # Set to first available option
@@ -2563,35 +2563,35 @@ def show_gui():
     gpuname_label = ctk.CTkLabel(hardware_tab, text="")
     gpuname_label.grid(row=3, column=1, padx=75, sticky="W")
     gpuname_label.configure(text_color="#ffff00")
-    gpu_layers_entry,gpu_layers_label = makelabelentry(hardware_tab,"GPU Layers:", gpulayers_var, 6, 50,tooltip="How many layers to offload onto the GPU.\nVRAM intensive, usage increases with model and context size.\nRequires some trial and error to find the best fit value.\n\nCommon values for total layers, accuracy not guaranteed.\n\nLlama/Mistral 7b/8b: 33\nSolar 10.7b/11b: 49\nLlama 13b: 41\nLlama 20b(stack): 63\nLlama/Yi 34b: 61\nMixtral 8x7b: 33\nLlama 70b: 81")
+    gpu_layers_entry,gpu_layers_label = makelabelentry(hardware_tab,"加载到GPU的层数:", gpulayers_var, 6, 50,tooltip="How many layers to offload onto the GPU.\nVRAM intensive, usage increases with model and context size.\nRequires some trial and error to find the best fit value.\n\nCommon values for total layers, accuracy not guaranteed.\n\nLlama/Mistral 7b/8b: 33\nSolar 10.7b/11b: 49\nLlama 13b: 41\nLlama 20b(stack): 63\nLlama/Yi 34b: 61\nMixtral 8x7b: 33\nLlama 70b: 81")
     tensor_split_entry,tensor_split_label = makelabelentry(hardware_tab, "Tensor Split:", tensor_split_str_vars, 8, 80, tooltip='When using multiple GPUs this option controls how large tensors should be split across all GPUs.\nUses a comma-separated list of non-negative values that assigns the proportion of data that each GPU should get in order.\nFor example, "3,2" will assign 60% of the data to GPU 0 and 40% to GPU 1.')
-    lowvram_box = makecheckbox(hardware_tab,  "Low VRAM (No KV offload)", lowvram_var, 4,0, tooltiptxt='Avoid offloading KV Cache or scratch buffers to VRAM.\nAllows more layers to fit, but may result in a speed loss.')
-    mmq_box = makecheckbox(hardware_tab,  "Use QuantMatMul (mmq)", mmq_var, 4,1, tooltiptxt="Enable MMQ mode to use finetuned kernels instead of default CuBLAS/HipBLAS for prompt processing.\nRead the wiki. Speed may vary.")
-    splitmode_box = makecheckbox(hardware_tab,  "Row-Split", rowsplit_var, 5,0, tooltiptxt="Split rows across GPUs instead of splitting layers and KV across GPUs.\nUses the main GPU for small tensors and intermediate results. Speed may vary.")
+    lowvram_box = makecheckbox(hardware_tab,  "低显存模式", lowvram_var, 4,0, tooltiptxt='Avoid offloading KV Cache or scratch buffers to VRAM.\nAllows more layers to fit, but may result in a speed loss.')
+    mmq_box = makecheckbox(hardware_tab,  "（乱码时取消勾选）使用 QuantMatMul (mmq)", mmq_var, 4,1, tooltiptxt="Enable MMQ mode to use finetuned kernels instead of default CuBLAS/HipBLAS for prompt processing.\nRead the wiki. Speed may vary.")
+    splitmode_box = makecheckbox(hardware_tab,  "行切分模式", rowsplit_var, 5,0, tooltiptxt="Split rows across GPUs instead of splitting layers and KV across GPUs.\nUses the main GPU for small tensors and intermediate results. Speed may vary.")
 
     # threads
-    makelabelentry(hardware_tab, "Threads:" , threads_var, 11, 50,tooltip="How many threads to use.\nRecommended value is your CPU core count, defaults are usually OK.")
+    makelabelentry(hardware_tab, "线程数:" , threads_var, 11, 50,tooltip="How many threads to use.\nRecommended value is your CPU core count, defaults are usually OK.")
 
     # hardware checkboxes
     hardware_boxes = {
-        "Launch Browser": [launchbrowser, "Launches your default browser after model loading is complete"],
-        "High Priority": [highpriority, "Increases the koboldcpp process priority.\nMay cause lag or slowdown instead. Not recommended."],
-        "Disable MMAP": [disablemmap, "Avoids using mmap to load models if enabled"],
-        "Use mlock": [usemlock, "Enables mlock, preventing the RAM used to load the model from being paged out."],
-        "Debug Mode": [debugmode, "Enables debug mode, with extra info printed to the terminal."],
-        "Keep Foreground": [keepforeground, "Bring KoboldCpp to the foreground every time there is a new generation."]
+        "加载完后自动启动浏览器": [launchbrowser, "Launches your default browser after model loading is complete"],
+        "高优先级模式": [highpriority, "Increases the koboldcpp process priority.\nMay cause lag or slowdown instead. Not recommended."],
+        "不使用 MMAP": [disablemmap, "Avoids using mmap to load models if enabled"],
+        "使用 mlock": [usemlock, "Enables mlock, preventing the RAM used to load the model from being paged out."],
+        "调试模式": [debugmode, "Enables debug mode, with extra info printed to the terminal."],
+        "始终以前台模式运行": [keepforeground, "Bring KoboldCpp to the foreground every time there is a new generation."]
     }
 
     for idx, (name, properties) in enumerate(hardware_boxes.items()):
         makecheckbox(hardware_tab, name, properties[0], int(idx/2) + 30, idx % 2, tooltiptxt=properties[1])
 
     # blas thread specifier
-    makelabelentry(hardware_tab, "BLAS threads:" , blas_threads_var, 14, 50,tooltip="How many threads to use during BLAS processing.\nIf left blank, uses same value as regular thread count.")
+    makelabelentry(hardware_tab, "BLAS 线程数:" , blas_threads_var, 14, 50,tooltip="How many threads to use during BLAS processing.\nIf left blank, uses same value as regular thread count.")
     # blas batch size
-    makeslider(hardware_tab, "BLAS Batch Size:", blasbatchsize_text, blas_size_var, 0, 7, 16,width=200, set=5,tooltip="How many tokens to process at once per batch.\nLarger values use more memory.")
+    makeslider(hardware_tab, "BLAS 每批token数:", blasbatchsize_text, blas_size_var, 0, 7, 16,width=200, set=5,tooltip="How many tokens to process at once per batch.\nLarger values use more memory.")
     # force version
-    makelabelentry(hardware_tab, "Force Version:" , version_var, 100, 50,tooltip="If the autodetected version is wrong, you can change it here.\nLeave as 0 for default.")
-    ctk.CTkButton(hardware_tab , text = "Run Benchmark", command = guibench ).grid(row=110,column=0, stick="se", padx= 0, pady=2)
+    makelabelentry(hardware_tab, "强制版本号" , version_var, 100, 50,tooltip="If the autodetected version is wrong, you can change it here.\nLeave as 0 for default.")
+    ctk.CTkButton(hardware_tab , text = "进行跑分", command = guibench ).grid(row=110,column=0, stick="se", padx= 0, pady=2)
 
 
     runopts_var.trace('w', changerunmode)
@@ -2600,17 +2600,17 @@ def show_gui():
     runmode_untouched = True
 
     # Tokens Tab
-    tokens_tab = tabcontent["Tokens"]
+    tokens_tab = tabcontent["上下文设置"]
     # tokens checkboxes
     smartcontextbox = makecheckbox(tokens_tab, "Use SmartContext", smartcontext, 1,tooltiptxt="Uses SmartContext. Now considered outdated and not recommended.\nCheck the wiki for more info.")
-    makecheckbox(tokens_tab, "Use ContextShift", contextshift, 2,tooltiptxt="Uses Context Shifting to reduce reprocessing.\nRecommended. Check the wiki for more info.", command=togglectxshift)
+    makecheckbox(tokens_tab, "缓存上一次的上下文", contextshift, 2,tooltiptxt="Uses Context Shifting to reduce reprocessing.\nRecommended. Check the wiki for more info.", command=togglectxshift)
 
 
     # context size
-    makeslider(tokens_tab, "Context Size:",contextsize_text, context_var, 0, len(contextsize_text)-1, 20, width=280, set=5,tooltip="What is the maximum context size to support. Model specific. You cannot exceed it.\nLarger contexts require more memory, and not all models support it.")
+    makeslider(tokens_tab, "上下文长度:",contextsize_text, context_var, 0, len(contextsize_text)-1, 20, width=280, set=5,tooltip="What is the maximum context size to support. Model specific. You cannot exceed it.\nLarger contexts require more memory, and not all models support it.")
 
-    customrope_scale_entry, customrope_scale_label = makelabelentry(tokens_tab, "RoPE Scale:", customrope_scale, row=23, padx=100, singleline=True, tooltip="For Linear RoPE scaling. RoPE frequency scale.")
-    customrope_base_entry, customrope_base_label = makelabelentry(tokens_tab, "RoPE Base:", customrope_base, row=24, padx=100, singleline=True, tooltip="For NTK Aware Scaling. RoPE frequency base.")
+    customrope_scale_entry, customrope_scale_label = makelabelentry(tokens_tab, "RoPE 缩放:", customrope_scale, row=23, padx=100, singleline=True, tooltip="For Linear RoPE scaling. RoPE frequency scale.")
+    customrope_base_entry, customrope_base_label = makelabelentry(tokens_tab, "RoPE 基:", customrope_base, row=24, padx=100, singleline=True, tooltip="For NTK Aware Scaling. RoPE frequency base.")
     def togglerope(a,b,c):
         items = [customrope_scale_label, customrope_scale_entry,customrope_base_label, customrope_base_entry]
         for idx, item in enumerate(items):
@@ -2618,12 +2618,12 @@ def show_gui():
                 item.grid()
             else:
                 item.grid_remove()
-    makecheckbox(tokens_tab,  "Custom RoPE Config", variable=customrope_var, row=22, command=togglerope,tooltiptxt="Override the default RoPE configuration with custom RoPE scaling.")
-    makecheckbox(tokens_tab, "Use FlashAttention", flashattention, 28, command=toggleflashattn,  tooltiptxt="Enable flash attention for GGUF models.")
-    noqkvlabel = makelabel(tokens_tab,"Requirments Not Met",31,0,"Requires FlashAttention ENABLED and ContextShift DISABLED.")
+    makecheckbox(tokens_tab,  "自定义 RoPE 设置", variable=customrope_var, row=22, command=togglerope,tooltiptxt="Override the default RoPE configuration with custom RoPE scaling.")
+    makecheckbox(tokens_tab, "（提高速度）使用 FA", flashattention, 28, command=toggleflashattn,  tooltiptxt="Enable flash attention for GGUF models.")
+    noqkvlabel = makelabel(tokens_tab,"条件未满足",31,0,"需要启用 \"（提高速度）使用FA\" ,且关闭 \"缓存上一次的上下文\" ")
     noqkvlabel.configure(text_color="#ff5555")
-    qkvslider,qkvlabel,qkvtitle = makeslider(tokens_tab, "Quantize KV Cache:", quantkv_text, quantkv_var, 0, 2, 30, set=0,tooltip="Enable quantization of KV cache.\nRequires FlashAttention and disables ContextShift.")
-    makefileentry(tokens_tab, "ChatCompletions Adapter:", "Select ChatCompletions Adapter File", chatcompletionsadapter_var, 32, width=250, filetypes=[("JSON Adapter", "*.json")], tooltiptxt="Select an optional ChatCompletions Adapter JSON file to force custom instruct tags.")
+    qkvslider,qkvlabel,qkvtitle = makeslider(tokens_tab, "量化KV 缓存:", quantkv_text, quantkv_var, 0, 2, 30, set=0,tooltip="Enable quantization of KV cache.\nRequires FlashAttention and disables ContextShift.")
+    makefileentry(tokens_tab, "对话完成模式模板", "Select ChatCompletions Adapter File", chatcompletionsadapter_var, 32, width=250, filetypes=[("JSON Adapter", "*.json")], tooltiptxt="Select an optional ChatCompletions Adapter JSON file to force custom instruct tags.")
     def pickpremadetemplate():
         initialDir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'kcpp_adapters')
         initialDir = initialDir if os.path.isdir(initialDir) else None
@@ -2636,29 +2636,29 @@ def show_gui():
     togglectxshift(1,1,1)
 
     # Model Tab
-    model_tab = tabcontent["Model Files"]
+    model_tab = tabcontent["模型文件设置"]
 
-    makefileentry(model_tab, "Model:", "Select GGML Model File", model_var, 1,width=280, onchoosefile=on_picked_model_file,tooltiptxt="Select a GGUF or GGML model file on disk to be loaded.")
+    makefileentry(model_tab, "模型文件:", "选择.gguf 或 .bin结尾的模型文件", model_var, 1,width=280, onchoosefile=on_picked_model_file,tooltiptxt="Select a GGUF or GGML model file on disk to be loaded.")
     makefileentry(model_tab, "Lora:", "Select Lora File",lora_var, 3,width=280,tooltiptxt="Select an optional GGML LoRA adapter to use.\nLeave blank to skip.")
     makefileentry(model_tab, "Lora Base:", "Select Lora Base File", lora_base_var, 5,width=280,tooltiptxt="Select an optional F16 GGML LoRA base file to use.\nLeave blank to skip.")
-    makefileentry(model_tab, "LLaVA mmproj:", "Select LLaVA mmproj File", mmproj_var, 7,width=280,tooltiptxt="Select a mmproj file to use for LLaVA.\nLeave blank to skip.")
+    makefileentry(model_tab, "视觉模型 mmproj", "Select LLaVA mmproj File", mmproj_var, 7,width=280,tooltiptxt="Select a mmproj file to use for LLaVA.\nLeave blank to skip.")
     makefileentry(model_tab, "Preloaded Story:", "Select Preloaded Story File", preloadstory_var, 9,width=280,tooltiptxt="Select an optional KoboldAI JSON savefile \nto be served on launch to any client.")
 
     # Network Tab
-    network_tab = tabcontent["Network"]
+    network_tab = tabcontent["网络设置"]
 
     # interfaces
-    makelabelentry(network_tab, "Port: ", port_var, 1, 150,tooltip="Select the port to host the KoboldCPP webserver.\n(Defaults to 5001)")
-    makelabelentry(network_tab, "Host: ", host_var, 2, 150,tooltip="Select a specific host interface to bind to.\n(Defaults to all)")
+    makelabelentry(network_tab, "端口号", port_var, 1, 150,tooltip="Select the port to host the KoboldCPP webserver.\n(Defaults to 5001)")
+    makelabelentry(network_tab, "主机名: ", host_var, 2, 150,tooltip="Select a specific host interface to bind to.\n(Defaults to all)")
 
-    makecheckbox(network_tab, "Multiuser Mode", multiuser_var, 3,tooltiptxt="Allows requests by multiple different clients to be queued and handled in sequence.")
+    makecheckbox(network_tab, "多用户模式", multiuser_var, 3,tooltiptxt="Allows requests by multiple different clients to be queued and handled in sequence.")
     makecheckbox(network_tab, "Remote Tunnel", remotetunnel, 3, 1,tooltiptxt="Creates a trycloudflare tunnel.\nAllows you to access koboldcpp from other devices over an internet URL.")
-    makecheckbox(network_tab, "Quiet Mode", quietmode, 4,tooltiptxt="Prevents all generation related terminal output from being displayed.")
-    makecheckbox(network_tab, "NoCertify Mode (Insecure)", nocertifymode, 4, 1,tooltiptxt="Allows insecure SSL connections. Use this if you have cert errors and need to bypass certificate restrictions.")
+    makecheckbox(network_tab, "静默模式", quietmode, 4,tooltiptxt="Prevents all generation related terminal output from being displayed.")
+    makecheckbox(network_tab,"无验证模式(不安全)", nocertifymode, 4, 1,tooltiptxt="Allows insecure SSL connections. Use this if you have cert errors and need to bypass certificate restrictions.")
 
-    makefileentry(network_tab, "SSL Cert:", "Select SSL cert.pem file",ssl_cert_var, 5, width=200 ,filetypes=[("Unencrypted Certificate PEM", "*.pem")], singlerow=True,tooltiptxt="Select your unencrypted .pem SSL certificate file for https.\nCan be generated with OpenSSL.")
-    makefileentry(network_tab, "SSL Key:", "Select SSL key.pem file", ssl_key_var, 7, width=200, filetypes=[("Unencrypted Key PEM", "*.pem")], singlerow=True,tooltiptxt="Select your unencrypted .pem SSL key file for https.\nCan be generated with OpenSSL.")
-    makelabelentry(network_tab, "Password: ", password_var, 8, 200,tooltip="Enter a password required to use this instance.\nThis key will be required for all text endpoints.\nImage endpoints are not secured.")
+    makefileentry(network_tab, "SSL 证书:", "Select SSL cert.pem file",ssl_cert_var, 5, width=200 ,filetypes=[("Unencrypted Certificate PEM", "*.pem")], singlerow=True,tooltiptxt="Select your unencrypted .pem SSL certificate file for https.\nCan be generated with OpenSSL.")
+    makefileentry(network_tab, "SSL 密钥:", "Select SSL key.pem file", ssl_key_var, 7, width=200, filetypes=[("Unencrypted Key PEM", "*.pem")], singlerow=True,tooltiptxt="Select your unencrypted .pem SSL key file for https.\nCan be generated with OpenSSL.")
+    makelabelentry(network_tab, "密码:", password_var, 8, 200,tooltip="Enter a password required to use this instance.\nThis key will be required for all text endpoints.\nImage endpoints are not secured.")
 
     # Horde Tab
     horde_tab = tabcontent["Horde Worker"]
@@ -2690,8 +2690,8 @@ def show_gui():
 
     # Image Gen Tab
 
-    images_tab = tabcontent["Image Gen"]
-    makefileentry(images_tab, "Stable Diffusion Model (safetensors/gguf):", "Select Stable Diffusion Model File", sd_model_var, 1, width=280, singlecol=False, filetypes=[("*.safetensors *.gguf","*.safetensors *.gguf")], tooltiptxt="Select a .safetensors or .gguf Stable Diffusion model file on disk to be loaded.")
+    images_tab = tabcontent["图像生成设置"]
+    makefileentry(images_tab, "SD模型 (safetensors/gguf):", "Select Stable Diffusion Model File", sd_model_var, 1, width=280, singlecol=False, filetypes=[("*.safetensors *.gguf","*.safetensors *.gguf")], tooltiptxt="Select a .safetensors or .gguf Stable Diffusion model file on disk to be loaded.")
     makelabelentry(images_tab, "Clamped Mode (Limit Resolution)", sd_clamped_var, 4, 50,tooltip="Limit generation steps and resolution settings for shared use.\nSet to 0 to disable, otherwise value is the size limit (min 512px).")
     makelabelentry(images_tab, "Image Threads:" , sd_threads_var, 6, 50,tooltip="How many threads to use during image generation.\nIf left blank, uses same value as threads.")
 
@@ -2726,7 +2726,7 @@ def show_gui():
     makecheckbox(images_tab, "Use TAE SD (AutoFix Broken VAE)", sd_vaeauto_var, 16,command=toggletaesd,tooltiptxt="Replace VAE with TAESD. May fix bad VAE.")
 
     # audio tab
-    audio_tab = tabcontent["Audio"]
+    audio_tab = tabcontent["音频设置"]
     makefileentry(audio_tab, "Whisper Model (Speech-To-Text):", "Select Whisper .bin Model File", whisper_model_var, 1, width=280, filetypes=[("*.bin","*.bin")], tooltiptxt="Select a Whisper .bin model file on disk to be loaded.")
 
     def kcpp_export_template():
@@ -2762,7 +2762,7 @@ def show_gui():
         pass
 
     # extra tab
-    extra_tab = tabcontent["Extra"]
+    extra_tab = tabcontent["其他设置"]
     makelabel(extra_tab, "Unpack KoboldCpp to a local directory to modify its files.", 1, 0)
     makelabel(extra_tab, "You can also launch via koboldcpp.py for faster startup.", 2, 0)
     ctk.CTkButton(extra_tab , text = "Unpack KoboldCpp To Folder", command = unpack_to_dir ).grid(row=3,column=0, stick="w", padx= 8, pady=2)
@@ -2803,11 +2803,11 @@ def show_gui():
         gpuchoiceidx = 0
         if gpu_choice_var.get()!="All":
             gpuchoiceidx = int(gpu_choice_var.get())-1
-        if runopts_var.get() == "Use CLBlast" or runopts_var.get() == "CLBlast NoAVX2 (Old CPU)":
+        if runopts_var.get() =="（不推荐，显卡）CLBlast" or runopts_var.get() == "CLBlast NoAVX2 (Old CPU)":
             args.useclblast = [[0,0], [1,0], [0,1], [1,1]][gpuchoiceidx]
             if runopts_var.get() == "CLBlast NoAVX2 (Old CPU)":
                 args.noavx2 = True
-        if runopts_var.get() == "Use CuBLAS" or runopts_var.get() == "Use hipBLAS (ROCm)":
+        if runopts_var.get() == "（N卡）CuBLAS" or runopts_var.get() == "（A卡）hipBLAS":
             if gpu_choice_var.get()=="All":
                 args.usecublas = ["lowvram"] if lowvram_var.get() == 1 else ["normal"]
             else:
@@ -2816,7 +2816,7 @@ def show_gui():
                 args.usecublas.append("mmq")
             if rowsplit_var.get()==1:
                 args.usecublas.append("rowsplit")
-        if runopts_var.get() == "Use Vulkan" or runopts_var.get() == "Vulkan NoAVX2 (Old CPU)":
+        if runopts_var.get() == "(新显卡通用，不推荐) Vulkan" or runopts_var.get() == "Vulkan NoAVX2 (Old CPU)":
             if gpu_choice_var.get()=="All":
                 args.usevulkan = []
             else:
@@ -2827,7 +2827,7 @@ def show_gui():
             args.gpulayers = int(gpulayers_var.get())
         if runopts_var.get()=="Use No BLAS":
             args.noblas = True
-        if runopts_var.get()=="NoAVX2 Mode (Old CPU)":
+        if runopts_var.get()=="NoAVX2 Mode (老 CPU)":
             args.noavx2 = True
         if runopts_var.get()=="Failsafe Mode (Old CPU)":
             args.noavx2 = True
