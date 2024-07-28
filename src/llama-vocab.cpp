@@ -11,6 +11,7 @@
 #include <forward_list>
 #include <queue>
 #include <sstream>
+#include <regex>
 
 //
 // helpers
@@ -163,7 +164,7 @@ static uint8_t llama_token_to_byte(const llama_vocab & vocab, llama_token id) {
             return unicode_utf8_to_byte(token_data.text); // TODO: why is this here after GGML_ASSERT?
         }
         case LLAMA_VOCAB_TYPE_WPM: {
-            GGML_ASSERT(false);
+            GGML_ABORT("fatal error");
         }
         default:
             GGML_ASSERT_CONTINUE(false);
@@ -1651,7 +1652,7 @@ std::vector<llama_vocab::id> llama_tokenize_internal(const llama_vocab & vocab, 
                 }
             } break;
         case LLAMA_VOCAB_TYPE_NONE:
-            GGML_ASSERT(false);
+            GGML_ABORT("fatal error");
     }
 
     return output;

@@ -2335,10 +2335,14 @@ generation_outputs gpttype_generate(const generation_inputs inputs)
     }
 
     bool is_mamba = (file_format == FileFormat::GGUF_GENERIC && file_format_meta.model_architecture==GGUFArch::ARCH_MAMBA);
+    bool blank_prompt = (addedmemory=="" && kcpp_params->prompt=="");
 
     if (file_format == FileFormat::RWKV_1 || file_format==FileFormat::RWKV_2 || is_mamba)
     {
-        ContextFastForward(current_context_tokens, embd_inp, n_past, last_n_tokens, nctx, smartcontext, false, true);
+        if(!blank_prompt)
+        {
+            ContextFastForward(current_context_tokens, embd_inp, n_past, last_n_tokens, nctx, smartcontext, false, true);
+        }
         if(is_mamba)
         {
             if(n_past==0)
@@ -2355,12 +2359,15 @@ generation_outputs gpttype_generate(const generation_inputs inputs)
     else
     {
         bool triggersc = useSmartContext;
-        if(useContextShift && (file_format == FileFormat::GGUF_GENERIC))
+        if(!blank_prompt) //special case for blank prompts, no fast forward or shifts
         {
-            PurgeMissingTokens(llama_ctx_v4, current_context_tokens, embd_inp, inputs.max_length, nctx);
-            triggersc = false;
+            if(useContextShift && (file_format == FileFormat::GGUF_GENERIC))
+            {
+                PurgeMissingTokens(llama_ctx_v4, current_context_tokens, embd_inp, inputs.max_length, nctx);
+                triggersc = false;
+            }
+            ContextFastForward(current_context_tokens, embd_inp, n_past, last_n_tokens, nctx, smartcontext, triggersc, false);
         }
-        ContextFastForward(current_context_tokens, embd_inp, n_past, last_n_tokens, nctx, smartcontext, triggersc, false);
         if(file_format == FileFormat::GGUF_GENERIC)
         {
             llama_kv_cache_seq_rm(llama_ctx_v4, 0, n_past, -1);
