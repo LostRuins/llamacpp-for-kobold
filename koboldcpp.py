@@ -1412,7 +1412,7 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                         tokenReserve += tokenStr
                         await asyncio.sleep(async_sleep_short) #if a stop sequence could trigger soon, do not send output
                     else:
-                        if tokenStr!="":
+                        if tokenStr!="" or tokenReserve!="":
                             tokenStr = tokenReserve + tokenStr
                             tokenReserve = ""
 
