@@ -15,12 +15,16 @@ jobs:
         with:
           ref: ${{ github.head_ref || github.ref_name }}
 
+      - name: Dependencies
+        id: depends
+        run: |
+          pip install customtkinter pyinstaller tk
+
       - name: Build
         id: make_build
         run: |
           make LLAMA_METAL=1
-          mkdir dist
-          cp koboldcpp_default.so dist/koboldcpp_default.so
+          python -m pyinstaller --noconfirm --onefile --collect-all customtkinter --collect-all psutil --add-data './koboldcpp_default.so:.' --add-data './kcpp_adapters:./kcpp_adapters' --add-data './klite.embd:.' --add-data './kcpp_docs.embd:.' --add-data './kcpp_sdui.embd:.' --add-data './taesd.embd:.' --add-data './taesd_xl.embd:.' --add-data './rwkv_vocab.embd:.' --add-data './rwkv_world_vocab.embd:.' --clean --console koboldcpp.py -n "koboldcpp-osx-arm64"
 
       - name: Save artifact
         uses: actions/upload-artifact@v3
