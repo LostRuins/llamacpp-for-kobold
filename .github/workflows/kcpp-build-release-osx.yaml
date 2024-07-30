@@ -1,0 +1,29 @@
+name: Koboldcpp OSX
+
+on: workflow_dispatch
+env:
+  BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+  NOAVX2: 1
+
+jobs:
+  osx:
+    runs-on: macos-latest
+    steps:
+      - name: Clone
+        id: checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Build
+        id: make_build
+        run: |
+          make LLAMA_METAL=1
+          mkdir dist
+          cp koboldcpp_default.so dist/koboldcpp_default.so
+
+      - name: Save artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: kcpp_linux_binary
+          path: dist/
