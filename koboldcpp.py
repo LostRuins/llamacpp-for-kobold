@@ -1435,7 +1435,8 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                     newbyte = ctypes.string_at(token)
                     incomplete_token_buffer += bytearray(newbyte)
                     tokenSeg = incomplete_token_buffer.decode("UTF-8","ignore")
-                    if tokenSeg!="":
+                    badFragment = (tokenSeg==" " and len(incomplete_token_buffer)>1) #partial incomplete unicode
+                    if tokenSeg!="" and not badFragment:
                         incomplete_token_buffer.clear()
                         tokenStr += tokenSeg
 
