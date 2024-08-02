@@ -41,7 +41,7 @@ maxhordelen = 350
 modelbusy = threading.Lock()
 requestsinqueue = 0
 defaultport = 5001
-KcppVersion = "1.71.1"
+KcppVersion = "1.72"
 showdebug = True
 guimode = False
 showsamplerwarning = True
@@ -425,25 +425,33 @@ def set_backend_props(inputs):
 
     if not args.tensor_split:
         if (args.usecublas and "0" in args.usecublas):
+            os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
             os.environ["CUDA_VISIBLE_DEVICES"] = "0"
             os.environ["HIP_VISIBLE_DEVICES"] = "0"
         elif (args.usecublas and "1" in args.usecublas):
+            os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
             os.environ["CUDA_VISIBLE_DEVICES"] = "1"
             os.environ["HIP_VISIBLE_DEVICES"] = "1"
         elif (args.usecublas and "2" in args.usecublas):
+            os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
             os.environ["CUDA_VISIBLE_DEVICES"] = "2"
             os.environ["HIP_VISIBLE_DEVICES"] = "2"
         elif (args.usecublas and "3" in args.usecublas):
+            os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
             os.environ["CUDA_VISIBLE_DEVICES"] = "3"
             os.environ["HIP_VISIBLE_DEVICES"] = "3"
     else:
         if (args.usecublas and "0" in args.usecublas):
+            os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
             inputs.cublas_info = 0
         elif (args.usecublas and "1" in args.usecublas):
+            os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
             inputs.cublas_info = 1
         elif (args.usecublas and "2" in args.usecublas):
+            os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
             inputs.cublas_info = 2
         elif (args.usecublas and "3" in args.usecublas):
+            os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
             inputs.cublas_info = 3
 
     if args.usevulkan: #is an empty array if using vulkan without defined gpu
@@ -614,7 +622,7 @@ def extract_modelfile_params(filepath,sdfilepath,whisperfilepath,mmprojfilepath)
         except Exception as ex:
             modelfile_extracted_meta = None
 
-def autoset_gpu_layers(ctxsize,gpumem,sdquanted): #shitty algo to determine how many layers to use
+def autoset_gpu_layers(ctxsize,gpumem,sdquanted,bbs): #shitty algo to determine how many layers to use
     global modelfile_extracted_meta # reference cached values instead
     try:
         if not modelfile_extracted_meta:
@@ -645,7 +653,7 @@ def autoset_gpu_layers(ctxsize,gpumem,sdquanted): #shitty algo to determine how 
                 headcount = ggufmeta[1]
                 headkvlen = (ggufmeta[2] if ggufmeta[2] > 0 else 128)
                 ratio = mem/(fsize*csmul*1.5)
-                computemem = layers*4*headkvlen*cs*4*1.5 # For now the first 4 is the hardcoded result for a blasbatchsize of 512. Ideally we automatically calculate blasbatchsize / 4 but I couldn't easily grab the value yet - Henk
+                computemem = layers*(4 if bbs <= 512 else (bbs/128))*headkvlen*cs*4*1.5 # For now the first 4 is the hardcoded result for a blasbatchsize of 512. Ideally we automatically calculate blasbatchsize / 4 but I couldn't easily grab the value yet - Henk
                 contextmem = layers*headcount*headkvlen*cs*4*1.1
                 reservedmem = 1.5*1024*1024*1024 # Users often don't have their GPU's VRAM worth of memory, we assume 500MB to avoid driver swapping + 500MB for the OS + 500MB for background apps / browser - Henk
                 if headcount > 0:
@@ -2427,7 +2435,7 @@ def show_gui():
         pass
 
     def changed_gpulayers_estimate(*args):
-        predicted_gpu_layers = autoset_gpu_layers(int(contextsize_text[context_var.get()]),MaxMemory[0],(sd_quant_var.get()==1))
+        predicted_gpu_layers = autoset_gpu_layers(int(contextsize_text[context_var.get()]),MaxMemory[0],(sd_quant_var.get()==1),int(blasbatchsize_values[int(blas_size_var.get())]))
         max_gpu_layers = (f"/{modelfile_extracted_meta[0][0]+3}" if (modelfile_extracted_meta and modelfile_extracted_meta[0] and modelfile_extracted_meta[0][0]!=0) else "")
         index = runopts_var.get()
         gpu_be = (index == "Use Vulkan" or index == "Vulkan NoAVX2 (Old CPU)" or index == "Use CLBlast" or index == "CLBlast NoAVX2 (Old CPU)" or index == "Use CuBLAS" or index == "Use hipBLAS (ROCm)")
@@ -2659,6 +2667,8 @@ def show_gui():
     makelabelentry(hardware_tab, "BLAS threads:" , blas_threads_var, 14, 50,tooltip="How many threads to use during BLAS processing.\nIf left blank, uses same value as regular thread count.")
     # blas batch size
     makeslider(hardware_tab, "BLAS Batch Size:", blasbatchsize_text, blas_size_var, 0, 7, 16,width=200, set=5,tooltip="How many tokens to process at once per batch.\nLarger values use more memory.")
+    blas_size_var.trace("w", changed_gpulayers_estimate)
+
     # force version
     makelabelentry(hardware_tab, "Force Version:" , version_var, 100, 50,tooltip="If the autodetected version is wrong, you can change it here.\nLeave as 0 for default.")
     ctk.CTkButton(hardware_tab , text = "Run Benchmark", command = guibench ).grid(row=110,column=0, stick="se", padx= 0, pady=2)
@@ -3763,7 +3773,7 @@ def main(launch_args,start_server=True):
             if not filename.endswith(".json"):
                 filename += ".json"
             premade_adapt_path = os.path.join(adapt_dir,filename)
-            if os.path.exists(premade_adapt_path):
+            if premade_adapt_path and os.path.exists(premade_adapt_path):
                 ccadapter_path = os.path.abspath(premade_adapt_path)
         if ccadapter_path:
             print(f"Loading Chat Completions Adapter: {ccadapter_path}")
@@ -3882,7 +3892,7 @@ def main(launch_args,start_server=True):
             if shouldavoidgpu:
                 print("WARNING: GPU layers is set, but a GPU backend was not selected!")
                 pass
-        elif args.gpulayers==-1 and not shouldavoidgpu and os.path.exists(args.model_param):
+        elif args.gpulayers==-1 and not shouldavoidgpu and args.model_param and os.path.exists(args.model_param):
             if not args.usecublas and not args.usevulkan and not args.useclblast:
                 print("NOTE: Auto GPU layers was set without picking a GPU backend! Trying to assign one for you automatically...")
                 auto_set_backend_cli()
@@ -3892,7 +3902,7 @@ def main(launch_args,start_server=True):
                 pass
             if MaxMemory[0] > 0:
                 extract_modelfile_params(args.model_param,args.sdmodel,args.whispermodel,args.mmproj)
-                layeramt = autoset_gpu_layers(args.contextsize, MaxMemory[0],args.sdquant)
+                layeramt = autoset_gpu_layers(args.contextsize, MaxMemory[0],args.sdquant,args.blasbatchsize)
                 print(f"Auto Recommended Layers: {layeramt}")
                 args.gpulayers = layeramt
             else:

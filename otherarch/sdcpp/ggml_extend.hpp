@@ -32,6 +32,10 @@
 #include "ggml-metal.h"
 #endif
 
+#ifdef SD_USE_VULKAN
+#include "ggml-vulkan.h"
+#endif
+
 #include "rng.hpp"
 #include "util.h"
 
@@ -529,7 +533,7 @@ __STATIC_INLINE__ struct ggml_tensor* ggml_nn_attention(struct ggml_context* ctx
                                                         struct ggml_tensor* k,
                                                         struct ggml_tensor* v,
                                                         bool mask = false) {
-#if defined(SD_USE_FLASH_ATTENTION) && !defined(SD_USE_CUBLAS) && !defined(SD_USE_METAL)
+#if defined(SD_USE_FLASH_ATTENTION) && !defined(SD_USE_CUBLAS) && !defined(SD_USE_METAL) && !defined(SD_USE_VULKAN)
     struct ggml_tensor* kqv = ggml_flash_attn(ctx, q, k, v, false);  // [N * n_head, n_token, d_head]
 #else
     float d_head = (float)q->ne[0];

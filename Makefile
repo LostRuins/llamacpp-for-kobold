@@ -42,8 +42,8 @@ endif
 #
 
 # keep standard at C11 and C++11
-CFLAGS   = -I. -Iggml/include -Iggml/src -Iinclude -Isrc -I./include -I./include/CL -I./otherarch -I./otherarch/tools -I./otherarch/sdcpp -I./otherarch/sdcpp/thirdparty -I./include/vulkan -O3 -fno-finite-math-only -DNDEBUG -std=c11   -fPIC -DLOG_DISABLE_LOGS -D_GNU_SOURCE -DGGML_USE_LLAMAFILE
-CXXFLAGS = -I. -Iggml/include -Iggml/src -Iinclude -Isrc -I./common -I./include -I./include/CL -I./otherarch -I./otherarch/tools -I./otherarch/sdcpp -I./otherarch/sdcpp/thirdparty -I./include/vulkan -O3 -fno-finite-math-only -DNDEBUG -std=c++11 -fPIC -DLOG_DISABLE_LOGS -D_GNU_SOURCE -DGGML_USE_LLAMAFILE
+CFLAGS   = -I. -Iggml/include -Iggml/src -Iinclude -Isrc -I./include -I./include/CL -I./otherarch -I./otherarch/tools -I./otherarch/sdcpp -I./otherarch/sdcpp/thirdparty -I./include/vulkan -O3 -fno-finite-math-only -fmath-errno -DNDEBUG -std=c11   -fPIC -DLOG_DISABLE_LOGS -D_GNU_SOURCE -DGGML_USE_LLAMAFILE
+CXXFLAGS = -I. -Iggml/include -Iggml/src -Iinclude -Isrc -I./common -I./include -I./include/CL -I./otherarch -I./otherarch/tools -I./otherarch/sdcpp -I./otherarch/sdcpp/thirdparty -I./include/vulkan -O3 -fno-finite-math-only -fmath-errno -DNDEBUG -std=c++11 -fPIC -DLOG_DISABLE_LOGS -D_GNU_SOURCE -DGGML_USE_LLAMAFILE
 LDFLAGS  =
 FASTCFLAGS = $(subst -O3,-Ofast,$(CFLAGS))
 FASTCXXFLAGS = $(subst -O3,-Ofast,$(CXXFLAGS))
@@ -56,7 +56,7 @@ NONECFLAGS =
 OPENBLAS_FLAGS = -DGGML_USE_OPENBLAS -DGGML_USE_BLAS -I/usr/local/include/openblas
 CLBLAST_FLAGS = -DGGML_USE_CLBLAST
 FAILSAFE_FLAGS = -DUSE_FAILSAFE
-VULKAN_FLAGS = -DGGML_USE_VULKAN
+VULKAN_FLAGS = -DGGML_USE_VULKAN -DSD_USE_VULKAN
 ifdef LLAMA_CUBLAS
 	CUBLAS_FLAGS = -DGGML_USE_CUDA -DSD_USE_CUBLAS
 else
@@ -535,6 +535,9 @@ sdcpp_default.o: otherarch/sdcpp/sdtype_adapter.cpp otherarch/sdcpp/stable-diffu
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 sdcpp_cublas.o: otherarch/sdcpp/sdtype_adapter.cpp otherarch/sdcpp/stable-diffusion.h otherarch/sdcpp/stable-diffusion.cpp otherarch/sdcpp/util.cpp otherarch/sdcpp/upscaler.cpp otherarch/sdcpp/model.cpp otherarch/sdcpp/thirdparty/zip.c
 	$(CXX) $(CXXFLAGS) $(CUBLAS_FLAGS) $(HIPFLAGS) -c $< -o $@
+sdcpp_vulkan.o: otherarch/sdcpp/sdtype_adapter.cpp otherarch/sdcpp/stable-diffusion.h otherarch/sdcpp/stable-diffusion.cpp otherarch/sdcpp/util.cpp otherarch/sdcpp/upscaler.cpp otherarch/sdcpp/model.cpp otherarch/sdcpp/thirdparty/zip.c
+	$(CXX) $(CXXFLAGS) $(VULKAN_FLAGS) -c $< -o $@
+
 
 #whisper objects
 whispercpp_default.o: otherarch/whispercpp/whisper_adapter.cpp
@@ -649,10 +652,10 @@ koboldcpp_hipblas:
 endif
 
 ifdef VULKAN_BUILD
-koboldcpp_vulkan: ggml_v4_vulkan.o ggml_v3.o ggml_v2.o ggml_v1.o expose.o gpttype_adapter_vulkan.o ggml-vulkan.o sdcpp_default.o whispercpp_default.o llavaclip_default.o llava.o ggml-backend_vulkan.o $(OBJS_FULL) $(OBJS)
+koboldcpp_vulkan: ggml_v4_vulkan.o ggml_v3.o ggml_v2.o ggml_v1.o expose.o gpttype_adapter_vulkan.o ggml-vulkan.o sdcpp_vulkan.o whispercpp_default.o llavaclip_default.o llava.o ggml-backend_vulkan.o $(OBJS_FULL) $(OBJS)
 	$(VULKAN_BUILD)
 ifdef NOAVX2_BUILD
-koboldcpp_vulkan_noavx2: ggml_v4_vulkan_noavx2.o ggml_v3_noavx2.o ggml_v2_noavx2.o ggml_v1_failsafe.o expose.o gpttype_adapter_vulkan_noavx2.o ggml-vulkan.o sdcpp_default.o whispercpp_default.o llavaclip_default.o llava.o ggml-backend_vulkan.o $(OBJS_SIMPLE) $(OBJS)
+koboldcpp_vulkan_noavx2: ggml_v4_vulkan_noavx2.o ggml_v3_noavx2.o ggml_v2_noavx2.o ggml_v1_failsafe.o expose.o gpttype_adapter_vulkan_noavx2.o ggml-vulkan.o sdcpp_vulkan.o whispercpp_default.o llavaclip_default.o llava.o ggml-backend_vulkan.o $(OBJS_SIMPLE) $(OBJS)
 	$(VULKAN_BUILD)
 else
 koboldcpp_vulkan_noavx2:
