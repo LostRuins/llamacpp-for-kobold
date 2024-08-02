@@ -1,4 +1,4 @@
-name: Koboldcpp OSX
+name: Koboldcpp Mac
 
 on: workflow_dispatch
 env:
@@ -30,11 +30,11 @@ jobs:
         id: test
         run: |
           wget https://huggingface.co/concedo/KobbleTinyV2-1.1B-GGUF/resolve/main/KobbleTiny-Q4_K.gguf
-          dist/koboldcpp-osx-arm64 --model KobbleTiny-Q4_K.gguf --gpulayers 99 --benchmark dist/bench.csv
+          dist/koboldcpp-mac-arm64 --model KobbleTiny-Q4_K.gguf --gpulayers 99 --benchmark dist/bench.csv
           
       - name: Save artifact
         uses: actions/upload-artifact@v3
         with:
-          name: kcpp_linux_binary
+          name: kcpp_mac_binary
           path: dist/
 
