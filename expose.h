@@ -1,11 +1,11 @@
 #pragma once
 #include <cstdint>
 
-const int stop_token_max = 16;
+const int stop_token_max = 24;
 const int ban_token_max = 16;
 const int tensor_split_max = 16;
-const int logit_bias_max = 16;
-const int dry_seq_break_max = 16;
+const int logit_bias_max = 24;
+const int dry_seq_break_max = 24;
 const int images_max = 4;
 
 // match kobold's sampler list and order
