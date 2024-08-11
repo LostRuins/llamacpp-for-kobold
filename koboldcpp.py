@@ -291,6 +291,7 @@ def pick_existant_file(ntoption,nonntoption):
 lib_default = pick_existant_file("koboldcpp_default.dll","koboldcpp_default.so")
 lib_failsafe = pick_existant_file("koboldcpp_failsafe.dll","koboldcpp_failsafe.so")
 lib_openblas = pick_existant_file("koboldcpp_openblas.dll","koboldcpp_openblas.so")
+lib_mkl = pick_existant_file("koboldcpp_mkl.dll","koboldcpp_mkl.so")
 lib_noavx2 = pick_existant_file("koboldcpp_noavx2.dll","koboldcpp_noavx2.so")
 lib_clblast = pick_existant_file("koboldcpp_clblast.dll","koboldcpp_clblast.so")
 lib_clblast_noavx2 = pick_existant_file("koboldcpp_clblast_noavx2.dll","koboldcpp_clblast_noavx2.so")
@@ -299,6 +300,7 @@ lib_hipblas = pick_existant_file("koboldcpp_hipblas.dll","koboldcpp_hipblas.so")
 lib_vulkan = pick_existant_file("koboldcpp_vulkan.dll","koboldcpp_vulkan.so")
 lib_vulkan_noavx2 = pick_existant_file("koboldcpp_vulkan_noavx2.dll","koboldcpp_vulkan_noavx2.so")
 libname = ""
+
 lib_option_pairs = [
     (lib_openblas, "Use OpenBLAS"),
     (lib_default, "Use No BLAS"),
@@ -309,8 +311,9 @@ lib_option_pairs = [
     (lib_noavx2, "NoAVX2 Mode (Old CPU)"),
     (lib_clblast_noavx2, "CLBlast NoAVX2 (Old CPU)"),
     (lib_vulkan_noavx2, "Vulkan NoAVX2 (Old CPU)"),
+    (lib_mkl, "Use Intel MKL"),
     (lib_failsafe, "Failsafe Mode (Old CPU)")]
-openblas_option, default_option, clblast_option, cublas_option, hipblas_option, vulkan_option, noavx2_option, clblast_noavx2_option, vulkan_noavx2_option, failsafe_option = (opt if file_exists(lib) or (os.name == 'nt' and file_exists(opt + ".dll")) else None for lib, opt in lib_option_pairs)
+openblas_option, default_option, clblast_option, cublas_option, hipblas_option, vulkan_option, noavx2_option, clblast_noavx2_option, vulkan_noavx2_option,  mkl_option, failsafe_option = (opt if file_exists(lib) or (os.name == 'nt' and file_exists(opt + ".dll")) else None for lib, opt in lib_option_pairs)
 runopts = [opt for lib, opt in lib_option_pairs if file_exists(lib)]
 
 def init_library():
@@ -322,6 +325,7 @@ def init_library():
     use_clblast = False #uses CLBlast instead
     use_cublas = False #uses cublas instead
     use_hipblas = False #uses hipblas instead
+    use_mkl = False #uses intel mkl
     use_noavx2 = False #uses no avx2 instructions
     use_failsafe = False #uses no intrinsics, failsafe mode
     use_vulkan = False #uses vulkan (needs avx2)
@@ -370,6 +374,12 @@ def init_library():
         else:
             print("Attempting to use CLBlast library for faster prompt ingestion. A compatible clblast will be required.")
             use_clblast = True
+    elif args.usemkl:
+        if not file_exists(lib_mkl) or (os.name=='nt' and not file_exists("libopenblas.dll")):
+            print("Warning: Intel MKL library file not found. Non-BLAS library will be used.")
+        else:
+            use_mkl = True
+            print("Attempting to use Intel MKL library for faster prompt ingestion. A compatible libopenblas will be required.")
     else:
         if not file_exists(lib_openblas) or (os.name=='nt' and not file_exists("libopenblas.dll")):
             print("Warning: OpenBLAS library file not found. Non-BLAS library will be used.")
@@ -397,6 +407,8 @@ def init_library():
             libname = lib_cublas
         elif use_hipblas:
             libname = lib_hipblas
+        elif use_mkl:
+            libname = lib_mkl
         elif use_openblas:
             libname = lib_openblas
         elif use_vulkan:
@@ -2966,6 +2978,7 @@ def show_gui():
         args.nommap = disablemmap.get()==1
         args.smartcontext = smartcontext.get()==1
         args.flashattention = flashattention.get()==1
+        args.use_mkl = runopts_var.get() == "Use Intel MKL"
         args.noshift = contextshift.get()==0
         args.remotetunnel = remotetunnel.get()==1
         args.foreground = keepforeground.get()==1
@@ -3157,6 +3170,9 @@ def show_gui():
         elif "noavx2" in dict and dict["noavx2"]:
             if noavx2_option is not None:
                 runopts_var.set(noavx2_option)
+        elif "usemkl" in dict and dict["usemkl"]:
+            if default_option is not None:
+                runopts_var.set("Use Intel MKL")
         elif "noblas" in dict and dict["noblas"]:
             if default_option is not None:
                 runopts_var.set(default_option)
@@ -4329,7 +4345,6 @@ def start_in_seperate_process(launch_args):
     return (output_queue, input_queue, p)
 
 if __name__ == '__main__':
-
     def check_range(value_type, min_value, max_value):
         def range_checker(arg: str):
             try:
@@ -4357,8 +4372,10 @@ if __name__ == '__main__':
     compatgroup.add_argument("--usecublas", help="Use CuBLAS for GPU Acceleration. Requires CUDA. Select lowvram to not allocate VRAM scratch buffer. Enter a number afterwards to select and use 1 GPU. Leaving no number will use all GPUs. For hipBLAS binaries, please check YellowRoseCx rocm fork.", nargs='*',metavar=('[lowvram|normal] [main GPU ID] [mmq] [rowsplit]'), choices=['normal', 'lowvram', '0', '1', '2', '3', 'mmq', 'rowsplit'])
     compatgroup.add_argument("--usevulkan", help="Use Vulkan for GPU Acceleration. Can optionally specify GPU Device ID (e.g. --usevulkan 0).", metavar=('[Device ID]'), nargs='*', type=int, default=None)
     compatgroup.add_argument("--useclblast", help="Use CLBlast for GPU Acceleration. Must specify exactly 2 arguments, platform ID and device ID (e.g. --useclblast 1 0).", type=int, choices=range(0,9), nargs=2)
+    compatgroup.add_argument("--usemkl", help="Use Intel MKL for BLAS acceleration.", action='store_true')
     compatgroup.add_argument("--noblas", help="Do not use any accelerated prompt ingestion", action='store_true')
     parser.add_argument("--contextsize", help="Controls the memory allocated for maximum context size, only change if you need more RAM for big contexts. (default 4096). Supported values are [256,512,1024,2048,3072,4096,6144,8192,12288,16384,24576,32768,49152,65536,98304,131072]. IF YOU USE ANYTHING ELSE YOU ARE ON YOUR OWN.",metavar=('[256,512,1024,2048,3072,4096,6144,8192,12288,16384,24576,32768,49152,65536,98304,131072]'), type=check_range(int,256,262144), default=4096)
+
     parser.add_argument("--gpulayers", help="Set number of layers to offload to GPU when using GPU. Requires GPU. Set to -1 to try autodetect (experimental)",metavar=('[GPU layers]'), nargs='?', const=1, type=int, default=0)
     parser.add_argument("--tensor_split", help="For CUDA and Vulkan only, ratio to split tensors across multiple GPUs, space-separated list of proportions, e.g. 7 3", metavar=('[Ratios]'), type=float, nargs='+')
 
