@@ -263,11 +263,13 @@ ifdef LLAMA_HIPBLAS
 		HCC         := $(ROCM_PATH)/llvm/bin/clang
 		HCXX        := $(ROCM_PATH)/llvm/bin/clang++
 	endif
-	LLAMA_CUDA_DMMV_X ?= 32
-	LLAMA_CUDA_MMV_Y ?= 1
+	LLAMA_CUDA_DMMV_X       ?= 32
+	LLAMA_CUDA_MMV_Y        ?= 1
 	LLAMA_CUDA_KQUANTS_ITER ?= 2
 	HIPFLAGS   += -DGGML_USE_HIPBLAS -DGGML_USE_CUDA -DSD_USE_CUBLAS $(shell $(ROCM_PATH)/bin/hipconfig -C)
-	HIPLDFLAGS    += -L$(ROCM_PATH)/lib -Wl,-rpath=$(ROCM_PATH)/lib -lhipblas -lamdhip64 -lrocblas
+	HIPLDFLAGS    += -L$(ROCM_PATH)/lib -Wl,-rpath=$(ROCM_PATH)/lib
+	HIPLDFLAGS    += -L$(ROCM_PATH)/lib64 -Wl,-rpath=$(ROCM_PATH)/lib64
+	HIPLDFLAGS    += -lhipblas -lamdhip64 -lrocblas
 	HIP_OBJS      += ggml-cuda.o ggml_v3-cuda.o ggml_v2-cuda.o ggml_v2-cuda-legacy.o
 	HIP_OBJS      += $(patsubst %.cu,%.o,$(wildcard ggml/src/ggml-cuda/*.cu))
 	HIP_OBJS      += $(OBJS_CUDA_TEMP_INST)
