@@ -233,7 +233,7 @@ KoboldCpp is an easy-to-use AI text-generation software for GGML and GGUF models
 - You can also run it using the command line. For info, please check `koboldcpp.exe --help`
 
 ## Linux Usage (Precompiled Binary, Recommended)
-On modern Linux systems, you should download the `koboldcpp-linux-x64-cuda1150` prebuilt PyInstaller binary on the **[releases page](https://github.com/LostRuins/koboldcpp/releases/latest)**. Simply download and run the binary (You may have to `chmod +x` it first).
+On modern Linux systems, you should download the `koboldcpp-linux-x64-cuda1150` prebuilt PyInstaller binary on the **[releases page](https://github.com/LostRuins/koboldcpp/releases/latest)**. Simply download and run the binary.
 
 Alternatively, you can also install koboldcpp to the current directory by running the following terminal command:
 ```
@@ -243,8 +243,7 @@ After running this command you can launch Koboldcpp from the current directory u
 Finally, obtain and load a GGUF model. See [here](#Obtaining-a-GGUF-model)
 
 ## MacOS (Precompiled Binary)
-- PyInstaller binaries for Modern ARM64 MacOS (M1, M2, M3) are now available! **[Simply download the MacOS binary](https://github.com/LostRuins/koboldcpp/releases/latest)**
-- In a MacOS terminal window, set the file to executable `chmod +x koboldcpp-mac-arm64` and run it with `./koboldcpp-mac-arm64`.
+- PyInstaller binaries for Modern ARM64 MacOS (M1, M2, M3) are now available! **[Simply download and run the MacOS binary](https://github.com/LostRuins/koboldcpp/releases/latest)**
 - Alternatively, or for older x86 MacOS computers, you can clone the repo and compile from source code, see Compiling for MacOS below.
 - Finally, obtain and load a GGUF model. See [here](#Obtaining-a-GGUF-model)
 
@@ -292,13 +291,13 @@ when you can't use the precompiled binary directly, we provide an automated buil
 ### Compiling on Linux (Manual Method)
 - To compile your binaries from source, clone the repo with `git clone https://github.com/LostRuins/koboldcpp.git`
 - A makefile is provided, simply run `make`.
-- Optional Vulkan: Link your own install of Vulkan SDK manually with `make LLAMA_VULKAN=1`
+- Optional OpenBLAS: Link your own install of OpenBLAS manually with `make LLAMA_OPENBLAS=1`
 - Optional CLBlast: Link your own install of CLBlast manually with `make LLAMA_CLBLAST=1`
 - Note: for these you will need to obtain and link OpenCL and CLBlast libraries.
-  - For Arch Linux: Install `cblas` and `clblast`.
-  - For Debian: Install `libclblast-dev`.
+  - For Arch Linux: Install `cblas` `openblas` and `clblast`.
+  - For Debian: Install `libclblast-dev` and `libopenblas-dev`.
 - You can attempt a CuBLAS build with `LLAMA_CUBLAS=1`, (or `LLAMA_HIPBLAS=1` for AMD). You will need CUDA Toolkit installed. Some have also reported success with the CMake file, though that is more for windows.
-- For a full featured build (all backends), do `make LLAMA_CLBLAST=1 LLAMA_CUBLAS=1 LLAMA_VULKAN=1`. (Note that `LLAMA_CUBLAS=1` will not work on windows, you need visual studio)
+- For a full featured build (all backends), do `make LLAMA_OPENBLAS=1 LLAMA_CLBLAST=1 LLAMA_CUBLAS=1 LLAMA_VULKAN=1`. (Note that `LLAMA_CUBLAS=1` will not work on windows, you need visual studio)
 - After all binaries are built, you can run the python script with the command `koboldcpp.py [ggml_model.gguf] [port]`
 
 ### Compiling on Windows
@@ -309,11 +308,12 @@ when you can't use the precompiled binary directly, we provide an automated buil
   - If you want to generate the .exe file, make sure you have the python module PyInstaller installed with pip (`pip install PyInstaller`). Then run the script `make_pyinstaller.bat`
   - The koboldcpp.exe file will be at your dist folder.
 - **Building with CUDA**: Visual Studio, CMake and CUDA Toolkit is required. Clone the repo, then open the CMake file and compile it in Visual Studio. Copy the `koboldcpp_cublas.dll` generated into the same directory as the `koboldcpp.py` file. If you are bundling executables, you may need to include CUDA dynamic libraries (such as `cublasLt64_11.dll` and `cublas64_11.dll`) in order for the executable to work correctly on a different PC.
-- **Replacing Libraries (Not Recommended)**: If you wish to use your own version of the additional Windows libraries (OpenCL, CLBlast, Vulkan), you can do it with:
+- **Replacing Libraries (Not Recommended)**: If you wish to use your own version of the additional Windows libraries (OpenCL, CLBlast and OpenBLAS), you can do it with:
   - OpenCL - tested with https://github.com/KhronosGroup/OpenCL-SDK . If you wish to compile it, follow the repository instructions. You will need vcpkg.
   - CLBlast - tested with https://github.com/CNugteren/CLBlast . If you wish to compile it you will need to reference the OpenCL files. It will only generate the ".lib" file if you compile using MSVC.
+  - OpenBLAS - tested with https://github.com/xianyi/OpenBLAS .
   - Move the respectives .lib files to the /lib folder of your project, overwriting the older files.
-  - Also, replace the existing versions of the corresponding .dll files located in the project directory root (e.g. clblast.dll).
+  - Also, replace the existing versions of the corresponding .dll files located in the project directory root (e.g. libopenblas.dll).
   - Make the KoboldCpp project using the instructions above.
 
 ### Compiling on MacOS
@@ -348,7 +348,7 @@ when you can't use the precompiled binary directly, we provide an automated buil
     - Metal is enabled by default on macOS, Vulkan support is enabled by default on both Linux and macOS, ROCm support isn't available yet.
     - You can also use `nix3-run` to use KoboldCpp: `nix run --expr ``with import <nixpkgs> { config = { allowUnfree = true; cudaSupport = true; }; }; koboldcpp`` --impure`
     - Or use `nix-shell`: `nix-shell --expr 'with import <nixpkgs> { config = { allowUnfree = true; cudaSupport = true; }; }; koboldcpp' --run "koboldcpp" --impure`
-    - Packages (like CLBLast, Vulkan, etc.) can be overridden, please refer to the [17th Nix Pill - Nixpkgs Overriding Packages](https://nixos.org/guides/nix-pills/17-nixpkgs-overriding-packages)
+    - Packages (like OpenBlast, CLBLast, Vulkan, etc.) can be overridden, please refer to the [17th Nix Pill - Nixpkgs Overriding Packages](https://nixos.org/guides/nix-pills/17-nixpkgs-overriding-packages)
 
 ## Questions and Help Wiki
 - **First, please check out [The KoboldCpp FAQ and Knowledgebase](https://github.com/LostRuins/koboldcpp/wiki) which may already have answers to your questions! Also please search through past issues and discussions.**
@@ -362,13 +362,13 @@ when you can't use the precompiled binary directly, we provide an automated buil
 
 ## Considerations
 - For Windows: No installation, single file executable, (It Just Works)
+- Since v1.0.6, requires libopenblas, the prebuilt windows binaries are included in this repo. If not found, it will fall back to a mode without BLAS.
 - Since v1.15, requires CLBlast if enabled, the prebuilt windows binaries are included in this repo. If not found, it will fall back to a mode without CLBlast.
 - Since v1.33, you can set the context size to be above what the model supports officially. It does increases perplexity but should still work well below 4096 even on untuned models. (For GPT-NeoX, GPT-J, and Llama models) Customize this with `--ropeconfig`.
 - Since v1.42, supports GGUF models for LLAMA and Falcon
 - Since v1.55, lcuda paths on Linux are hardcoded and may require manual changes to the makefile if you do not use koboldcpp.sh for the compilation.
 - Since v1.60, provides native image generation with StableDiffusion.cpp, you can load any SD1.5 or SDXL .safetensors model and it will provide an A1111 compatible API to use.
 - **I try to keep backwards compatibility with ALL past llama.cpp models**. But you are also encouraged to reconvert/update your models if possible for best results.
-- Since v1.75, openblas has been deprecated and removed in favor of the native CPU implementation.
 
 ## License
 - The original GGML library and llama.cpp by ggerganov are licensed under the MIT License

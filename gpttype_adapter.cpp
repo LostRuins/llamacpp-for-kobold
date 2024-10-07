@@ -1740,7 +1740,7 @@ ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in
     gptj_ctx_v3.hparams.rope_freq_scale = neox_ctx_v3.hparams.rope_freq_scale = rope_freq_scale;
     gptj_ctx_v3.hparams.rope_freq_base = neox_ctx_v3.hparams.rope_freq_base = rope_freq_base;
 
-    //this is used for the mem_per_token eval, blas needs more RAM
+    //this is used for the mem_per_token eval, openblas needs more RAM
     bool v3_use_scratch = ggml_v3_cpu_has_gpublas();
 
     int cu_parseinfo_maindevice = inputs.cublas_info<=0?0:inputs.cublas_info;
@@ -2550,6 +2550,7 @@ int GetThreadsToUse(bool blasmode)
     {
         if(!ggml_cpu_has_gpublas())
         {
+            // return 1;
             return std::min(kcpp_data->n_blasthreads, 4);
         }
         else
