@@ -3236,7 +3236,10 @@ generation_outputs gpttype_generate(const generation_inputs inputs)
                 grammar_accept_token(file_format, n_vocab, grammar, id);
             }
 
-            last_n_tokens.erase(last_n_tokens.begin());
+            if (!last_n_tokens.empty())
+            {
+                last_n_tokens.erase(last_n_tokens.begin());
+            }
             last_n_tokens.push_back(id);
             current_context_tokens.push_back(id);
 
@@ -3416,7 +3419,10 @@ generation_outputs gpttype_generate(const generation_inputs inputs)
                         int sepsize = llava_sep.size();
                         while(input_consumed < embd_inp.size() && (embd_inp[input_consumed]==LLAVA_TOKEN_IDENTIFIER_A || embd_inp[input_consumed]==LLAVA_TOKEN_IDENTIFIER_B))
                         {
-                            last_n_tokens.erase(last_n_tokens.begin());
+                            if (!last_n_tokens.empty())
+                            {
+                                last_n_tokens.erase(last_n_tokens.begin());
+                            }
                             last_n_tokens.push_back(currtoken);
                             current_context_tokens.push_back(currtoken);
                             ++input_consumed;
@@ -3472,7 +3478,10 @@ generation_outputs gpttype_generate(const generation_inputs inputs)
                 else
                 {
                     embd.push_back(currtoken);
-                    last_n_tokens.erase(last_n_tokens.begin());
+                    if (!last_n_tokens.empty())
+                    {
+                        last_n_tokens.erase(last_n_tokens.begin());
+                    }
                     last_n_tokens.push_back(currtoken);
                     current_context_tokens.push_back(currtoken);
                     ++input_consumed;
