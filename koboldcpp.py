@@ -26,9 +26,9 @@ bias_max_value = 100.0
 
 # abuse prevention
 stop_token_max = 512
-ban_token_max = 512
-logit_bias_max = 512
-dry_seq_break_max = 512
+ban_token_max = 1024
+logit_bias_max = 1024
+dry_seq_break_max = 256
 
 # global vars
 handle = None
