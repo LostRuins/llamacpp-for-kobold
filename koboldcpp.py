@@ -2204,7 +2204,6 @@ def show_gui():
     guimode = True
     from tkinter.filedialog import askopenfilename, asksaveasfile
     import sys
-    import math
     import customtkinter as ctk
 
     # if args received, launch
