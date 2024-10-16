@@ -80,12 +80,6 @@ struct generation_inputs
     const int mirostat = 0;
     const float mirostat_eta = 0.0f;
     const float mirostat_tau = 0.0f;
-    const float dry_multiplier = 0.0f;
-    const float dry_base = 0.0f;
-    const int dry_allowed_length = 0;
-    const int dry_penalty_last_n = 0;
-    const char ** dry_sequence_breakers = nullptr;
-    const int dry_sequence_breakers_len = 0;
     const float xtc_threshold = 0.0f;
     const float xtc_probability = 0.0f;
     const samplers sampler_order[KCPP_SAMPLER_MAX] = {};
@@ -93,8 +87,6 @@ struct generation_inputs
     const bool allow_eos_token = false;
     const bool bypass_eos_token = false;
     const bool render_special = false;
-    const char ** stop_sequence = nullptr;
-    const int stop_sequence_len = 0;
     const bool stream_sse = false;
     const char * grammar = nullptr;
     const bool grammar_retain_state = false;
@@ -102,10 +94,18 @@ struct generation_inputs
     const float dynatemp_range = 0.0f;
     const float dynatemp_exponent = 1.0f;
     const float smoothing_factor = 0.0f;
-    const logit_bias * logit_biases = nullptr;
+    const float dry_multiplier = 0.0f;
+    const float dry_base = 0.0f;
+    const int dry_allowed_length = 0;
+    const int dry_penalty_last_n = 0;
+    const int dry_sequence_breakers_len = 0;
+    const char ** dry_sequence_breakers = nullptr;
+    const int stop_sequence_len = 0;
+    const char ** stop_sequence = nullptr;
     const int logit_biases_len = 0;
-    const char ** banned_tokens = nullptr;
+    const logit_bias * logit_biases = nullptr;
     const int banned_tokens_len = 0;
+    const char ** banned_tokens = nullptr;
 };
 struct generation_outputs
 {

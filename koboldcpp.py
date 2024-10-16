@@ -24,6 +24,12 @@ images_max = 4
 bias_min_value = -100.0
 bias_max_value = 100.0
 
+# abuse prevention
+stop_token_max = 512
+ban_token_max = 512
+logit_bias_max = 512
+dry_seq_break_max = 512
+
 # global vars
 handle = None
 friendlymodelname = "inactive"
@@ -146,12 +152,6 @@ class generation_inputs(ctypes.Structure):
                 ("mirostat", ctypes.c_int),
                 ("mirostat_tau", ctypes.c_float),
                 ("mirostat_eta", ctypes.c_float),
-                ("dry_multiplier", ctypes.c_float),
-                ("dry_base", ctypes.c_float),
-                ("dry_allowed_length", ctypes.c_int),
-                ("dry_penalty_last_n", ctypes.c_int),
-                ("dry_sequence_breakers", ctypes.POINTER(ctypes.c_char_p)),
-                ("dry_sequence_breakers_len", ctypes.c_int),
                 ("xtc_threshold", ctypes.c_float),
                 ("xtc_probability", ctypes.c_float),
                 ("sampler_order", ctypes.c_int * sampler_order_max),
@@ -159,8 +159,6 @@ class generation_inputs(ctypes.Structure):
                 ("allow_eos_token", ctypes.c_bool),
                 ("bypass_eos_token", ctypes.c_bool),
                 ("render_special", ctypes.c_bool),
-                ("stop_sequence", ctypes.POINTER(ctypes.c_char_p)),
-                ("stop_sequence_len", ctypes.c_int),
                 ("stream_sse", ctypes.c_bool),
                 ("grammar", ctypes.c_char_p),
                 ("grammar_retain_state", ctypes.c_bool),
@@ -168,10 +166,18 @@ class generation_inputs(ctypes.Structure):
                 ("dynatemp_range", ctypes.c_float),
                 ("dynatemp_exponent", ctypes.c_float),
                 ("smoothing_factor", ctypes.c_float),
-                ("logit_biases", ctypes.POINTER(logit_bias)),
+                ("dry_multiplier", ctypes.c_float),
+                ("dry_base", ctypes.c_float),
+                ("dry_allowed_length", ctypes.c_int),
+                ("dry_penalty_last_n", ctypes.c_int),
+                ("dry_sequence_breakers_len", ctypes.c_int),
+                ("dry_sequence_breakers", ctypes.POINTER(ctypes.c_char_p)),
+                ("stop_sequence_len", ctypes.c_int),
+                ("stop_sequence", ctypes.POINTER(ctypes.c_char_p)),
                 ("logit_biases_len", ctypes.c_int),
-                ("banned_tokens", ctypes.POINTER(ctypes.c_char_p)),
-                ("banned_tokens_len", ctypes.c_int)]
+                ("logit_biases", ctypes.POINTER(logit_bias)),
+                ("banned_tokens_len", ctypes.c_int),
+                ("banned_tokens", ctypes.POINTER(ctypes.c_char_p))]
 
 class generation_outputs(ctypes.Structure):
     _fields_ = [("status", ctypes.c_int),
@@ -983,6 +989,10 @@ def generate(genparams, is_quiet=False, stream_flag=False):
             print(f"ERROR: dry_sequence_breakers must be an array of strings or a json encoded array of strings. Could not parse '{dry_sequence_breakers}': " + str(e))
             dry_sequence_breakers = []
 
+    if dry_multiplier <= 0 or dry_sequence_breakers is None: # prevent explicitly set to None, retain old behavior
+        dry_sequence_breakers = []
+
+    dry_sequence_breakers = dry_sequence_breakers[:dry_seq_break_max]
     inputs.dry_sequence_breakers_len = len(dry_sequence_breakers)
     inputs.dry_sequence_breakers = (ctypes.c_char_p * inputs.dry_sequence_breakers_len)()
 
@@ -1002,6 +1012,9 @@ def generate(genparams, is_quiet=False, stream_flag=False):
             print("ERROR: sampler_order must be a list of integers: " + str(e))
     inputs.seed = seed
 
+    if stop_sequence is None:
+        stop_sequence = []
+    stop_sequence = stop_sequence[:stop_token_max]
     inputs.stop_sequence_len = len(stop_sequence)
     inputs.stop_sequence = (ctypes.c_char_p * inputs.stop_sequence_len)()
 
@@ -1018,9 +1031,9 @@ def generate(genparams, is_quiet=False, stream_flag=False):
     except Exception as ex:
         print(f"Logit bias dictionary is invalid: {ex}")
 
+    bias_list = bias_list[:logit_bias_max]
     inputs.logit_biases_len = len(bias_list)
     inputs.logit_biases = (logit_bias * inputs.logit_biases_len)()
-
     for n, lb in enumerate(bias_list):
         try:
             t_id = int(lb['key'])
@@ -1032,9 +1045,11 @@ def generate(genparams, is_quiet=False, stream_flag=False):
             inputs.logit_biases[n] = logit_bias(-1, 0.0)
             print(f"Skipped unparsable logit bias:{ex}")
 
+    if banned_tokens is None:
+        banned_tokens = []
+    banned_tokens = banned_tokens[:ban_token_max]
     inputs.banned_tokens_len = len(banned_tokens)
     inputs.banned_tokens = (ctypes.c_char_p * inputs.banned_tokens_len)()
-
     for n, tok in enumerate(banned_tokens):
         inputs.banned_tokens[n] = tok.encode("UTF-8")
 
