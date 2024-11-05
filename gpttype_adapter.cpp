@@ -740,9 +740,22 @@ void sample_xtc(llama_token_data_array * candidates, float xtc_threshold, float 
 
     if(last_idx>1) //if there are 2 or more viable candidates
     {
+        if (debugmode==1) {
+            printf("XTC penalties [");
+        }
         // then remove all other tokens above threshold EXCEPT the least likely one
         for (size_t i = 0; i < last_idx - 1; ++i) {
+            if (debugmode==1)
+            {
+                gpt_vocab::id token = candidates->data[i].id;
+                std::string tokenizedstr = FileFormatTokenizeID(token, file_format);
+                ::utreplace(tokenizedstr, "\n", "\\n");
+                printf("%s(%s %.02f%%)", i == 0 ? "" : " ", RemoveBell(tokenizedstr).c_str(), 100.f * candidates->data[i].p);
+            }
             candidates->data[i].logit -= 999.0f; //infinity gets wonky results downstream, this hack works well enough
+        }
+        if (debugmode==1) {
+            printf("]\n");
         }
         candidates->sorted = false;
 
