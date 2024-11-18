@@ -456,6 +456,7 @@ def init_library():
     handle.abort_generate.restype = ctypes.c_bool
     handle.token_count.restype = token_count_outputs
     handle.get_pending_output.restype = ctypes.c_char_p
+    handle.get_chat_template.restype = ctypes.c_char_p
     handle.sd_load_model.argtypes = [sd_load_model_inputs]
     handle.sd_load_model.restype = ctypes.c_bool
     handle.sd_generate.argtypes = [sd_generation_inputs]
@@ -1939,6 +1940,10 @@ Enter Prompt:<br>
             self.send_header("location", self.path)
             self.end_headers(content_type='text/html')
             return None
+        elif self.path.endswith('/api/extra/chat_template'):
+            ctbytes = handle.get_chat_template()
+            chat_template = ctypes.string_at(ctbytes).decode("UTF-8")
+            response_body = (json.dumps({"chat_template":chat_template}).encode())
 
         if response_body is None:
             self.send_response(404)

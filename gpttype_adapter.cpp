@@ -2491,6 +2491,21 @@ bool gpttype_generate_abort()
     return true;
 }
 
+std::string gpttype_get_chat_template()
+{
+    // copied from examples/server/utils.hpp::llama_get_chat_template
+    std::string template_key = "tokenizer.chat_template";
+    // call with NULL buffer to get the total size of the string
+    int32_t res = llama_model_meta_val_str(&llama_ctx_v4->model, template_key.c_str(), NULL, 0);
+    if (res < 0) {
+        return "";
+    }
+
+    std::vector<char> model_template(res, 0);
+    llama_model_meta_val_str(&llama_ctx_v4->model, template_key.c_str(), model_template.data(), model_template.size());
+    return std::string(model_template.data(), model_template.size());
+}
+
 std::vector<int> gpttype_get_token_arr(const std::string & input, bool addbos)
 {
     std::vector<int> toks;
