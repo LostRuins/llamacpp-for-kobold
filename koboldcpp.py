@@ -1953,11 +1953,10 @@ Enter Prompt:<br>
 
     def do_POST(self):
         global modelbusy, requestsinqueue, currentusergenkey, totalgens, pendingabortkey
-        contlenstr = self.headers['content-length']
-        content_length = 0
-        body = None
-        if contlenstr:
-            content_length = int(contlenstr)
+        body = bytearray()
+
+        if "Content-Length" in self.headers:
+            content_length = int(self.headers["Content-Length"])
             if content_length > (1024*1024*32): #32mb payload limit
                 self.send_response(500)
                 self.end_headers(content_type='application/json')
@@ -1966,7 +1965,27 @@ Enter Prompt:<br>
                 "type": "bad_input",
                 }}).encode())
                 return
-            body = self.rfile.read(content_length)
+            body.extend(self.rfile.read(content_length))
+        elif "chunked" in self.headers.get("Transfer-Encoding", ""):
+            content_length = 0
+            while True:
+                line = self.rfile.readline().strip()
+                chunk_length = int(line, 16)
+                content_length += chunk_length
+                if content_length > (1024*1024*32): #32mb payload limit
+                    self.send_response(500)
+                    self.end_headers(content_type='application/json')
+                    self.wfile.write(json.dumps({"detail": {
+                    "msg": "Payload is too big. Max payload size is 32MB.",
+                    "type": "bad_input",
+                    }}).encode())
+                    return
+                if chunk_length != 0:
+                    chunk = self.rfile.read(chunk_length)
+                    body.extend(chunk)
+                self.rfile.readline()
+                if chunk_length == 0:
+                    break
 
         self.path = self.path.rstrip('/')
         response_body = None
