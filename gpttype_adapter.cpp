@@ -2501,9 +2501,9 @@ std::string gpttype_get_chat_template()
         return "";
     }
 
-    std::vector<char> model_template(res, 0);
+    std::vector<char> model_template(res + 1, 0);
     llama_model_meta_val_str(&llama_ctx_v4->model, template_key.c_str(), model_template.data(), model_template.size());
-    return std::string(model_template.data(), model_template.size());
+    return std::string(model_template.data(), model_template.size() - 1);
 }
 
 std::vector<int> gpttype_get_token_arr(const std::string & input, bool addbos)
