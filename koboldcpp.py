@@ -1940,9 +1940,12 @@ Enter Prompt:<br>
             self.send_header("location", self.path)
             self.end_headers(content_type='text/html')
             return None
-        elif self.path.endswith('/api/extra/chat_template'):
+        elif self.path.endswith('/props'):
             ctbytes = handle.get_chat_template()
             chat_template = ctypes.string_at(ctbytes).decode("UTF-8")
+            # TODO: decide whether to add or skip below settings from llama.cpp /props endpoint.
+            # { "default_generation_settings", ctx_server.default_generation_settings_for_props },
+            # { "total_slots",                 ctx_server.params.n_parallel },
             response_body = (json.dumps({"chat_template":chat_template}).encode())
 
         if response_body is None:
