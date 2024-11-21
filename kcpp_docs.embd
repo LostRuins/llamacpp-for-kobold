@@ -394,7 +394,7 @@
                          },
                          "hordeexitcounter": {
                             "type": "integer",
-                            "description": "Status of embedded horde worker. If it's too high, may have crashed."
+                            "description": "Status of embedded horde worker, if applicable. If it's too high, may have crashed."
                          },
                           "uptime": {
                             "type": "integer",
@@ -432,7 +432,7 @@
                             "description": "Successful request"
                          }
                       },
-                      "summary": "Retrieve the current max context length setting value that horde sees",
+                      "summary": "Retrieve the current max context length setting value that public backends see",
                       "tags": [
                          "api/v1"
                       ]

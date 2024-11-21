@@ -12,7 +12,7 @@ Current version indicated by LITEVER below.
 -->
 
 <script>
-	const LITEVER = 187;
+	const LITEVER = 189;
 	const urlParams = new URLSearchParams(window.location.search);
 	var localflag = true;
 	const STORAGE_PREFIX = (localflag?"e_":"")+"kaihordewebui_";
@@ -634,6 +634,16 @@ Current version indicated by LITEVER below.
 		}
 		.color_blueurl:focus {
 			color: #d3e7ff;
+		}
+
+		.color_orangeurl {
+			color: #f7a223;
+		}
+		.color_orangeurl:hover {
+			color: #ffe8d6;
+		}
+		.color_orangeurl:focus {
+			color: #ffedd3;
 		}
 
 		.color_orange {
@@ -3178,6 +3188,15 @@ Current version indicated by LITEVER below.
 		return formatted;
 	}
 
+	function get_my_multiplayer_chatname()
+	{
+		if(multiplayer_active && multiplayer_override_name!="")
+		{
+			return multiplayer_override_name;
+		}
+		return localsettings.chatname;
+	}
+
 	function get_instruct_starttag(doTrim=true)
 	{
 		if(doTrim){
@@ -3448,70 +3467,6 @@ Current version indicated by LITEVER below.
 		return null;
     };
 
-	//similar to Promises allSettled, but I want to roll my own for better control and compatibility
-	/**
-	 * @param {[RequestInfo,RequestInit][]} fetchList , but can also be string[]
-	 */
-	function multifetch(fetchList, onDoneResults)
-	{
-		if (fetchList == null || fetchList.length == 0) {
-			onDoneResults([],[]);
-		} else {
-
-			let signal = null;
-			//put in trycatch as some older browsers dont support
-			try {
-				let controller = new AbortController();
-				const timeoutId = setTimeout(() => { controller.abort() }, 12000);
-				signal = controller.signal;
-			} catch (e) {
-				console.log("AbortController Err: " + e);
-			}
-
-			let promisesLeft = fetchList.length;
-			let resultsArr = [];
-			let errorArr = [];
-
-			let multifetchResolve = function () {
-				resultsArr = resultsArr.sort((a,b)=>{
-					return (find_text_horde(a.cluster).sort_order - find_text_horde(b.cluster).sort_order);
-				});
-				onDoneResults(resultsArr,errorArr);
-			}
-
-			for (let i = 0; i < fetchList.length; ++i) {
-				let curr = fetchList[i];
-				if(!Array.isArray(curr))
-				{
-					curr = [curr,null];
-				}
-				let rqi = curr[1];
-				if(rqi==null)
-				{
-					rqi = {};
-				}
-				rqi.signal = signal;
-				fetch(curr[0].fullurl, rqi)
-				.then((response) => response.json())
-				.then((data) => {
-					resultsArr.push({cluster:curr[0].baseurl,data:data});
-					promisesLeft -= 1;
-					if (promisesLeft==0)
-					{
-						multifetchResolve();
-					}
-				})
-				.catch((error) => {
-					errorArr.push({cluster:curr[0].baseurl,data:error});
-					promisesLeft -= 1;
-					if (promisesLeft==0)
-					{
-						multifetchResolve();
-					}
-				});
-			}
-		}
-	}
 
 	function apply_proxy_url(url, proxy_by_default=false)
 	{
@@ -3543,141 +3498,64 @@ Current version indicated by LITEVER below.
 		return header;
 	}
 
-	//instead of a single fetch, optionally break it up into multiple repeated requests which update a local variable
-	function kobold_api_stream(sub_endpt,submit_payload,synchro_streaming_tokens_left,trackedgenid,synchro_streaming_response = "",tokens_per_tick = 4096)
+	//synchronous kai request
+	function kobold_api_sync_req(sub_endpt,submit_payload,trackedgenid)
 	{
-		//called recursively
-		if(synchro_streaming_tokens_left<=0)
+		let reqOpt = {
+		method: 'POST', // or 'PUT'
+		headers: get_kobold_header(),
+		body: JSON.stringify(submit_payload),
+		};
+		if(globalabortcontroller)
 		{
-			if(pending_response_id=="" || pending_response_id==trackedgenid) //drop unrelated requests
-			{
-				synchro_polled_response = synchro_streaming_response;
-			}
-			synchro_pending_stream = "";
+			reqOpt.signal = globalabortcontroller.signal;
 		}
-		else
-		{
-			let new_submit_payload = JSON.parse(JSON.stringify(submit_payload));
-			new_submit_payload.prompt += synchro_streaming_response;
-			new_submit_payload.max_length = Math.min(tokens_per_tick,synchro_streaming_tokens_left);
-
-			let reqOpt = {
-			method: 'POST', // or 'PUT'
-			headers: get_kobold_header(),
-			body: JSON.stringify(new_submit_payload),
-			};
-			if(globalabortcontroller)
-			{
-				reqOpt.signal = globalabortcontroller.signal;
-			}
-			fetch(sub_endpt, reqOpt)
-			.then((response) => response.json())
-			.then((data) => {
-				console.log("sync kobold_api_stream response: " + JSON.stringify(data));
-				if (custom_kobold_endpoint != "" && data && data.results != null && data.results.length > 0) {
-					synchro_streaming_response += data.results[0].text;
-					synchro_streaming_tokens_left -= tokens_per_tick;
-					if (data.results[0].finish_reason == "stop") {
-						last_stop_reason = "stop";
-					}
-
-					last_response_obj = JSON.parse(JSON.stringify(data));
-
-					//handle some early stopping criterias
-					if (localsettings.opmode == 3) //stop on selfname found
-					{
-						let foundMyName = synchro_streaming_response.indexOf(localsettings.chatname + "\:");
-						if (foundMyName != -1)
-						{
-							synchro_streaming_tokens_left = 0;
-						}
-					}
-					if (localsettings.opmode == 4) //stop on selfname found
-					{
-						let st = get_instruct_starttag(true);
-						let et = get_instruct_endtag(true);
-						let foundStop = synchro_streaming_response.indexOf(st);
-						if (foundStop != -1)
-						{
-							synchro_streaming_tokens_left = 0;
-						}
-						foundStop = synchro_streaming_response.indexOf(et);
-						if (foundStop != -1)
-						{
-							synchro_streaming_tokens_left = 0;
-						}
-					}
-
-					//stop on any stop token
-					if(extrastopseq!="")
-					{
-						let rep = replaceAll(extrastopseq,"\\n","\n");
-						let srep = rep.split("||$||");
-						if (srep.length > 0) {
-							for (let i = 0; i < srep.length; ++i) {
-								if (srep[i] && srep[i] != "") {
-									let foundStop = synchro_streaming_response.indexOf(srep[i]);
-									if (foundStop != -1)
-									{
-										synchro_streaming_tokens_left = 0;
-										break;
-									}
-								}
-							}
-						}
-					}
-
-					if(data.results[0].text=="") //stop on no output
-					{
-						synchro_streaming_tokens_left = 0;
-					}
-
-					if(pending_response_id!="")
-					{
-						synchro_pending_stream = synchro_streaming_response;
-						if(synchro_pending_stream!="")
-						{
-							render_gametext();
-						}
-					}
-					else
-					{
-						synchro_streaming_tokens_left = 0;
-					}
-
-					kobold_api_stream(sub_endpt,submit_payload,synchro_streaming_tokens_left,trackedgenid,synchro_streaming_response,tokens_per_tick);
+		fetch(sub_endpt, reqOpt)
+		.then((response) => response.json())
+		.then((data) => {
+			console.log("sync kobold_api_stream response: " + JSON.stringify(data));
+			if (custom_kobold_endpoint != "" && data && data.results != null && data.results.length > 0) {
+				let sync_response = data.results[0].text;
+				if (data.results[0].finish_reason == "stop") {
+					last_stop_reason = "stop";
 				}
-				else {
-					//error occurred, maybe captcha failed
-					console.error("error occurred in v1 generation");
-					clear_poll_flags();
-					render_gametext();
-
-					msgbox("Error occurred during text generation: " + formatError(data),"Error Encountered",false,false,
-					()=>{
-						if(is_using_kcpp_with_streaming() && data.detail && data.detail.type=="service_unavailable")
-						{
-							//offer to abort
-							msgboxYesNo("Attempt to abort existing request?","Send Abort Command?",()=>{
-								lastcheckgenkey = "";
-								abort_generation();
-							},null);
-						}
-					});
-				}
-			})
-			.catch((error) => {
-				console.error('Error:', error);
-				if(error.name!="AbortError") //aborts are silent
+				last_response_obj = JSON.parse(JSON.stringify(data));
+				if(pending_response_id=="" || pending_response_id==trackedgenid) //drop unrelated requests
 				{
-					flush_streaming_text();
-					msgbox("Error while submitting prompt: " + error);
+					synchro_polled_response = sync_response;
 				}
+				synchro_pending_stream = "";
+			}
+			else {
+				//error occurred, maybe captcha failed
+				console.error("error occurred in v1 generation");
 				clear_poll_flags();
 				render_gametext();
 
-			});
-		}
+				msgbox("Error occurred during text generation: " + formatError(data),"Error Encountered",false,false,
+				()=>{
+					if(is_using_kcpp_with_streaming() && data.detail && data.detail.type=="service_unavailable")
+					{
+						//offer to abort
+						msgboxYesNo("Attempt to abort existing request?","Send Abort Command?",()=>{
+							lastcheckgenkey = "";
+							abort_generation();
+						},null);
+					}
+				});
+			}
+		})
+		.catch((error) =>
+		{
+			console.error('Error:', error);
+			if(error.name!="AbortError") //aborts are silent
+			{
+				flush_streaming_text();
+				msgbox("Error while submitting prompt: " + error);
+			}
+			clear_poll_flags();
+			render_gametext();
+		});
 	}
 
 	function oai_api_sync_req(targetep,oai_payload,oaiheaders)
@@ -4241,40 +4119,17 @@ Current version indicated by LITEVER below.
 	const poll_interval_base_text = 500;
 	const poll_interval_base_img = 3800;
 	const poll_interval_idle = 1000;
+	const poll_interval_multiplayer = 2000; //every 2s
 
-	const text_hordes = [
-		{
-			baseurl: "https://aihorde.net",
-			tag: "🤖",
-			sort_order: 1,
-			client_agent: default_client_agent,
-			get perf_endpoint(){return this.baseurl  + "/api/v2/status/performance"},
-			get models_endpoint(){return this.baseurl  + "/api/v2/status/models?type=text"},
-			get submit_endpoint(){return this.baseurl  + "/api/v2/generate/text/async"},
-			get polling_endpoint(){return this.baseurl  + "/api/v2/generate/text/status"},
-			get output_endpoint(){return this.baseurl  + "/api/v2/generate/text/status"},
-			get worker_endpoint(){return this.baseurl  + "/api/v2/workers?type=text"},
-			get finduser_endpoint(){return this.baseurl  + "/api/v2/find_user"},
-			get maintenance_endpoint(){return this.baseurl  + "/api/v2/workers"},
-		}
-	];
-
-	function find_text_horde(clusterurl)
-	{
-		for(let i=0;i<text_hordes.length;++i)
-		{
-			if(text_hordes[i].baseurl==clusterurl)
-			{
-				return text_hordes[i];
-			}
-		}
-		return null;
-	}
-
-	const perf_endpoints = text_hordes.map(a => ({"baseurl":a.baseurl,"fullurl":a.perf_endpoint}));
-	const models_endpoints =  text_hordes.map(a => ({"baseurl":a.baseurl,"fullurl":a.models_endpoint}));
-	const worker_endpoints =  text_hordes.map(a => ({"baseurl":a.baseurl,"fullurl":a.worker_endpoint}));
-	const finduser_endpoints =  text_hordes.map(a => ({"baseurl":a.baseurl,"fullurl":a.finduser_endpoint}));
+	const horde_base_url = "https://aihorde.net"
+	const horde_perf_endpoint = horde_base_url + "/api/v2/status/performance";
+	const horde_models_endpoint = horde_base_url + "/api/v2/status/models?type=text";
+	const horde_submit_endpoint = horde_base_url + "/api/v2/generate/text/async";
+	const horde_polling_endpoint = horde_base_url + "/api/v2/generate/text/status";
+	const horde_output_endpoint = horde_base_url + "/api/v2/generate/text/status";
+	const horde_worker_endpoint = horde_base_url + "/api/v2/workers?type=text";
+	const horde_finduser_endpoint = horde_base_url + "/api/v2/find_user";
+	const horde_maintenance_endpoint = horde_base_url + "/api/v2/workers";
 
 	const stablehorde_submit_endpoint = stablehorde_url + "/api/v2/generate/async";
 	const stablehorde_poll_endpoint = stablehorde_url + "/api/v2/generate/check";
@@ -4296,6 +4151,9 @@ Current version indicated by LITEVER below.
 	const koboldcpp_logprobs_endpoint = "/api/extra/last_logprobs";
 	const koboldcpp_truemaxctxlen_endpoint = "/api/extra/true_max_context_length";
 	const koboldcpp_preloadstory_endpoint = "/api/extra/preloadstory";
+	const koboldcpp_multiplayer_check_endpoint = "/api/extra/multiplayer/status";
+	const koboldcpp_multiplayer_fetch_endpoint = "/api/extra/multiplayer/getstory";
+	const koboldcpp_multiplayer_submit_endpoint = "/api/extra/multiplayer/setstory";
 	const koboldcpp_transcribe_endpoint = "/api/extra/transcribe";
 	const koboldcpp_tokenize_endpoint = "/api/extra/tokencount";
 	const koboldcpp_perf_endpoint = "/api/extra/perf";
@@ -4374,7 +4232,6 @@ Current version indicated by LITEVER below.
 	var retry_preserve_last = false; //if true, retrying does not delete any old text
 	var redo_prev_text = []; //if we undo a retry, save a copy here so it can be reverted with redo
 	var pending_response_id = ""; //guid of response pending from horde server
-	var pending_response_horde = text_hordes[0]; //the url to poll for pending response from a v2 submit
 	var poll_in_progress = false; //are we currently waiting for a text generation
 	var poll_ticks_passed = 0; //how much time passed after polling
 	var horde_poll_nearly_completed = false; //if true, increase polling rate
@@ -4432,6 +4289,13 @@ Current version indicated by LITEVER below.
 	var koboldcpp_version = ""; //detect if we are using koboldcpp
 	var koboldcpp_version_obj = {};
 	var koboldcpp_has_vision = false;
+	var koboldcpp_has_multiplayer = false;
+	var multiplayer_active = false;
+	var multiplayer_override_name = "";
+	var multiplayer_last_turn_major = 0;
+	var multiplayer_last_turn_minor = 0;
+	var schedule_multiplayer_minor_change = false;
+	var schedule_multiplayer_major_change = false;
 	var last_request_str = "No Requests Available"; //full context of last submitted request
 	var last_response_obj = null;
 	var lastcheckgenkey = ""; //for checking polled-streaming unique id when generating in kcpp
@@ -4452,7 +4316,6 @@ Current version indicated by LITEVER below.
 
 	var localsettings = {
 		my_api_key: "0000000000", //put here so it can be saved and loaded in persistent mode
-		home_cluster: text_hordes[0].baseurl, //which horde does this api key belongs to
 		saved_oai_key: "", //do not ever share this in save files!
 		saved_oai_addr: default_oai_base, //do not ever share this in save files!
 		saved_dalle_key: "",
@@ -4713,6 +4576,13 @@ Current version indicated by LITEVER below.
 		"user":"</s>[INST]",
 		"assistant":"[/INST]",
 		"system":"",
+	},
+	{
+		"id":15,
+		"name":"Mistral V7",
+		"user":"</s>[INST]",
+		"assistant":"[/INST]",
+		"system":"[SYSTEM_PROMPT]", //how do we do for the end of system prompt?
 	}
 	];
 
@@ -4983,6 +4853,7 @@ Current version indicated by LITEVER below.
 			//can we find the model that's used? if yes load it, otherwise load the first one
 				if (mdls.length > 0)
 				{
+					selected_models = []; //force clear is needed, as it can get overwritten
 					for (var i = 0; i < mdls.length; ++i) {
 						let skipignored = false;
 						for(let k=0;k<ignoredmodels.length;++k)
@@ -5033,6 +4904,7 @@ Current version indicated by LITEVER below.
 		setInterval(poll_pending_response, poll_interval_base_text);
 		setInterval(poll_image_db, poll_interval_base_img); //check images every Xs
 		setInterval(poll_idle_responses, poll_interval_idle); //a basic update loop for idle responses
+		setInterval(poll_multiplayer, poll_interval_multiplayer); //a basic update loop for idle responses
 
 		attempt_connect(false);
 
@@ -5199,49 +5071,39 @@ Current version indicated by LITEVER below.
 		else
 		{
 			//fetch horde performance status as initial login
-			multifetch(perf_endpoints, (resArr, errArr) => {
-				if (resArr && resArr.length > 0) {
-					perfdata = {
-						"queued_requests": 0,
-						"queued_tokens": 0,
-						"past_minute_tokens": 0,
-						"worker_count": 0
-					};
-					for (let i = 0; i < resArr.length; ++i) {
-						let cur = resArr[i].data;
-						if (cur.hasOwnProperty("text_worker_count")) {
-							//new horde api
-							perfdata.queued_requests += cur.queued_text_requests;
-							perfdata.worker_count += cur.text_worker_count;
-							perfdata.queued_tokens += cur.queued_tokens;
-							perfdata.past_minute_tokens += cur.past_minute_tokens;
-						} else {
-							//old horde api
-							perfdata.queued_requests += cur.queued_requests;
-							perfdata.worker_count += cur.worker_count;
-							perfdata.queued_tokens += cur.queued_tokens;
-							perfdata.past_minute_tokens += cur.past_minute_tokens;
-						}
-					}
-					document.body.classList.add("connected");
-					document.getElementById("connectstatus").innerHTML = "AI Horde";
-					document.getElementById("connectstatus").classList.add("color_offwhite");
-					render_gametext(false);
+			fetch(horde_perf_endpoint)
+			.then(x => x.json())
+			.then(data => {
+				perfdata = {
+					"queued_requests": 0,
+					"queued_tokens": 0,
+					"past_minute_tokens": 0,
+					"worker_count": 0
+				};
+				//new horde api
+				perfdata.queued_requests += data.queued_text_requests;
+				perfdata.worker_count += data.text_worker_count;
+				perfdata.queued_tokens += data.queued_tokens;
+				perfdata.past_minute_tokens += data.past_minute_tokens;
+				document.body.classList.add("connected");
+				document.getElementById("multiplayerstatus").innerText = "";
+				document.getElementById("connectstatus").innerHTML = "AI Horde";
+				document.getElementById("connectstatus").classList.add("color_offwhite");
+				render_gametext(false);
 
-					read_url_params_data();
+				read_url_params_data();
 
-					if (popup_aiselect) {
-						display_endpoint_container();
-					}
-
+				if (popup_aiselect) {
+					display_endpoint_container();
 				}
-				else {
-					msgbox("Failed to connect to AI Horde Service!\nPlease check your network connection.<br><br>You may still be able to connect to an alternative service, <a href='#' class='color_blueurl' onclick='hide_popups();display_endpoint_container()'>click here to view options</a>.","Error Encountered",true);
-					document.body.classList.remove("connected");
-					document.getElementById("connectstatus").innerHTML = "Offline Mode";
-					document.getElementById("connectstatus").classList.remove("color_offwhite");
-					render_gametext(false);
-				}
+			}).catch((error) => {
+				console.log("Error: " + error);
+				msgbox("Failed to connect to AI Horde Service!\nPlease check your network connection.<br><br>You may still be able to connect to an alternative service, <a href='#' class='color_blueurl' onclick='hide_popups();display_endpoint_container()'>click here to view options</a>.","Error Encountered",true);
+				document.body.classList.remove("connected");
+				document.getElementById("multiplayerstatus").innerText = "";
+				document.getElementById("connectstatus").innerHTML = "Offline Mode";
+				document.getElementById("connectstatus").classList.remove("color_offwhite");
+				render_gametext(false);
 			});
 		}
 
@@ -5899,27 +5761,28 @@ Current version indicated by LITEVER below.
 	{
 		return (custom_kobold_endpoint!="" && koboldcpp_version && koboldcpp_version!="" && compare_version_str(koboldcpp_version, "1.74") >= 0);
 	}
+	function is_using_kcpp_with_multiplayer()
+	{
+		return (custom_kobold_endpoint!="" && koboldcpp_version && koboldcpp_version!="" && compare_version_str(koboldcpp_version, "1.78") >= 0 && koboldcpp_has_multiplayer);
+	}
 
 
-	//0 is none, 1 is pseudostreaming, 2 is true poll-streaming, 3 is sse-streaming
+	//0 is none, 1 is poll-streaming, 2 is sse-streaming
 	function determine_streaming_type()
 	{
 		if(localsettings.tokenstreammode==2 && is_using_kcpp_with_sse())
 		{
-			return 3;
+			return 2; //sse stream
 		}
-		let streamtype = (localsettings.tokenstreammode>0 ? 1 : 0);
-		let pstreamamount = urlParams.get('streamamount');
-		if(streamtype==1 && is_using_kcpp_with_streaming() && (pstreamamount == null || pstreamamount <= 0))
-		{
-			streamtype = 2; //true streaming
-		}
-
 		if(waiting_for_autosummary)
 		{
-			streamtype = 0;
+			return 0;
 		}
-		return streamtype;
+		if(localsettings.tokenstreammode==1 && is_using_kcpp_with_streaming())
+		{
+			return 1; //polled stream
+		}
+		return 0;
 	}
 
 	function determine_if_ban_eos(input_was_empty) {
@@ -5951,18 +5814,6 @@ Current version indicated by LITEVER below.
 	function is_using_web_lite()
 	{
 		return (window.location.hostname.includes("koboldai.net") || window.location.hostname.includes("lostruins.github.io"));
-	}
-
-	function get_most_common_cluster(arr)
-	{
-		let pickedcluster = arr[0].cluster;
-		let b={}, maxi=0;
-		for(let ki=0;ki<arr.length;++ki) {
-			let k = arr[ki].cluster;
-			if(b[k]) b[k]++; else b[k]=1;
-			if(maxi < b[k]) { pickedcluster=k; maxi=b[k]; }
-		}
-		return pickedcluster;
 	}
 
 	function generate_compressed_story(save_images,export_settings,export_aesthetic_settings) {
@@ -6123,13 +5974,6 @@ Current version indicated by LITEVER below.
 						selected_models.push(mdls[0]);
 					}
 
-					const allMatched1 = selected_models.every(item => item.cluster === selected_models[0].cluster);
-
-					if (!allMatched1) {
-						//if conflicted, get the most numerous cluster (mode)
-						let pickedcluster = get_most_common_cluster(selected_models);
-						selected_models = selected_models.filter(item => item.cluster === pickedcluster);
-					}
 					render_gametext();
 				}
 			}
@@ -6197,13 +6041,6 @@ Current version indicated by LITEVER below.
 								selected_models.push(mdls[0]);
 							}
 
-							const allMatched1 = selected_models.every(item => item.cluster === selected_models[0].cluster);
-
-							if (!allMatched1) {
-								//if conflicted, get the most numerous cluster (mode)
-								let pickedcluster = get_most_common_cluster(selected_models);
-								selected_models = selected_models.filter(item => item.cluster === pickedcluster);
-							}
 							render_gametext();
 						}
 
@@ -6415,7 +6252,6 @@ Current version indicated by LITEVER below.
 			new_save_storyobj.savedsettings = JSON.parse(JSON.stringify(localsettings));
 			//redact some values
 			new_save_storyobj.savedsettings.my_api_key = "0000000000";
-			new_save_storyobj.savedsettings.home_cluster = text_hordes[0].baseurl;
 			new_save_storyobj.savedsettings.saved_oai_key = "";
 			new_save_storyobj.savedsettings.saved_dalle_key = "";
 			new_save_storyobj.savedsettings.saved_dalle_url = "";
@@ -6560,6 +6396,7 @@ Current version indicated by LITEVER below.
 											restart_new_game(false);
 											gametext_arr.push(text);
 											render_gametext(true);
+											sync_multiplayer(true);
 										}, null, true)
 								} else {
 									msgbox("Could not load selected file. Is it valid?");
@@ -6587,10 +6424,10 @@ Current version indicated by LITEVER below.
 		return is_kai;
 	}
 
-	function kai_json_load(storyobj, force_load_settngs)
+	function kai_json_load(storyobj, force_load_settings, ignore_multiplayer_sync)
 	{
 		//either show popup or just proceed to load
-		handle_advload_popup((localsettings.show_advanced_load && !force_load_settngs),()=>
+		handle_advload_popup((localsettings.show_advanced_load && !force_load_settings),()=>
 		{
 			let old_gametext_arr = gametext_arr;
 			let old_current_anote = current_anote;
@@ -6761,7 +6598,6 @@ Current version indicated by LITEVER below.
 				if (storyobj.savedsettings && storyobj.savedsettings != "")
 				{
 					let tmpapikey1 = localsettings.my_api_key;
-					let tmphc = localsettings.home_cluster;
 					let tmp_oai1 = localsettings.saved_oai_key;
 					let tmp_oai2 = localsettings.saved_oai_addr;
 					let tmp_oai3 = localsettings.saved_dalle_key;
@@ -6802,7 +6638,6 @@ Current version indicated by LITEVER below.
 						}
 					}
 					localsettings.my_api_key = tmpapikey1;
-					localsettings.home_cluster = tmphc;
 					localsettings.saved_oai_key = tmp_oai1;
 					localsettings.saved_oai_addr = tmp_oai2;
 					localsettings.saved_dalle_key = tmp_oai3;
@@ -6845,7 +6680,7 @@ Current version indicated by LITEVER below.
 			migrate_old_images_in_gametext();
 
 			//prompt to import settings
-			if (localsettings.show_advanced_load && !force_load_settngs)
+			if (localsettings.show_advanced_load && !force_load_settings)
 			{
 				import_settings(
 				document.getElementById("advset_mainstory").checked,
@@ -6860,6 +6695,10 @@ Current version indicated by LITEVER below.
 				import_settings(true, true, true, true, true, true);
 			}
 			render_gametext(true);
+			if(!ignore_multiplayer_sync) //we don't want an infinite loop
+			{
+				sync_multiplayer(true);
+			}
 		});
 	}
 
@@ -7041,6 +6880,7 @@ Current version indicated by LITEVER below.
 				}
 			}
 			render_gametext(true);
+			sync_multiplayer(true);
 		}
 
 		if(localsettings.import_tavern_prompt)
@@ -7082,6 +6922,7 @@ Current version indicated by LITEVER below.
 		localsettings.opmode = 3;
 		localsettings.gui_type_chat = 2;
 		render_gametext(true);
+		sync_multiplayer(true);
 	}
 	function nai_json_load(obj)
 	{
@@ -7104,6 +6945,7 @@ Current version indicated by LITEVER below.
 			current_wi = load_nai_wi(obj.lorebook);
 		}
 		render_gametext(true);
+		sync_multiplayer(true);
 	}
 	function load_nai_wi(obj)
 	{
@@ -7652,6 +7494,95 @@ Current version indicated by LITEVER below.
 		}
 	}
 
+	function leave_multiplayer()
+	{
+		multiplayer_active = false;
+		multiplayer_last_turn_major = 0;
+		multiplayer_last_turn_minor = 0;
+		schedule_multiplayer_minor_change = false;
+		schedule_multiplayer_major_change = false;
+		multiplayer_override_name = "";
+		render_gametext(false);
+	}
+
+	function join_multiplayer()
+	{
+		if(is_using_kcpp_with_multiplayer())
+		{
+			inputBox(`You're about to enter a Multiplayer Session.<br><br><span class="color_red">Note that stories or messages sent by other users are <b>unfiltered</b>, and may contain <b>offensive or disturbing content</b>. You assume full responsibility and participate at your own discretion.</span><br><br>Enter a unique nickname to use for chat mode (only yourself), or leave it blank to share the same common chatname with other users.`,"Join Multiplayer - Override Chat Nickname?","","[No Override]", ()=>{
+				let userinput = getInputBoxValue().trim();
+				multiplayer_active = true;
+				multiplayer_override_name = userinput;
+				multiplayer_last_turn_major = 0;
+				multiplayer_last_turn_minor = 0;
+				schedule_multiplayer_minor_change = false;
+				schedule_multiplayer_major_change = false;
+				render_gametext(false);
+			},true);
+
+		}else{
+			leave_multiplayer();
+			msgbox("Multiplayer is not available or not enabled on this backend","No Multiplayer Detected");
+		}
+	}
+
+	function sync_multiplayer(fullupdate)
+	{
+		if(!is_using_kcpp_with_multiplayer() || !multiplayer_active)
+		{
+			schedule_multiplayer_minor_change = false;
+			schedule_multiplayer_major_change = false;
+			return;
+		}
+		schedule_multiplayer_minor_change = true;
+		if(fullupdate)
+		{
+			schedule_multiplayer_major_change = true;
+		}
+	}
+
+	function submit_multiplayer(fullupdate)
+	{
+		if(!is_using_kcpp_with_multiplayer() || !multiplayer_active)
+		{
+			schedule_multiplayer_minor_change = false;
+			schedule_multiplayer_major_change = false;
+			return;
+		}
+		let subdata = generate_compressed_story(true,true,true);
+
+		fetch(apply_proxy_url(custom_kobold_endpoint + koboldcpp_multiplayer_submit_endpoint),
+		{
+			method: 'POST',
+			headers: get_kobold_header(),
+			body: JSON.stringify({
+				"fullupdate": fullupdate,
+				"data": subdata,
+			})
+		})
+		.then(response => response.json())
+		.then(vals => {
+			if(vals && vals.success)
+			{
+				let expected_major = (fullupdate?(1+multiplayer_last_turn_major):multiplayer_last_turn_major);
+				let expected_minor = (fullupdate?0:(multiplayer_last_turn_minor+1));
+				if(vals.turn_major==expected_major && vals.turn_minor==expected_minor)
+				{
+					//if nobody else updated, disregard our own updates
+					multiplayer_last_turn_major = expected_major;
+					multiplayer_last_turn_minor = expected_minor;
+				}
+			}else{
+				leave_multiplayer();
+				msgbox("Multiplayer Error: " + JSON.stringify(vals),"Disconnected from Multiplayer");
+			}
+		}).catch(error => {
+			leave_multiplayer();
+			msgbox("Multiplayer Error: " + error,"Disconnected from Multiplayer");
+			console.log("Failed to access multiplayer status: " + error);
+		});
+	}
+
 	function character_creator()
 	{
 		hide_popups();
@@ -7704,6 +7635,7 @@ Current version indicated by LITEVER below.
 			localsettings.gui_type_chat = 2;
 			localsettings.chatopponent = chatopponent;
 			render_gametext();
+			sync_multiplayer(true);
 		}
 		tempAestheticInstructUISettings = null;
 		hide_popups();
@@ -7825,6 +7757,7 @@ Current version indicated by LITEVER below.
 		}
 
 		render_gametext(true);
+		sync_multiplayer(true);
 	}
 	function togglescenarioautopick()
 	{
@@ -7970,6 +7903,10 @@ Current version indicated by LITEVER below.
 			let bcolor = (curr.opmode==1?"blue":(curr.opmode==2?"green":(curr.opmode==3?"red":"yellow")));
 			let entry = `<button type="button" name="`+i+`" class="scenarioitem `+bcolor+` btn btn-primary" onclick="return click_scenario(`+i+`)">`+curr.title+`</button>`;
 			scenarios += entry;
+		}
+		if(is_using_kcpp_with_multiplayer())
+		{
+			scenarios += `<button type="button" name="" class="scenarioitem purple btn btn-primary" onclick="hide_popups();join_multiplayer()">Join Multiplayer</button>`;
 		}
 
 		document.getElementById("scenariogrid").innerHTML = scenarios;
@@ -8157,39 +8094,17 @@ Current version indicated by LITEVER below.
 			onDoneCallback(cached_worker_list);
 			return;
 		}
-		multifetch(worker_endpoints,(resArr,errArr)=>{
-
-			if(resArr && resArr.length>0)
-			{
-				let wdata = [];
-				for(let i=0;i<resArr.length;++i)
-				{
-					let cur = resArr[i].data;
-					if (cur)
-					{
-						for (let x = 0; x < cur.length; ++x) {
-							let wd = cur[x];
-							wd.cluster = resArr[i].cluster;
-							if(wd.hasOwnProperty("max_content_length"))
-							{
-								wd.max_context_length = wd.max_content_length;
-							}
-							wdata.push(wd);
-						}
-					}
-				}
-
-				cached_worker_list = wdata;
-				stale_cached_worker_time = performance.now() + 30000; //cache worker list for 30s
-				if (onDoneCallback != null) {
-					onDoneCallback(wdata);
-				}
+		fetch(horde_worker_endpoint)
+		.then(x => x.json())
+		.then(data => {
+			cached_worker_list = data;
+			stale_cached_worker_time = performance.now() + 30000; //cache worker list for 30s
+			if (onDoneCallback != null) {
+				onDoneCallback(data);
 			}
-			else
-			{
-				console.log("Error: " + errArr);
-				msgbox("Failed to retrieve AI Horde Worker list!\nPlease check your network connection.");
-			}
+		}).catch((error) => {
+			console.log("Error: " + error);
+			msgbox("Failed to retrieve AI Horde Worker list!\nPlease check your network connection.");
 		});
 
 	}
@@ -8261,8 +8176,6 @@ Current version indicated by LITEVER below.
 			{
 				tokenspersec = 0;
 			}
-			let parentcluster = find_text_horde(elem.cluster);
-			let clustertag = ((parentcluster&&parentcluster.tag!="")?" "+parentcluster.tag+"":"");
 			let style = (elem.trusted ? "style=\"color:#dd77ff;\"" : "");
 			let brokenstyle = (elem.maintenance_mode ? "style=\"color:#ee4444;\"" : "");
 			let workerNameHtml = escapeHtml(elem.name.substring(0, 40));
@@ -8295,11 +8208,10 @@ Current version indicated by LITEVER below.
 	function show_my_own_workers()
 	{
 		let userData = lastValidFoundUserData;
-		let parentcluster = find_text_horde(lastValidFoundCluster);
 		lastValidFoundUserWorkers = [];
-		if (parentcluster && userData && userData.worker_ids && userData.worker_ids.length > 0)
+		if (userData && userData.worker_ids && userData.worker_ids.length > 0)
 		{
-			let urls = userData.worker_ids.map(x=>parentcluster.maintenance_endpoint + "/" + x);
+			let urls = userData.worker_ids.map(x=> horde_maintenance_endpoint + "/" + x);
 			Promise.all(urls.map(url => fetch(url).then(response => response.json()).catch(error => error)))
 				.then(values => {
 					values = values.filter(n => (n.id && n.id!=""));
@@ -8806,7 +8718,7 @@ Current version indicated by LITEVER below.
 	function togglepalmmodel()
 	{
 		let mdlname = document.getElementById("custom_palm_model").value;
-		if(mdlname=="gemini-1.5-pro-latest" || mdlname=="gemini-1.5-pro-001" || mdlname=="gemini-1.5-pro-002" || mdlname=="gemini-1.5-flash-latest" || mdlname=="gemini-1.5-pro-exp-0801" || mdlname=="gemini-1.5-pro-exp-0827")
+		if(mdlname=="gemini-1.5-pro-latest" || mdlname=="gemini-1.5-pro-001" || mdlname=="gemini-1.5-pro-002" || mdlname=="gemini-1.5-flash-latest" || mdlname=="gemini-1.5-pro-exp-0801" || mdlname=="gemini-1.5-pro-exp-0827" || mdlname=="gemini-exp-1114")
 		{
 			document.getElementById("gemini_system_instruction").classList.remove("hidden");
 			if(localsettings.saved_palm_jailbreak=="")
@@ -9260,6 +9172,7 @@ Current version indicated by LITEVER below.
 								document.body.classList.add("connected");
 								document.getElementById("connectstatus").classList.add("color_offwhite");
 							}
+							document.getElementById("multiplayerstatus").innerText = "";
 							document.getElementById("connectstatus").innerHTML = "KoboldAI Endpoint";
 							render_gametext();
 
@@ -9316,9 +9229,11 @@ Current version indicated by LITEVER below.
 										koboldcpp_version_obj = data;
 										koboldcpp_version = data.version;
 										console.log("KoboldCpp Detected: " + koboldcpp_version);
+										document.getElementById("multiplayerstatus").innerText = "";
 										document.getElementById("connectstatus").innerHTML = (`<span style='cursor: pointer;' onclick='fetch_koboldcpp_perf()'>KoboldCpp ${koboldcpp_version}</a>`);
 										koboldcpp_has_vision = (data.vision?true:false);
 										koboldcpp_has_whisper = (data.transcribe?true:false);
+										koboldcpp_has_multiplayer = (data.multiplayer?true:false);
 										let has_password = (data.protected?true:false);
 										let has_txt2img = (data.txt2img?true:false);
 										let no_txt_model = (mdlname=="inactive");
@@ -9362,6 +9277,12 @@ Current version indicated by LITEVER below.
 												} else {
 													close_welcome_panel(false);
 													kai_json_load(tmpstory, false);
+												}
+											}else{
+												if(koboldcpp_has_multiplayer)
+												{
+													//force refresh
+													render_gametext(false);
 												}
 											}
 										}).catch(error => {
@@ -9471,6 +9392,7 @@ Current version indicated by LITEVER below.
 								custom_kobold_endpoint = "";
 								if(localflag)
 								{
+									document.getElementById("multiplayerstatus").innerText = "";
 									document.getElementById("connectstatus").innerHTML = "Offline Mode";
 								}
 								render_gametext();
@@ -9549,6 +9471,7 @@ Current version indicated by LITEVER below.
 					document.body.classList.add("connected");
 					document.getElementById("connectstatus").classList.add("color_offwhite");
 				}
+				document.getElementById("multiplayerstatus").innerText = "";
 				document.getElementById("connectstatus").innerHTML = "OpenAI Endpoint";
 				render_gametext(true);
 			}
@@ -9599,6 +9522,7 @@ Current version indicated by LITEVER below.
 					document.body.classList.add("connected");
 					document.getElementById("connectstatus").classList.add("color_offwhite");
 				}
+				document.getElementById("multiplayerstatus").innerText = "";
 				document.getElementById("connectstatus").innerHTML = "Claude Endpoint";
 				render_gametext();
 
@@ -9631,6 +9555,7 @@ Current version indicated by LITEVER below.
 					document.body.classList.add("connected");
 					document.getElementById("connectstatus").classList.add("color_offwhite");
 				}
+				document.getElementById("multiplayerstatus").innerText = "";
 				document.getElementById("connectstatus").innerHTML = "Gemini Endpoint";
 				render_gametext();
 			}
@@ -9662,6 +9587,7 @@ Current version indicated by LITEVER below.
 					document.body.classList.add("connected");
 					document.getElementById("connectstatus").classList.add("color_offwhite");
 				}
+				document.getElementById("multiplayerstatus").innerText = "";
 				document.getElementById("connectstatus").innerHTML = "Cohere Endpoint";
 				render_gametext();
 			}
@@ -9822,34 +9748,17 @@ Current version indicated by LITEVER below.
 		}
 
 		//fetch the model list
-		multifetch(models_endpoints,(resArr,errArr)=>{
-			if(resArr && resArr.length>0)
+		fetch(horde_models_endpoint)
+		.then(x => x.json())
+		.then(data => {
+			cached_model_list = data;
+			stale_cached_model_time = performance.now() + 30000; //cache model list for 30s
+			onDoneCallback(cached_model_list);
+		}).catch((error) => {
+			console.log("Error: " + error);
+			if(!is_popup_open())
 			{
-				let mdls = [];
-				for(let i=0;i<resArr.length;++i)
-				{
-					let cur = resArr[i].data;
-					if (cur)
-					{
-						for (let x = 0; x < cur.length; ++x) {
-							let mdl = cur[x];
-							mdl.cluster = resArr[i].cluster;
-							mdls.push(mdl);
-						}
-					}
-				}
-
-				cached_model_list = mdls;
-				stale_cached_model_time = performance.now() + 30000; //cache model list for 30s
-				onDoneCallback(mdls);
-			}
-			else
-			{
-				console.log("Error: " + errArr);
-				if(!is_popup_open())
-				{
-					msgbox("Failed to fetch models!\nPlease check your network connection.");
-				}
+				msgbox("Failed to fetch models!\nPlease check your network connection.");
 			}
 		});
 	}
@@ -9918,27 +9827,23 @@ Current version indicated by LITEVER below.
 						let curr = worker_data[i];
 						let cm = (curr.models && curr.models.length > 0) ? curr.models[0] : "None";
 						let cn = curr.name;
-						let parentcluster = find_text_horde(curr.cluster);
-						let clustertag = ((parentcluster && parentcluster.tag != "") ? "" + parentcluster.tag + " " : "");
 						let style = (curr.trusted ? "style=\"color:#b700ff;\"" : "");
 						style = (curr.maintenance_mode ? "style=\"color:#ee4444;\"" : style);
 						let extratag = (curr.trusted ? " 💜" : "");
 						extratag = (curr.maintenance_mode ? " ⛔" : extratag);
-						let alrselected = (selected_workers.filter(x => (x.cluster == curr.cluster && x.name == curr.name)).length > 0) ? " selected" : "";
-						model_choices += "<option " + style + " value=\"" + i + "\" " + alrselected + ">" + clustertag + escapeHtml(cn) + " (" + escapeHtml(cm) + ")" + extratag + "</option>";
+						let alrselected = (selected_workers.filter(x => (x.name == curr.name)).length > 0) ? " selected" : "";
+						model_choices += "<option " + style + " value=\"" + i + "\" " + alrselected + ">" + escapeHtml(cn) + " (" + escapeHtml(cm) + ")" + extratag + "</option>";
 					}
 					document.getElementById("pickedmodel").innerHTML = model_choices;
 				} else {
 					let model_choices = "";
 					for (let i = 0; i < models_data.length; ++i) {
 						let curr = models_data[i];
-						let parentcluster = find_text_horde(curr.cluster);
-						let clustertag = ((parentcluster && parentcluster.tag != "") ? "" + parentcluster.tag + " " : "");
-						let alrselected = (selected_models.filter(x => (x.cluster == curr.cluster && x.name == curr.name)).length > 0) ? " selected" : "";
+						let alrselected = (selected_models.filter(x => (x.name == curr.name)).length > 0) ? " selected" : "";
 						let mperf = parseFloat(curr.performance);
 						if (!mperf || isNaN(mperf) || mperf >= 99999) //a patch before the performance is properly fixed, we calculate it ourselves
 						{
-							let assocworkers = worker_data.filter(x => (x.cluster == curr.cluster && x.models.includes(curr.name)));
+							let assocworkers = worker_data.filter(x => (x.models.includes(curr.name)));
 							if (assocworkers.length > 0)
 							{
 								mperf = 0;
@@ -9954,7 +9859,7 @@ Current version indicated by LITEVER below.
 								mperf = mperf.toFixed(1)
 							}
 						}
-						model_choices += "<option value=\"" + i + "\" " + alrselected + ">" + clustertag + escapeHtml(curr.name) + " (ETA: "+ curr.eta +"s, Queue: " + curr.queued + ", Speed: " + mperf + ", Qty: " + curr.count + ")</option>";
+						model_choices += "<option value=\"" + i + "\" " + alrselected + ">" + escapeHtml(curr.name) + " (ETA: "+ curr.eta +"s, Queue: " + curr.queued + ", Speed: " + mperf + ", Qty: " + curr.count + ")</option>";
 					}
 					document.getElementById("pickedmodel").innerHTML = model_choices;
 				}
@@ -10023,7 +9928,7 @@ Current version indicated by LITEVER below.
 					prep_sel_workers.push(addedworker);
 					let modnames = addedworker.models;
 					for (var j = 0; j < modnames.length; ++j) {
-						let addedmodel = models_data.find(element => (element.name == modnames[j] && element.cluster==addedworker.cluster));
+						let addedmodel = models_data.find(element => (element.name == modnames[j]));
 						if (!prep_sel_models.includes(addedmodel)) {
 							prep_sel_models.push(addedmodel);
 						}
@@ -10040,21 +9945,6 @@ Current version indicated by LITEVER below.
 			prep_sel_models = prep_sel_models.filter(x=>x);
 			prep_sel_workers = prep_sel_workers.filter(x=>x);
 
-			const allMatched1 = prep_sel_models.every(item => item.cluster === prep_sel_models[0].cluster);
-			const allMatched2 = prep_sel_workers.every(item => item.cluster === prep_sel_workers[0].cluster);
-
-			if(!allMatched1 || !allMatched2)
-			{
-				if (prep_sel_workers.length > 0) {
-					let pickedcluster = get_most_common_cluster(prep_sel_workers);
-					prep_sel_workers = prep_sel_workers.filter(item => item.cluster === pickedcluster);
-					prep_sel_models = prep_sel_models.filter(item => item.cluster === pickedcluster);
-				} else {
-					let pickedcluster = get_most_common_cluster(prep_sel_models);
-					prep_sel_models = prep_sel_models.filter(item => item.cluster === pickedcluster);
-				}
-			}
-
 			selected_models = prep_sel_models;
 			selected_workers = prep_sel_workers;
 			localsettings.my_api_key = document.getElementById("apikey").value;
@@ -10062,20 +9952,12 @@ Current version indicated by LITEVER below.
 			{
 				localsettings.my_api_key = defaultsettings.my_api_key;
 			}
-			if (desired_new_home_cluster != null) {
-				localsettings.home_cluster = desired_new_home_cluster;
-				desired_new_home_cluster = null;
-			}
 
+			document.getElementById("multiplayerstatus").innerText = "";
 			document.getElementById("connectstatus").innerHTML = "AI Horde";
 
 			render_gametext();
 			hide_popups();
-
-			if(!allMatched1 || !allMatched2)
-			{
-				msgbox("You've selected multiple workers from different clusters. Only one cluster will be used.","Caution");
-			}
 		}
 	}
 
@@ -10087,8 +9969,7 @@ Current version indicated by LITEVER below.
 			msgboxYesNo(`Are you sure you want to delete the worker <span class='color_orange'>`+elem.name+`</span> with the ID <span class='color_orange'>`+elem.id+`</span>?<br><br><b>This action is irreversible!</b>`,"Confirm Delete Worker",
 			()=>{
 				let newapikey = document.getElementById("apikey").value;
-				let parentcluster = find_text_horde(lastValidFoundCluster);
-				fetch(parentcluster.maintenance_endpoint + "/" + elem.id, {
+				fetch(horde_maintenance_endpoint + "/" + elem.id, {
 						method: 'DELETE',
 						headers: {
 							'Content-Type': 'application/json',
@@ -10111,7 +9992,6 @@ Current version indicated by LITEVER below.
 	function update_my_workers()
 	{
 		let newapikey = document.getElementById("apikey").value;
-		let parentcluster = find_text_horde(lastValidFoundCluster);
 		for(var i=0;i<lastValidFoundUserWorkers.length;++i)
 		{
 			let desc = document.getElementById("mwc_desc_"+i);
@@ -10128,7 +10008,7 @@ Current version indicated by LITEVER below.
 					{
 						wo.info = desc.value.trim();
 					}
-					fetch(parentcluster.maintenance_endpoint + "/" + lastValidFoundUserWorkers[i].id, {
+					fetch(horde_maintenance_endpoint + "/" + lastValidFoundUserWorkers[i].id, {
 						method: 'PUT',
 						headers: {
 							'Content-Type': 'application/json',
@@ -10149,9 +10029,7 @@ Current version indicated by LITEVER below.
 
 	}
 
-	let desired_new_home_cluster = null;
 	let lastValidFoundUserData = null;
-	let lastValidFoundCluster = null;
 	let lastValidFoundUserWorkers = [];
 	function fetch_kudo_balance()
 	{
@@ -10159,70 +10037,50 @@ Current version indicated by LITEVER below.
 		{
 			return;
 		}
-		desired_new_home_cluster = null;
 		let newapikey = document.getElementById("apikey").value;
 
 		if (newapikey != null && newapikey.trim() != "") {
 			document.getElementById("showownworkerslink").classList.add("hidden");
 			document.getElementById("kudos_bal").innerHTML = "Checking...<br>&nbsp;";
 
-			let fupayload = {
+			fetch(horde_finduser_endpoint, {
 				method: 'GET',
 				headers: {
 					'apikey': newapikey,
 				},
-			};
-			let fu_zip = finduser_endpoints.map(a => [a, fupayload]);
-			multifetch(fu_zip, (resArr, errArr) => {
-				if (resArr && resArr.length > 0) {
-					lastValidFoundUserData = null;
-					lastValidFoundCluster = "";
-					for (let i = 0; i < resArr.length; ++i) {
-						let curdat = resArr[i].data;
-						let clus = resArr[i].cluster;
-						if (curdat) {
-							let uname = curdat.username;
-							console.log(curdat);
-							if (uname != null && uname != "") {
-								lastValidFoundUserData = curdat;
-								lastValidFoundCluster = clus;
-								break;
-							}
-						}
-					}
-					if (lastValidFoundUserData) {
-						desired_new_home_cluster = lastValidFoundCluster;
-						let kuds = lastValidFoundUserData.kudos;
-						let uname = lastValidFoundUserData.username;
-						let parentcluster = find_text_horde(desired_new_home_cluster);
-						let clustertag = ((parentcluster&&parentcluster.tag!="")?""+parentcluster.tag+" ":"");
-						let unameurl = "<a class='color_blueurl' href='#' onclick='show_my_own_workers()'>"+uname+"</a>";
-						if (kuds < 0) {
-							document.getElementById("kudos_bal").innerHTML = clustertag + unameurl + "<br>Kudos Balance: 0";
-							if(uname.toLowerCase()=="anonymous#0")
-							{
-								document.getElementById("kudos_bal").innerHTML = clustertag + uname + "<br>"+
-								"<a class='color_blueurl' href='https://aihorde.net/register'>(Register New User)</a>";
-							}else{
-								document.getElementById("showownworkerslink").classList.remove("hidden");
-							}
-						} else {
-							document.getElementById("kudos_bal").innerHTML = clustertag + unameurl + "<br>Kudos Balance: " + kuds;
+			})
+			.then((response) => response.json())
+			.then((data) => {
+				console.log(data);
+				lastValidFoundUserData = null;
+				if (data && data.username != null && data.username != "") {
+					lastValidFoundUserData = data;
+					let uname = data.username;
+					let kuds = data.kudos;
+					let unameurl = "<a class='color_blueurl' href='#' onclick='show_my_own_workers()'>"+uname+"</a>";
+					if (kuds < 0) {
+						document.getElementById("kudos_bal").innerHTML = unameurl + "<br>Kudos Balance: 0";
+						if(uname.toLowerCase()=="anonymous#0")
+						{
+							document.getElementById("kudos_bal").innerHTML = uname + "<br>"+
+							"<a class='color_blueurl' href='https://aihorde.net/register'>(Register New User)</a>";
+						}else{
 							document.getElementById("showownworkerslink").classList.remove("hidden");
 						}
-
-					}
-					else {
-						document.getElementById("kudos_bal").innerHTML = "API Key Error<br><a class='color_blueurl' href='https://aihorde.net/register'>(Register New User)</a>";
+					} else {
+						document.getElementById("kudos_bal").innerHTML = unameurl + "<br>Kudos Balance: " + kuds;
+						document.getElementById("showownworkerslink").classList.remove("hidden");
 					}
 				}
 				else {
-					console.log("Error: " + errArr);
 					document.getElementById("kudos_bal").innerHTML = "API Key Error<br><a class='color_blueurl' href='https://aihorde.net/register'>(Register New User)</a>";
 				}
+			})
+			.catch((error) => {
+				console.log("Error: " + error);
+				document.getElementById("kudos_bal").innerHTML = "API Key Error<br><a class='color_blueurl' href='https://aihorde.net/register'>(Register New User)</a>";
 			});
 		}
-
 	}
 
 	function inputboxfocus()
@@ -10909,6 +10767,7 @@ Current version indicated by LITEVER below.
 
 		autosave();//need to always autosave, so that we can switch back to non persistent sessions
 		render_gametext(false);
+		sync_multiplayer(true);
 	}
 
 	function get_preset_instruct_tag_format(sel)
@@ -11175,6 +11034,7 @@ Current version indicated by LITEVER below.
 		}
 		hide_popups();
 		restart_new_game(true, document.getElementById("keep_memory").checked);
+		sync_multiplayer(true);
 		hide_popups();
 	}
 
@@ -11289,7 +11149,7 @@ Current version indicated by LITEVER below.
 			let long_story = (truncated_context.length>1800?true:false);
 			truncated_context += "\n### Instruction:Summarize the above text in a single paragraph of up to "+(long_story?"ten":"five")+" detailed sentences.\n### Response:";
 			truncated_context = replace_placeholders(truncated_context);
-		let submit_payload = {
+			let submit_payload = {
 			"prompt": truncated_context,
 			"params": {
 				"n": 1,
@@ -11501,6 +11361,7 @@ Current version indicated by LITEVER below.
 			let ns = new AestheticInstructUISettings();
 			aestheticInstructUISettings = deepCopyAestheticSettings(ns);
 			refreshPreview(false);
+			leave_multiplayer();
 			restart_new_game();
 			display_settings();
 			confirm_settings();
@@ -11781,9 +11642,9 @@ Current version indicated by LITEVER below.
 		render_gametext();
 
 		//we do this last so its ok even if it fails
-		if (pending_response_horde && id_to_cancel && id_to_cancel != "" && !is_using_custom_ep())
+		if (id_to_cancel && id_to_cancel != "" && !is_using_custom_ep())
 		{
-			let cancelurl = pending_response_horde.output_endpoint + "/" + id_to_cancel;
+			let cancelurl = horde_output_endpoint + "/" + id_to_cancel;
 			fetch(cancelurl, {
 				method: 'DELETE'
 			})
@@ -12399,7 +12260,7 @@ Current version indicated by LITEVER below.
 				{
 					if(localsettings.inject_chatnames_instruct)
 					{
-						newgen = localsettings.chatname + ": " + newgen;
+						newgen = get_my_multiplayer_chatname() + ": " + newgen;
 					}
 					if(localsettings.inject_timestamps)
 					{
@@ -12436,7 +12297,7 @@ Current version indicated by LITEVER below.
 				{
 					injecttime = " ["+(new Date().toLocaleTimeString([], {year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'}))+"]";
 				}
-				newgen = "\n" + localsettings.chatname + ":"+ injecttime +" "+ newgen + "";
+				newgen = "\n" + get_my_multiplayer_chatname() + ":"+ injecttime +" "+ newgen + "";
 			}
 			else if(localsettings.opmode==3 && newgen.trim()=="")
 			{
@@ -12496,7 +12357,7 @@ Current version indicated by LITEVER below.
 						for(let mm=0;mm<selected_models.length;++mm)
 						{
 							let x = selected_models[mm];
-							if(x.cluster == curr.cluster && curr.models.includes(x.name))
+							if(curr.models.includes(x.name))
 							{
 								wrk_list.push(curr);
 								break;
@@ -12572,7 +12433,7 @@ Current version indicated by LITEVER below.
 					{
 						let recenttext = gametext_arr[gametext_arr.length-1].toLowerCase();
 						let spokennames = coarr.filter(x=>(recenttext.includes(x.toLowerCase())));
-						let selfname = localsettings.chatname + "\: ";
+						let selfname = get_my_multiplayer_chatname() + "\: ";
 						let wasself = (recenttext.includes(selfname.toLowerCase()));
 						if(wasself && spokennames.length>0)
 						{
@@ -12583,13 +12444,12 @@ Current version indicated by LITEVER below.
 					hasMulti = (coarr.length>1);
 				}
 
-				let me = localsettings.chatname;
 				if (co == null || co == "" || co.trim()=="") {
 					co = "";
 				}
 
 				//examine context to try to determine if there's an existing botname
-				var othernamesregex = new RegExp("\n(?!" + localsettings.chatname + ").+?\: ", "gi");
+				var othernamesregex = new RegExp("\n(?!" + get_my_multiplayer_chatname() + ").+?\: ", "gi");
 				if(!localsettings.chat_match_any_name && localsettings.chatopponent!="")
 				{
 					let namelist = localsettings.chatopponent.split("||$||");
@@ -12610,19 +12470,19 @@ Current version indicated by LITEVER below.
 				if(is_impersonate_user) //replace opponent with ourselves if needed
 				{
 					is_impersonate_user = false;
-					co = localsettings.chatname;
+					co = get_my_multiplayer_chatname();
 				}
 
 				if (localsettings.chat_context_mod && current_anote.length == 0 && current_memory.length == 0 && current_wi.length == 0) {
-					if (gametext_arr.length > 0 && gametext_arr[0].startsWith("\n" + me + ": ")) {
-						let injected = "[The following is an interesting chat message log between " + me + " and " + original_co + ".]\n\n" + localsettings.chatname + ": Hi.\n" + original_co + ": Hello.";
+					if (gametext_arr.length > 0 && gametext_arr[0].startsWith("\n" + localsettings.chatname + ": ")) {
+						let injected = "[The following is an interesting chat message log between " + localsettings.chatname + " and " + original_co + ".]\n\n" + localsettings.chatname + ": Hi.\n" + original_co + ": Hello.";
 						if(co=="")
 						{
-							injected = "[The following is an interesting chat message log between " + me + " and someone else.]\n\n" + localsettings.chatname + ": Hi.";
+							injected = "[The following is an interesting chat message log between " + localsettings.chatname + " and someone else.]\n\n" + localsettings.chatname + ": Hi.";
 						}
 						if(hasMulti)
 						{
-							injected = "[The following is an interesting chat message log between " + me + " and multiple others.]\n\n" + localsettings.chatname + ": Hi.";
+							injected = "[The following is an interesting chat message log between " + localsettings.chatname + " and multiple others.]\n\n" + localsettings.chatname + ": Hi.";
 						}
 						truncated_context = injected + truncated_context;
 					}
@@ -12645,6 +12505,7 @@ Current version indicated by LITEVER below.
 
 				if(localsettings.allow_continue_chat && newgen.trim() == "" && co!="")
 				{
+					let me = get_my_multiplayer_chatname();
 					//determine if the most recent speaker is ourself
 					let last_self = Math.max(truncated_context.lastIndexOf(me + ":"),truncated_context.lastIndexOf("\n"+me));
 					let last_oppo = truncated_context.lastIndexOf(co+":");
@@ -12981,6 +12842,7 @@ Current version indicated by LITEVER below.
 			}
 
 			render_gametext();
+			sync_multiplayer(false);
 		}
 		is_impersonate_user = false;
 	}
@@ -12998,7 +12860,12 @@ Current version indicated by LITEVER below.
 		}
 		if (localsettings.opmode == 3) //stop on selfname found
 		{
-			seqs = [localsettings.chatname + "\:",("\n" + localsettings.chatname + " ")];
+			seqs = [get_my_multiplayer_chatname() + "\:",("\n" + get_my_multiplayer_chatname() + " ")];
+			if(get_my_multiplayer_chatname()!=localsettings.chatname)
+			{
+				seqs.push(localsettings.chatname + "\:");
+				seqs.push("\n" + localsettings.chatname + " ");
+			}
 
 			//for multichat, everyone else becomes a stopper token
 			if (localsettings.chatopponent!="" && localsettings.chatopponent.includes("||$||")) {
@@ -13021,12 +12888,13 @@ Current version indicated by LITEVER below.
 		{
 			let st = get_instruct_starttag(true);
 			let et = get_instruct_endtag(true);
+			let me = get_my_multiplayer_chatname();
 			seqs = [st, et];
 			if(localsettings.inject_chatnames_instruct)
 			{
-				if(localsettings.chatname!="")
+				if(me!="")
 				{
-					seqs.push(localsettings.chatname + "\:");
+					seqs.push(me + "\:");
 				}
 				if(localsettings.chatopponent!="")
 				{
@@ -13194,13 +13062,6 @@ Current version indicated by LITEVER below.
 					}
 				}
 
-				let pseudostreaming = (determine_streaming_type()==1);
-				let streamchunk = 4096; //use 4096 for everything except pseudostreaming
-				if(pseudostreaming)
-				{
-					let pstreamamount = urlParams.get('streamamount');
-					streamchunk = ((pstreamamount != null && pstreamamount > 0) ? pstreamamount:8); //8 tokens per stream tick by default
-				}
 				last_request_str = JSON.stringify(submit_payload);
 				last_response_obj = null;
 				if (localsettings.tokenstreammode==2 && is_using_kcpp_with_sse()) {
@@ -13209,7 +13070,7 @@ Current version indicated by LITEVER below.
 				} else {
 					let sub_endpt = apply_proxy_url(custom_kobold_endpoint + kobold_custom_gen_endpoint);
 					let trackedgenid = pending_response_id; //if it changes, stop streaming
-					kobold_api_stream(sub_endpt, submit_payload, submit_payload.max_length, trackedgenid, "", streamchunk);
+					kobold_api_sync_req(sub_endpt, submit_payload, trackedgenid);
 				}
 				update_custom_kobold_endpoint_model_display();
 			}
@@ -13718,36 +13579,8 @@ Current version indicated by LITEVER below.
 		}
 		else {
 			console.log("submit v2 api");
-
-			//determine which horde selected models or workers are on.
-			//if they are on both, or if no workers/models are selected,
-			//then we prioritize the one matching our home cluster
-			let selectedhorde = find_text_horde(localsettings.home_cluster);
-			if (selected_workers.length > 0) {
-				const foundhome = selected_workers.filter(m => m.cluster == localsettings.home_cluster);
-				const foundaway = selected_workers.filter(m => m.cluster != localsettings.home_cluster);
-
-				if (foundhome.length == 0 && foundaway.length > 0) {
-					let bettermatch = find_text_horde(foundaway[0].cluster);
-					if (bettermatch) {
-						selectedhorde = bettermatch;
-					}
-				}
-			}
-			else if (selected_models.length > 0) {
-				const foundhome = selected_models.filter(m => m.cluster == localsettings.home_cluster);
-				const foundaway = selected_models.filter(m => m.cluster != localsettings.home_cluster);
-				if (foundhome.length == 0 && foundaway.length > 0) {
-					let bettermatch = find_text_horde(foundaway[0].cluster);
-					if (bettermatch) {
-						selectedhorde = bettermatch;
-					}
-				}
-			}
-
-			//use anon key if we are generating for a model outside our home cluster
-			let apikeytouse = (selectedhorde.baseurl == localsettings.home_cluster ? localsettings.my_api_key : defaultsettings.my_api_key);
-			let clientagenttouse = selectedhorde.client_agent;
+			let apikeytouse = localsettings.my_api_key;
+			let clientagenttouse = default_client_agent;
 			let subpostheaders = {
 				'Content-Type': 'application/json',
 				'apikey': apikeytouse,
@@ -13774,7 +13607,7 @@ Current version indicated by LITEVER below.
 			last_request_str = JSON.stringify(submit_payload);
 			last_response_obj = null;
 
-			fetch(selectedhorde.submit_endpoint, {
+			fetch(horde_submit_endpoint, {
 				method: 'POST', // or 'PUT'
 				headers: subpostheaders,
 				body: JSON.stringify(submit_payload),
@@ -13784,7 +13617,6 @@ Current version indicated by LITEVER below.
 					console.log('Success:', data);
 					if (data.id && data.id != "") {
 						pending_response_id = data.id;
-						pending_response_horde = selectedhorde;
 						poll_ticks_passed = 0;
 						console.log("awaiting response for " + pending_response_id);
 					}
@@ -14195,7 +14027,7 @@ Current version indicated by LITEVER below.
 								<option value="0">Disabled</option>
 								<option value="1">Interrogate (Horde)</option>
 								<option value="2">Interrogate (KCPP / Forge / A1111)</option>
-								<option value="3">Multimodal (LLaVA)</option>
+								<option value="3">Multimodal (KCPP Mmproj)</option>
 								<option value="4">OpenAI Vision (API)</option>
 							</select>`;
 			document.getElementById("zoomedimgdesc").innerHTML = `
@@ -14329,6 +14161,7 @@ Current version indicated by LITEVER below.
 	function handle_incoming_text(gentxt, genworker, genmdl, genkudos) {
 		//handle stopping tokens if they got missed (eg. horde)
 		gentxt = trim_extra_stop_seqs(gentxt,true);
+		let mychatname = get_my_multiplayer_chatname();
 
 		//always trim incomplete sentences for adventure and chat (if not multiline)
 		//do not trim if instruct mode AND stop token reached
@@ -14341,7 +14174,7 @@ Current version indicated by LITEVER below.
 			if(localsettings.opmode == 3)
 			{
 				let foundOppoName = gentxt.indexOf(localsettings.chatopponent + "\: ");
-				let foundMyName = gentxt.indexOf(localsettings.chatname + "\: ");
+				let foundMyName = gentxt.indexOf(mychatname + "\: ");
 				if(foundOppoName > 0 || foundMyName > 0)
 				{
 					donottrim = true;
@@ -14426,8 +14259,8 @@ Current version indicated by LITEVER below.
 			{
 				gentxt = gentxt.substring(oppomatch.length);
 			}
-			let foundMyName = gentxt.indexOf(localsettings.chatname + "\:");
-			let foundMyName2 = gentxt.indexOf("\n" + localsettings.chatname + " ");
+			let foundMyName = gentxt.indexOf(mychatname + "\:");
+			let foundMyName2 = gentxt.indexOf("\n" + mychatname + " ");
 			var foundAltYouName = new RegExp("\nYou [A-Z\"\'*] ", "gi");
 			var foundAltYouNameRes = gentxt.match(foundAltYouName);
 			let splitresponse = [];
@@ -14439,7 +14272,7 @@ Current version indicated by LITEVER below.
 				{
 					let ml_check = input_arr[0];
 					//test for other chatopponents
-					var moreopponents = new RegExp("\n(?!" + localsettings.chatname + ").+?\: ", "gi");
+					var moreopponents = new RegExp("\n(?!" + mychatname + ").+?\: ", "gi");
 					var foundmoreopponent = ml_check.match(moreopponents);
 					if(foundmoreopponent != null && foundmoreopponent.length > 0)
 					{
@@ -14452,14 +14285,14 @@ Current version indicated by LITEVER below.
 
 			if (foundMyName != -1)
 			{
-				splitresponse = gentxt.split(localsettings.chatname + "\:");
+				splitresponse = gentxt.split(mychatname + "\:");
 				splitresponse = prune_multiliners(splitresponse);
 			}
 			else if (foundMyName2 != -1 &&
-			(localsettings.chatname!="User" ||
+			(mychatname!="User" ||
 			(foundAltYouNameRes!=null && foundAltYouNameRes.length>0))) //added by henky request, trigger even without colon
 			{
-				splitresponse = gentxt.split("\n" + localsettings.chatname + " ");
+				splitresponse = gentxt.split("\n" + mychatname + " ");
 				splitresponse = prune_multiliners(splitresponse);
 			}
 			else if (foundOppoNameWithNL > 0) //split by oppo name
@@ -14525,9 +14358,9 @@ Current version indicated by LITEVER below.
 
 			if(localsettings.inject_chatnames_instruct)
 			{
-				let st2 = localsettings.chatname + "\:";
+				let st2 = mychatname + "\:";
 				let et2 = localsettings.chatopponent + "\:";
-				if(localsettings.chatname!="")
+				if(mychatname!="")
 				{
 					found = gentxt.indexOf(st2);
 					splitresponse = [];
@@ -14941,14 +14774,17 @@ Current version indicated by LITEVER below.
 				let nextcounter = ++idle_triggered_counter;
 				if(localsettings.opmode == 4) //handle idle messages
 				{
-					if (!localsettings.placeholder_tags) {
-						pending_context_preinjection =  get_instruct_endtag(false);
-					} else {
-						pending_context_preinjection =  instructendplaceholder;
-					}
-					if(localsettings.inject_timestamps)
+					if(!localsettings.allow_continue_chat)
 					{
-						pending_context_preinjection += "["+(new Date().toLocaleTimeString([], {year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'}))+"]";
+						if (!localsettings.placeholder_tags) {
+							pending_context_preinjection =  get_instruct_endtag(false);
+						} else {
+							pending_context_preinjection =  instructendplaceholder;
+						}
+						if(localsettings.inject_timestamps)
+						{
+							pending_context_preinjection += "["+(new Date().toLocaleTimeString([], {year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'}))+"]";
+						}
 					}
 				}
 				submit_generation();
@@ -15242,6 +15078,83 @@ Current version indicated by LITEVER below.
 		});
 	}
 
+	function poll_multiplayer()
+	{
+		if(!is_using_kcpp_with_multiplayer() || !multiplayer_active)
+		{
+			document.getElementById("multiplayerstatus").innerText = "";
+			schedule_multiplayer_minor_change = false;
+			schedule_multiplayer_major_change = false;
+			return;
+		}
+		document.getElementById("multiplayerstatus").innerHTML = `<a href="#" onclick="leave_multiplayer()" class="color_orangeurl" style="font-size:10px">[Exit Multiplayer]</a>`;
+
+		//send our changes if they exist
+		if(schedule_multiplayer_minor_change || schedule_multiplayer_major_change)
+		{
+			submit_multiplayer(schedule_multiplayer_major_change);
+			schedule_multiplayer_minor_change = false;
+			schedule_multiplayer_major_change = false;
+		}
+		else
+		{
+			//listen for others changes
+			fetch(apply_proxy_url(custom_kobold_endpoint + koboldcpp_multiplayer_check_endpoint),
+			{
+				method: 'GET',
+				headers: get_kobold_header(),
+			})
+			.then(response => response.json())
+			.then(vals => {
+				if(vals && vals.turn_major && multiplayer_active && (vals.turn_major != multiplayer_last_turn_major || vals.turn_minor != multiplayer_last_turn_minor))
+				{
+					let minor_change = (multiplayer_last_turn_major == vals.turn_major);
+					multiplayer_last_turn_major = vals.turn_major;
+					multiplayer_last_turn_minor = vals.turn_minor;
+					fetch(apply_proxy_url(custom_kobold_endpoint + koboldcpp_multiplayer_fetch_endpoint),
+					{
+						method: 'GET',
+						headers: get_kobold_header(),
+					})
+					.then(response => response.text())
+					.then(story => {
+						let tmpstory = decompress_story(story);
+						if(tmpstory && is_kai_json(tmpstory))
+						{
+							if(minor_change)
+							{
+								//minor change, load only gametext_arr. assume its v1
+								gametext_arr = [];
+								if (tmpstory.prompt != "") {
+									gametext_arr.push(tmpstory.prompt);
+								}
+								for (var i = 0; i < tmpstory.actions.length; ++i) {
+									gametext_arr.push(tmpstory.actions[i]);
+								}
+								render_gametext(false);
+							}
+							else
+							{
+								kai_json_load(tmpstory, true, true); //major change, load everything
+							}
+						}
+					}).catch(error => {
+						console.log("Failed to get multiplayer story: " + error);
+					});
+				}
+				else if(!vals || vals.error)
+				{
+					leave_multiplayer();
+					msgbox("Disconnected from multiplayer due to bad response.","Disconnected from Multiplayer");
+				}
+			}).catch(error => {
+				leave_multiplayer();
+				msgbox("Disconnected from multiplayer: " + error,"Disconnected from Multiplayer");
+				console.log("Failed to access multiplayer status: " + error);
+			});
+		}
+	}
+
 	//clock speed is 500ms per tick
 	function poll_pending_response()
 	{
@@ -15271,7 +15184,7 @@ Current version indicated by LITEVER below.
 					{
 						//still waiting, do nothing until next poll
 						console.log("sync request: still awaiting reply");
-						let polledstreaming = (determine_streaming_type()==2);
+						let polledstreaming = (determine_streaming_type()==1);
 						//only check once every 2 ticks if remote
 						if (polledstreaming && (localflag?true:(poll_ticks_passed%2==0)))
 						{
@@ -15341,13 +15254,14 @@ Current version indicated by LITEVER below.
 						synchro_pending_stream = "";
 						show_abort_button(false);
 						render_gametext();
+						sync_multiplayer(false);
 					}
 				}
 				else {
 					//horde api needs to constantly poll to see if response is done
 					console.log("async request: started for pending id " + pending_response_id);
 					poll_in_progress = true;
-					fetch(pending_response_horde.polling_endpoint + "/" + pending_response_id)
+					fetch(horde_polling_endpoint + "/" + pending_response_id)
 					.then(x => x.json())
 					.then(data => {
 						if (data.message != null || data.faulted == true || data.is_possible == false) {
@@ -15374,7 +15288,7 @@ Current version indicated by LITEVER below.
 								//complete, fetch final results. we wait 0.5s more as kudos may take time to calculate
 								setTimeout(() => {
 									console.log("fetching completed generation for " + pending_response_id);
-									fetch(pending_response_horde.output_endpoint + "/" + pending_response_id)
+									fetch(horde_output_endpoint + "/" + pending_response_id)
 										.then(x => x.json())
 										.then(data => {
 											console.log("Finished " + pending_response_id + ": " + JSON.stringify(data));
@@ -15609,6 +15523,7 @@ Current version indicated by LITEVER below.
 				}
 
 				render_gametext();
+				sync_multiplayer(false);
 				console.log("Merged edit field. Parts:" + gametext_arr.length);
 			}
 
@@ -15920,7 +15835,9 @@ Current version indicated by LITEVER below.
 
 				document.getElementById("gametext").innerHTML = `Welcome to <span class="color_cyan">KoboldAI Lite</span>!`+
 				`<br>You are using the models <span class="color_green">${selmodelstr}</span>${(selected_workers.length == 0 ? `` : ` (Pinned to ${selected_workers.length} worker IDs)`)}.`+
-				`${whorun}.<br><br><b><span class="color_orange">${nowmode} Selected</span></b> - Enter a prompt below to begin!`+
+				`${whorun}.`+
+				(multiplayer_active?`<br><br><span class="color_green">[ Multiplayer is <b>Active</b>! This session is shared with other server participants.]<br>[ You can leave via exit button in top right corner. ]</span>`:(is_using_kcpp_with_multiplayer()?`<br><br>[ <a href="#" tabindex="${mainmenu_is_untab?`-1`:`0`}" class="color_blueurl mainnav" onclick="join_multiplayer()"><span class="color_green">Multiplayer Available</span> - Click Here To Join</a> ]`:``))+
+				`<br><br><b><span class="color_orange">${nowmode} Selected</span></b> - Enter a prompt below to begin!`+
 				`<br>Or, <a href="#" tabindex="${mainmenu_is_untab?`-1`:`0`}" class="color_blueurl mainnav" onclick="document.getElementById('loadfileinput').click()">load a <b>JSON File</b> or a <b>Character Card</b> here.</a>`+
 				`<br>Or, <a href="#" tabindex="${mainmenu_is_untab?`-1`:`0`}" class="color_blueurl mainnav" onclick="display_scenarios()">select a <b>Quick Start Scenario</b> here.</a>`+
 				`<br>${(welcome!=""?`<br><em>${escapeHtml(welcome)}</em>`:``)}`;
@@ -17478,6 +17395,7 @@ Current version indicated by LITEVER below.
 			}
 			retry_preserve_last = false;
 			render_gametext();
+			sync_multiplayer(false);
 		}
 
 		}, 2000);
@@ -17502,6 +17420,7 @@ Current version indicated by LITEVER below.
 				redo_arr.push(popped);
 			}
 			render_gametext();
+			sync_multiplayer(false);
 		}
 	}
 
@@ -17525,6 +17444,7 @@ Current version indicated by LITEVER below.
 				gametext_arr.push(redo_prev_text.pop());
 			}
 			render_gametext();
+			sync_multiplayer(false);
 		}
 
 		}, 2000);
@@ -17542,12 +17462,14 @@ Current version indicated by LITEVER below.
 				let popped = redo_arr.pop();
 				gametext_arr.push(popped);
 				render_gametext();
+				sync_multiplayer(false);
 			}else if (redo_prev_text.length>0) {
 				last_reply_was_empty = false;
 				retry_prev_text.push(gametext_arr.pop());
 				retry_preserve_last = false;
 				gametext_arr.push(redo_prev_text.pop());
 				render_gametext();
+				sync_multiplayer(false);
 			}
 		}
 	}
@@ -18394,6 +18316,7 @@ Current version indicated by LITEVER below.
 				</div>
 				<div id="connectstatusdiv">
 					<div id="connectstatus">Connecting</div>
+					<div id="multiplayerstatus"></div>
 				</div>
 			</div>
 		</div>
@@ -18742,12 +18665,15 @@ Current version indicated by LITEVER below.
 				</select>
 				<select style="padding:4px;display:inline;width:calc(100% - 220px)" class="form-control hidden" id="custom_mistralai_model" onchange="oai_model_change(true)">
 					<option value="open-mistral-7b">open-mistral-7b</option>
-					<option value="mistral-tiny">mistral-tiny</option>
 					<option value="open-mistral-nemo">open-mistral-nemo</option>
-					<option value="mistral-small">mistral-small</option>
 					<option value="open-mixtral-8x22b">open-mixtral-8x22b</option>
-					<option value="mistral-medium">mistral-medium</option>
+					<option value="mistral-tiny">mistral-tiny</option>
+					<option value="mistral-small">mistral-small</option>
+					<option value="mistral-medium-latest">mistral-medium-latest</option>
 					<option value="mistral-large-latest">mistral-large-latest</option>
+					<option value="pixtral-12b-latest">pixtral-12b-latest</option>
+					<option value="pixtral-large-latest">pixtral-large-latest</option>
+					<option value="codestral-latest">codestral-latest</option>
 					<option style="display:none;" class="custom_model_option" value="custom">[Custom]</option>
 				</select>
 				<select style="padding:4px;display:inline;width:calc(100% - 220px)" class="form-control hidden" id="custom_featherless_model" onchange="oai_model_change(true)">
@@ -18868,6 +18794,7 @@ Current version indicated by LITEVER below.
 					<option value="gemini-1.5-flash-latest">gemini-1.5-flash-latest</option>
 					<option value="gemini-1.5-pro-exp-0801">gemini-1.5-pro-exp-0801</option>
 					<option value="gemini-1.5-pro-exp-0827">gemini-1.5-pro-exp-0827</option>
+					<option value="gemini-exp-1114">gemini-exp-1114</option>
 					<option value="text-bison-001">text-bison-001</option>
 				</select>
 				<span class="color_green" style="font-weight: bold;">Please input Gemini or PaLM API Key.</span><br><br>
@@ -19091,7 +19018,7 @@ Current version indicated by LITEVER below.
 						</div>
 						<div class="settinglabel">
 							<div class="justifyleft settingsmall">Continue Bot Replies <span class="helpicon">?<span
-							class="helptext">Allow incomplete AI chat mode replies, which can be continued by pressing submit again. Not recommended for newbies.</span></span></div>
+							class="helptext">Allow AI to continue incomplete past responses, which can be extended by pressing submit again. Not recommended for newbies.</span></span></div>
 							<input type="checkbox" title="Continue Bot Replies" id="allow_continue_chat" style="margin:0px 0px 0px auto;">
 						</div>
 						<div class="settinglabel">
@@ -19973,7 +19900,7 @@ Current version indicated by LITEVER below.
 			</div>
 
 			<div class="popupfooter">
-				<button type="button" class="btn btn-primary" onclick="confirm_memory();save_wi();commit_wi_changes();render_gametext();hide_popups()">OK</button>
+				<button type="button" class="btn btn-primary" onclick="confirm_memory();save_wi();commit_wi_changes();render_gametext();sync_multiplayer(true);hide_popups()">OK</button>
 				<button type="button" class="btn btn-primary" onclick="hide_popups();">Cancel</button>
 			</div>
 		</div>

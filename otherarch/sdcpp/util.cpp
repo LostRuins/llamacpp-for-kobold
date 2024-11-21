@@ -425,7 +425,6 @@ const char* sd_get_system_info() {
     static char buffer[1024];
     std::stringstream ss;
     ss << "System Info: \n";
-    ss << "    BLAS = " << ggml_cpu_has_blas() << std::endl;
     ss << "    SSE3 = " << ggml_cpu_has_sse3() << std::endl;
     ss << "    AVX = " << ggml_cpu_has_avx() << std::endl;
     ss << "    AVX2 = " << ggml_cpu_has_avx2() << std::endl;

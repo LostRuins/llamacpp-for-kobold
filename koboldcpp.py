@@ -45,7 +45,7 @@ maxhordelen = 400
 modelbusy = threading.Lock()
 requestsinqueue = 0
 defaultport = 5001
-KcppVersion = "1.78"
+KcppVersion = "1.79"
 showdebug = True
 guimode = False
 showsamplerwarning = True
@@ -64,6 +64,10 @@ args = None #global args
 runmode_untouched = True
 modelfile_extracted_meta = None
 importvars_in_progress = False
+has_multiplayer = False
+multiplayer_story_data_compressed = None #stores the full compressed story of the current multiplayer session
+multiplayer_turn_major = 0 # to keep track of when a client needs to sync their stories
+multiplayer_turn_minor = 0
 preloaded_story = None
 chatcompl_adapter = None
 embedded_kailite = None
@@ -455,6 +459,7 @@ def init_library():
     handle.abort_generate.restype = ctypes.c_bool
     handle.token_count.restype = token_count_outputs
     handle.get_pending_output.restype = ctypes.c_char_p
+    handle.get_chat_template.restype = ctypes.c_char_p
     handle.sd_load_model.argtypes = [sd_load_model_inputs]
     handle.sd_load_model.restype = ctypes.c_bool
     handle.sd_generate.argtypes = [sd_generation_inputs]
@@ -1792,7 +1797,7 @@ Enter Prompt:<br>
 
     def do_GET(self):
         global embedded_kailite, embedded_kcpp_docs, embedded_kcpp_sdui
-        global maxctx, maxhordelen, friendlymodelname, KcppVersion, totalgens, preloaded_story, exitcounter, currentusergenkey, friendlysdmodelname, fullsdmodelpath, mmprojpath, password, fullwhispermodelpath
+        global has_multiplayer, multiplayer_turn_major, multiplayer_turn_minor, multiplayer_story_data_compressed, maxctx, maxhordelen, friendlymodelname, KcppVersion, totalgens, preloaded_story, exitcounter, currentusergenkey, friendlysdmodelname, fullsdmodelpath, mmprojpath, password, fullwhispermodelpath
         self.path = self.path.rstrip('/')
         response_body = None
         content_type = 'application/json'
@@ -1849,7 +1854,7 @@ Enter Prompt:<br>
             has_vision = (mmprojpath!="")
             has_password = (password!="")
             has_whisper = (fullwhispermodelpath!="")
-            response_body = (json.dumps({"result":"KoboldCpp","version":KcppVersion, "protected":has_password ,"txt2img":has_txt2img,"vision":has_vision,"transcribe":has_whisper}).encode())
+            response_body = (json.dumps({"result":"KoboldCpp","version":KcppVersion, "protected":has_password ,"txt2img":has_txt2img,"vision":has_vision,"transcribe":has_whisper,"multiplayer":has_multiplayer}).encode())
 
         elif self.path.endswith(('/api/extra/perf')):
             global last_req_time, start_time
@@ -1909,6 +1914,11 @@ Enter Prompt:<br>
         elif self.path.endswith(('/.well-known/serviceinfo')):
             response_body = (json.dumps({"version":"0.2","software":{"name":"KoboldCpp","version":KcppVersion,"repository":"https://github.com/LostRuins/koboldcpp","homepage":"https://github.com/LostRuins/koboldcpp","logo":"https://raw.githubusercontent.com/LostRuins/koboldcpp/refs/heads/concedo/niko.ico"},"api":{"koboldai":{"name":"KoboldAI API","rel_url":"/api","documentation":"https://lite.koboldai.net/koboldcpp_api","version":KcppVersion},"openai":{"name":"OpenAI API","rel_url ":"/v1","documentation":"https://openai.com/documentation/api","version":KcppVersion}}}).encode())
 
+        elif self.path=="/props":
+            ctbytes = handle.get_chat_template()
+            chat_template = ctypes.string_at(ctbytes).decode("UTF-8","ignore")
+            response_body = (json.dumps({"chat_template":chat_template,"total_slots":1}).encode())
+
         elif self.path=="/api" or self.path=="/docs" or self.path.startswith(('/api/?json=','/api?json=','/docs/?json=','/docs?json=')):
             content_type = 'text/html'
             if embedded_kcpp_docs is None:
@@ -1926,6 +1936,20 @@ Enter Prompt:<br>
         elif self.path=="/v1":
             content_type = 'text/html'
             response_body = (f"KoboldCpp OpenAI compatible endpoint is running!\n\nFor usage reference, see https://platform.openai.com/docs/api-reference").encode()
+
+        elif self.path=="/api/extra/multiplayer/status":
+            if not has_multiplayer:
+                response_body = (json.dumps({"error":"Multiplayer not enabled!"}).encode())
+            else:
+                response_body = (json.dumps({"turn_major":multiplayer_turn_major,"turn_minor":multiplayer_turn_minor,"idle":(0 if modelbusy.locked() else 1)}).encode())
+
+        elif self.path=="/api/extra/multiplayer/getstory":
+            if not has_multiplayer:
+                response_body = (json.dumps({"error":"Multiplayer not enabled!"}).encode())
+            elif multiplayer_story_data_compressed is None:
+                response_body = (json.dumps({"gamestarted":True,"prompt":"","memory":"","authorsnote":"","anotetemplate":"","actions":[],"actions_metadata":{},"worldinfo":[],"wifolders_d":{},"wifolders_l":[]}).encode())
+            else:
+                response_body = multiplayer_story_data_compressed.encode()
 
         elif self.path=="/api/extra/preloadstory":
             if preloaded_story is None:
@@ -1952,7 +1976,8 @@ Enter Prompt:<br>
         return
 
     def do_POST(self):
-        global modelbusy, requestsinqueue, currentusergenkey, totalgens, pendingabortkey
+        global modelbusy, requestsinqueue, currentusergenkey, totalgens, pendingabortkey, multiplayer_turn_major, multiplayer_turn_minor, multiplayer_story_data_compressed
+
         body = bytearray()
 
         if "Content-Length" in self.headers:
@@ -2066,6 +2091,37 @@ Enter Prompt:<br>
                     lastlogprobs = handle.last_logprobs()
                     logprobsdict = parse_last_logprobs(lastlogprobs)
             response_body = (json.dumps({"logprobs":logprobsdict}).encode())
+
+        elif self.path.endswith(('/api/extra/multiplayer/setstory')):
+            if not self.secure_endpoint():
+                return
+            if not has_multiplayer:
+                response_code = 400
+                response_body = (json.dumps({"success":False, "error":"Multiplayer not enabled!"}).encode())
+            try:
+                incoming_story = json.loads(body) # ensure submitted data is valid json
+                fullupdate = incoming_story.get('fullupdate', False)
+                storybody = incoming_story.get('data', None) #should be a compressed string
+                if storybody:
+                    storybody = str(storybody)
+                    if len(storybody) > (1024*1024*3): #limit story to 3mb
+                        response_code = 400
+                        response_body = (json.dumps({"success":False, "error":"Story is too long!"}).encode())
+                    else:
+                        multiplayer_story_data_compressed = str(storybody) #save latest story
+                        if fullupdate:
+                            multiplayer_turn_minor = 0
+                            multiplayer_turn_major += 1
+                        else:
+                            multiplayer_turn_minor += 1
+                        response_body = (json.dumps({"success":True,"turn_major":multiplayer_turn_major,"turn_minor":multiplayer_turn_minor}).encode())
+                else:
+                    response_code = 400
+                    response_body = (json.dumps({"success":False, "error":"No story submitted!"}).encode())
+            except Exception as e:
+                utfprint("Multiplayer Set Story - Body Error: " + str(e))
+                response_code = 400
+                response_body = (json.dumps({"success": False, "error":"Submitted story invalid!"}).encode())
 
         if response_body is not None:
             self.send_response(response_code)
@@ -2535,6 +2591,7 @@ def show_gui():
     port_var = ctk.StringVar(value=defaultport)
     host_var = ctk.StringVar(value="")
     multiuser_var = ctk.IntVar(value=1)
+    multiplayer_var = ctk.IntVar(value=has_multiplayer)
     horde_name_var = ctk.StringVar(value="koboldcpp")
     horde_gen_var = ctk.StringVar(value=maxhordelen)
     horde_context_var = ctk.StringVar(value=maxhordectx)
@@ -2764,6 +2821,7 @@ def show_gui():
     def togglefastforward(a,b,c):
         if fastforward.get()==0:
             contextshift.set(0)
+            smartcontext.set(0)
             togglectxshift(1,1,1)
 
     def togglectxshift(a,b,c):
@@ -2911,7 +2969,7 @@ def show_gui():
     makeslider(quick_tab, "Context Size:", contextsize_text, context_var, 0, len(contextsize_text)-1, 30, width=280, set=5,tooltip="What is the maximum context size to support. Model specific. You cannot exceed it.\nLarger contexts require more memory, and not all models support it.")
 
     # load model
-    makefileentry(quick_tab, "GGUF Model:", "Select GGUF or GGML Model File", model_var, 40, 280, onchoosefile=on_picked_model_file,tooltiptxt="Select a GGUF or GGML model file on disk to be loaded.")
+    makefileentry(quick_tab, "GGUF Text Model:", "Select GGUF or GGML Model File", model_var, 40, 280, onchoosefile=on_picked_model_file,tooltiptxt="Select a GGUF or GGML model file on disk to be loaded.")
     model_var.trace("w", gui_changed_modelfile)
 
     # Hardware Tab
@@ -3007,9 +3065,9 @@ def show_gui():
     # Model Tab
     model_tab = tabcontent["Model Files"]
 
-    makefileentry(model_tab, "Model:", "Select GGUF or GGML Model File", model_var, 1,width=280, onchoosefile=on_picked_model_file,tooltiptxt="Select a GGUF or GGML model file on disk to be loaded.")
-    makefileentry(model_tab, "Lora:", "Select Lora File",lora_var, 3,width=280,tooltiptxt="Select an optional GGML LoRA adapter to use.\nLeave blank to skip.")
-    makefileentry(model_tab, "Lora Base:", "Select Lora Base File", lora_base_var, 5,width=280,tooltiptxt="Select an optional F16 GGML LoRA base file to use.\nLeave blank to skip.")
+    makefileentry(model_tab, "Text Model:", "Select GGUF or GGML Model File", model_var, 1,width=280, onchoosefile=on_picked_model_file,tooltiptxt="Select a GGUF or GGML model file on disk to be loaded.")
+    makefileentry(model_tab, "Text Lora:", "Select Lora File",lora_var, 3,width=280,tooltiptxt="Select an optional GGML LoRA adapter to use.\nLeave blank to skip.")
+    makefileentry(model_tab, "Text Lora Base:", "Select Lora Base File", lora_base_var, 5,width=280,tooltiptxt="Select an optional F16 GGML LoRA base file to use.\nLeave blank to skip.")
     makefileentry(model_tab, "Vision mmproj:", "Select Vision mmproj File", mmproj_var, 7,width=280,tooltiptxt="Select a mmproj file to use for vision models like LLaVA.\nLeave blank to skip.")
     makefileentry(model_tab, "Preloaded Story:", "Select Preloaded Story File", preloadstory_var, 9,width=280,tooltiptxt="Select an optional KoboldAI JSON savefile \nto be served on launch to any client.")
     makefileentry(model_tab, "ChatCompletions Adapter:", "Select ChatCompletions Adapter File", chatcompletionsadapter_var, 12, width=250, filetypes=[("JSON Adapter", "*.json")], tooltiptxt="Select an optional ChatCompletions Adapter JSON file to force custom instruct tags.")
@@ -3035,10 +3093,11 @@ def show_gui():
     makecheckbox(network_tab, "Remote Tunnel", remotetunnel, 3, 1,tooltiptxt="Creates a trycloudflare tunnel.\nAllows you to access koboldcpp from other devices over an internet URL.")
     makecheckbox(network_tab, "Quiet Mode", quietmode, 4,tooltiptxt="Prevents all generation related terminal output from being displayed.")
     makecheckbox(network_tab, "NoCertify Mode (Insecure)", nocertifymode, 4, 1,tooltiptxt="Allows insecure SSL connections. Use this if you have cert errors and need to bypass certificate restrictions.")
+    makecheckbox(network_tab, "Shared Multiplayer", multiplayer_var, 5,tooltiptxt="Hosts a shared multiplayer session that others can join.")
 
-    makefileentry(network_tab, "SSL Cert:", "Select SSL cert.pem file",ssl_cert_var, 5, width=200 ,filetypes=[("Unencrypted Certificate PEM", "*.pem")], singlerow=True, singlecol=False,tooltiptxt="Select your unencrypted .pem SSL certificate file for https.\nCan be generated with OpenSSL.")
-    makefileentry(network_tab, "SSL Key:", "Select SSL key.pem file", ssl_key_var, 7, width=200, filetypes=[("Unencrypted Key PEM", "*.pem")], singlerow=True, singlecol=False, tooltiptxt="Select your unencrypted .pem SSL key file for https.\nCan be generated with OpenSSL.")
-    makelabelentry(network_tab, "Password: ", password_var, 8, 200,tooltip="Enter a password required to use this instance.\nThis key will be required for all text endpoints.\nImage endpoints are not secured.")
+    makefileentry(network_tab, "SSL Cert:", "Select SSL cert.pem file",ssl_cert_var, 7, width=200 ,filetypes=[("Unencrypted Certificate PEM", "*.pem")], singlerow=True, singlecol=False,tooltiptxt="Select your unencrypted .pem SSL certificate file for https.\nCan be generated with OpenSSL.")
+    makefileentry(network_tab, "SSL Key:", "Select SSL key.pem file", ssl_key_var, 9, width=200, filetypes=[("Unencrypted Key PEM", "*.pem")], singlerow=True, singlecol=False, tooltiptxt="Select your unencrypted .pem SSL key file for https.\nCan be generated with OpenSSL.")
+    makelabelentry(network_tab, "Password: ", password_var, 10, 200,tooltip="Enter a password required to use this instance.\nThis key will be required for all text endpoints.\nImage endpoints are not secured.")
 
     # Horde Tab
     horde_tab = tabcontent["Horde Worker"]
@@ -3095,9 +3154,9 @@ def show_gui():
     makecheckbox(images_tab, "Compress Weights (Saves Memory)", sd_quant_var, 8,command=togglesdquant,tooltiptxt="Quantizes the SD model weights to save memory. May degrade quality.")
     sd_quant_var.trace("w", changed_gpulayers_estimate)
 
-    makefileentry(images_tab, "T5-XXL File:", "Select Optional T5-XXL model file (SD3 or flux)",sd_t5xxl_var, 14, width=280, singlerow=True, filetypes=[("*.safetensors", "*.safetensors")],tooltiptxt="Select a .safetensors t5xxl file to be loaded.")
-    makefileentry(images_tab, "Clip-L File:", "Select Optional Clip-L model file (SD3 or flux)",sd_clipl_var, 16, width=280, singlerow=True, filetypes=[("*.safetensors", "*.safetensors")],tooltiptxt="Select a .safetensors t5xxl file to be loaded.")
-    makefileentry(images_tab, "Clip-G File:", "Select Optional Clip-G model file (SD3)",sd_clipg_var, 18, width=280, singlerow=True, filetypes=[("*.safetensors", "*.safetensors")],tooltiptxt="Select a .safetensors t5xxl file to be loaded.")
+    makefileentry(images_tab, "T5-XXL File:", "Select Optional T5-XXL model file (SD3 or flux)",sd_t5xxl_var, 14, width=280, singlerow=True, filetypes=[("*.safetensors *.gguf","*.safetensors *.gguf")],tooltiptxt="Select a .safetensors t5xxl file to be loaded.")
+    makefileentry(images_tab, "Clip-L File:", "Select Optional Clip-L model file (SD3 or flux)",sd_clipl_var, 16, width=280, singlerow=True, filetypes=[("*.safetensors *.gguf","*.safetensors *.gguf")],tooltiptxt="Select a .safetensors t5xxl file to be loaded.")
+    makefileentry(images_tab, "Clip-G File:", "Select Optional Clip-G model file (SD3)",sd_clipg_var, 18, width=280, singlerow=True, filetypes=[("*.safetensors *.gguf","*.safetensors *.gguf")],tooltiptxt="Select a .safetensors t5xxl file to be loaded.")
 
     sdvaeitem1,sdvaeitem2,sdvaeitem3 = makefileentry(images_tab, "Image VAE:", "Select Optional SD VAE file",sd_vae_var, 20, width=280, singlerow=True, filetypes=[("*.safetensors *.gguf", "*.safetensors *.gguf")],tooltiptxt="Select a .safetensors or .gguf SD VAE file to be loaded.")
     def toggletaesd(a,b,c):
@@ -3272,6 +3331,7 @@ def show_gui():
         args.port_param = defaultport if port_var.get()=="" else int(port_var.get())
         args.host = host_var.get()
         args.multiuser = multiuser_var.get()
+        args.multiplayer = (multiplayer_var.get()==1)
 
         if usehorde_var.get() != 0:
             args.hordemodelname = horde_name_var.get()
@@ -3438,6 +3498,7 @@ def show_gui():
         port_var.set(dict["port_param"] if ("port_param" in dict and dict["port_param"]) else defaultport)
         host_var.set(dict["host"] if ("host" in dict and dict["host"]) else "")
         multiuser_var.set(dict["multiuser"] if ("multiuser" in dict) else 1)
+        multiplayer_var.set(dict["multiplayer"] if ("multiplayer" in dict) else 0)
 
         horde_name_var.set(dict["hordemodelname"] if ("hordemodelname" in dict and dict["hordemodelname"]) else "koboldcpp")
         horde_context_var.set(dict["hordemaxctx"] if ("hordemaxctx" in dict and dict["hordemaxctx"]) else maxhordectx)
@@ -3664,7 +3725,7 @@ def run_horde_worker(args, api_key, worker_name):
     session_starttime = datetime.now()
     sleepy_counter = 0 #if this exceeds a value, worker becomes sleepy (slower)
     exitcounter = 0
-    print(f"===\nEmbedded Horde Worker '{worker_name}' Starting...\n(To use your own Horde Bridge/Scribe worker instead, don't set your API key)")
+    print(f"===\nEmbedded Horde Worker '{worker_name}' Starting...\n(To use your own Horde Bridge/Scribe worker instead, don't set your API key)\n")
     BRIDGE_AGENT = f"KoboldCppEmbedWorker:2:https://github.com/LostRuins/koboldcpp"
     cluster = "https://aihorde.net"
     while exitcounter < 10:
@@ -4193,19 +4254,19 @@ def main(launch_args,start_server=True):
         if dlfile:
             args.sdmodel = dlfile
     if args.sdt5xxl and args.sdt5xxl!="":
-        dlfile = download_model_from_url(args.sdt5xxl,[".safetensors"])
+        dlfile = download_model_from_url(args.sdt5xxl,[".gguf",".safetensors"])
         if dlfile:
             args.sdt5xxl = dlfile
     if args.sdclipl and args.sdclipl!="":
-        dlfile = download_model_from_url(args.sdclipl,[".safetensors"])
+        dlfile = download_model_from_url(args.sdclipl,[".gguf",".safetensors"])
         if dlfile:
             args.sdclipl = dlfile
     if args.sdclipg and args.sdclipg!="":
-        dlfile = download_model_from_url(args.sdclipg,[".safetensors"])
+        dlfile = download_model_from_url(args.sdclipg,[".gguf",".safetensors"])
         if dlfile:
             args.sdclipg = dlfile
     if args.sdvae and args.sdvae!="":
-        dlfile = download_model_from_url(args.sdvae,[".safetensors"])
+        dlfile = download_model_from_url(args.sdvae,[".gguf",".safetensors"])
         if dlfile:
             args.sdvae = dlfile
     if args.mmproj and args.mmproj!="":
@@ -4224,7 +4285,7 @@ def main(launch_args,start_server=True):
         friendlymodelname = "koboldcpp/" + sanitize_string(newmdldisplayname)
 
     # horde worker settings
-    global maxhordelen, maxhordectx, showdebug
+    global maxhordelen, maxhordectx, showdebug, has_multiplayer
     if args.hordemodelname and args.hordemodelname!="":
         friendlymodelname = args.hordemodelname
         if args.debugmode == 1:
@@ -4241,6 +4302,9 @@ def main(launch_args,start_server=True):
 
     if args.debugmode != 1:
         showdebug = False
+
+    if args.multiplayer:
+        has_multiplayer = True
 
     if args.highpriority:
         print("Setting process to Higher Priority - Use Caution")
@@ -4685,6 +4749,7 @@ if __name__ == '__main__':
     advparser.add_argument("--prompt", metavar=('[prompt]'), help="Passing a prompt string triggers a direct inference, loading the model, outputs the response to stdout and exits. Can be used alone or with benchmark.", type=str, default="")
     advparser.add_argument("--promptlimit", help="Sets the maximum number of generated tokens, usable only with --prompt or --benchmark",metavar=('[token limit]'), type=int, default=100)
     advparser.add_argument("--multiuser", help="Runs in multiuser mode, which queues incoming requests instead of blocking them.", metavar=('limit'), nargs='?', const=1, type=int, default=1)
+    advparser.add_argument("--multiplayer", help="Hosts a shared multiplayer session that others can join.", action='store_true')
     advparser.add_argument("--remotetunnel", help="Uses Cloudflare to create a remote tunnel, allowing you to access koboldcpp remotely over the internet even behind a firewall.", action='store_true')
     advparser.add_argument("--highpriority", help="Experimental flag. If set, increases the process CPU priority, potentially speeding up generation. Use caution.", action='store_true')
     advparser.add_argument("--foreground", help="Windows only. Sends the terminal to the foreground every time a new prompt is generated. This helps avoid some idle slowdown issues.", action='store_true')

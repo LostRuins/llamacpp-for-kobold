@@ -48,8 +48,8 @@ ifdef KCPP_DEBUG
 	CFLAGS = -g -O0
 	CXXFLAGS = -g -O0
 endif
-CFLAGS   += -I. -Iggml/include -Iggml/src -Iinclude -Isrc -I./include -I./include/CL -I./otherarch -I./otherarch/tools -I./otherarch/sdcpp -I./otherarch/sdcpp/thirdparty -I./include/vulkan -O3 -fno-finite-math-only -std=c11 -fPIC -DLOG_DISABLE_LOGS -D_GNU_SOURCE
-CXXFLAGS += -I. -Iggml/include -Iggml/src -Iinclude -Isrc -I./common -I./include -I./include/CL -I./otherarch -I./otherarch/tools -I./otherarch/sdcpp -I./otherarch/sdcpp/thirdparty -I./include/vulkan -O3 -fno-finite-math-only -std=c++11 -fPIC -DLOG_DISABLE_LOGS -D_GNU_SOURCE
+CFLAGS   += -I. -Iggml/include -Iggml/src -Iggml/src/ggml-cpu -Iinclude -Isrc -I./include -I./include/CL -I./otherarch -I./otherarch/tools -I./otherarch/sdcpp -I./otherarch/sdcpp/thirdparty -I./include/vulkan -O3 -fno-finite-math-only -std=c11 -fPIC -DLOG_DISABLE_LOGS -D_GNU_SOURCE
+CXXFLAGS += -I. -Iggml/include -Iggml/src -Iggml/src/ggml-cpu -Iinclude -Isrc -I./common -I./include -I./include/CL -I./otherarch -I./otherarch/tools -I./otherarch/sdcpp -I./otherarch/sdcpp/thirdparty -I./include/vulkan -O3 -fno-finite-math-only -std=c++11 -fPIC -DLOG_DISABLE_LOGS -D_GNU_SOURCE
 ifndef KCPP_DEBUG
 	CFLAGS += -DNDEBUG -s
 	CXXFLAGS += -DNDEBUG -s
@@ -86,9 +86,9 @@ endif
 CUBLASLD_FLAGS =
 CUBLAS_OBJS =
 
-OBJS_FULL += ggml-alloc.o ggml-aarch64.o ggml-quants.o unicode.o unicode-data.o sgemm.o common.o sampling.o
-OBJS_SIMPLE += ggml-alloc.o ggml-aarch64.o ggml-quants_noavx2.o unicode.o unicode-data.o sgemm_noavx2.o common.o sampling.o
-OBJS_FAILSAFE += ggml-alloc.o ggml-aarch64.o ggml-quants_failsafe.o unicode.o unicode-data.o sgemm_failsafe.o common.o sampling.o
+OBJS_FULL += ggml-alloc.o ggml-aarch64.o ggml-quants.o ggml-cpu-quants.o ggml-cpu-aarch64.o unicode.o unicode-data.o ggml-threading.o ggml-cpu-cpp.o sgemm.o common.o sampling.o
+OBJS_SIMPLE += ggml-alloc.o ggml-aarch64.o ggml-quants_noavx2.o ggml-cpu-quants_noavx2.o ggml-cpu-aarch64_noavx2.o unicode.o unicode-data.o ggml-threading.o ggml-cpu-cpp.o sgemm_noavx2.o common.o sampling.o
+OBJS_FAILSAFE += ggml-alloc.o ggml-aarch64.o ggml-quants_failsafe.o ggml-cpu-quants_failsafe.o ggml-cpu-aarch64_failsafe.o unicode.o unicode-data.o ggml-threading.o ggml-cpu-cpp.o sgemm_failsafe.o common.o sampling.o
 
 # OS specific
 # TODO: support Windows
@@ -167,8 +167,8 @@ ifndef LLAMA_NO_ACCELERATE
 	# Mac M1 - include Accelerate framework.
 	# `-framework Accelerate` works on Mac Intel as well, with negliable performance boost (as of the predict time).
 	ifeq ($(UNAME_S),Darwin)
-		CFLAGS  += -DGGML_USE_ACCELERATE -DGGML_USE_BLAS
-		CXXFLAGS  += -DGGML_USE_ACCELERATE -DGGML_USE_BLAS
+		CFLAGS  += -DGGML_USE_ACCELERATE -DGGML_USE_BLAS -DGGML_BLAS_USE_ACCELERATE
+		CXXFLAGS  += -DGGML_USE_ACCELERATE -DGGML_USE_BLAS -DGGML_BLAS_USE_ACCELERATE
 		LDFLAGS += -framework Accelerate
 		OBJS += ggml-blas.o
 	endif
@@ -185,7 +185,7 @@ ifdef LLAMA_CUBLAS
 	CUBLAS_FLAGS = -DGGML_USE_CUDA -DSD_USE_CUBLAS -I/usr/local/cuda/include -I/opt/cuda/include -I$(CUDA_PATH)/targets/x86_64-linux/include
 	CUBLASLD_FLAGS = -lcuda -lcublas -lcudart -lcublasLt -lpthread -ldl -lrt -L/usr/local/cuda/lib64 -L/opt/cuda/lib64 -L$(CUDA_PATH)/targets/x86_64-linux/lib -L$(CUDA_PATH)/lib64/stubs -L/usr/local/cuda/targets/aarch64-linux/lib -L/usr/local/cuda/targets/sbsa-linux/lib -L/usr/lib/wsl/lib
 	CUBLAS_OBJS = ggml-cuda.o ggml_v3-cuda.o ggml_v2-cuda.o ggml_v2-cuda-legacy.o
-	CUBLAS_OBJS += $(patsubst %.cu,%.o,$(wildcard ggml/src/ggml-cuda/*.cu))
+	CUBLAS_OBJS += $(patsubst %.cu,%.o,$(filter-out ggml/src/ggml-cuda/ggml-cuda.cu, $(wildcard ggml/src/ggml-cuda/*.cu)))
 	CUBLAS_OBJS += $(OBJS_CUDA_TEMP_INST)
 	NVCC      = nvcc
 	NVCCFLAGS = --forward-unknown-to-host-compiler -use_fast_math
@@ -241,7 +241,7 @@ endif
 
 ggml/src/ggml-cuda/%.o: ggml/src/ggml-cuda/%.cu ggml/include/ggml.h ggml/src/ggml-common.h ggml/src/ggml-cuda/common.cuh
 	$(NVCC) $(NVCCFLAGS) $(subst -Ofast,-O3,$(CXXFLAGS)) $(CUBLAS_FLAGS) $(HIPFLAGS) $(CUBLAS_CXXFLAGS) -Wno-pedantic -c $< -o $@
-ggml-cuda.o: ggml/src/ggml-cuda.cu ggml/include/ggml-cuda.h ggml/include/ggml.h ggml/include/ggml-backend.h ggml/src/ggml-backend-impl.h ggml/src/ggml-common.h $(wildcard ggml/src/ggml-cuda/*.cuh)
+ggml-cuda.o: ggml/src/ggml-cuda/ggml-cuda.cu ggml/include/ggml-cuda.h ggml/include/ggml.h ggml/include/ggml-backend.h ggml/src/ggml-backend-impl.h ggml/src/ggml-common.h $(wildcard ggml/src/ggml-cuda/*.cuh)
 	$(NVCC) $(NVCCFLAGS) $(subst -Ofast,-O3,$(CXXFLAGS)) $(CUBLAS_FLAGS) $(HIPFLAGS) $(CUBLAS_CXXFLAGS) -Wno-pedantic -c $< -o $@
 ggml_v2-cuda.o: otherarch/ggml_v2-cuda.cu otherarch/ggml_v2-cuda.h
 	$(NVCC) $(NVCCFLAGS) $(subst -Ofast,-O3,$(CXXFLAGS)) $(CUBLAS_FLAGS) $(HIPFLAGS) $(CUBLAS_CXXFLAGS) -Wno-pedantic -c $< -o $@
@@ -266,12 +266,12 @@ ifdef LLAMA_HIPBLAS
 	LLAMA_CUDA_DMMV_X       ?= 32
 	LLAMA_CUDA_MMV_Y        ?= 1
 	LLAMA_CUDA_KQUANTS_ITER ?= 2
-	HIPFLAGS   += -DGGML_USE_HIPBLAS -DGGML_USE_CUDA -DSD_USE_CUBLAS $(shell $(ROCM_PATH)/bin/hipconfig -C)
+	HIPFLAGS   += -DGGML_USE_HIP -DGGML_USE_CUDA -DSD_USE_CUBLAS $(shell $(ROCM_PATH)/bin/hipconfig -C)
 	HIPLDFLAGS    += -L$(ROCM_PATH)/lib -Wl,-rpath=$(ROCM_PATH)/lib
 	HIPLDFLAGS    += -L$(ROCM_PATH)/lib64 -Wl,-rpath=$(ROCM_PATH)/lib64
 	HIPLDFLAGS    += -lhipblas -lamdhip64 -lrocblas
 	HIP_OBJS      += ggml-cuda.o ggml_v3-cuda.o ggml_v2-cuda.o ggml_v2-cuda-legacy.o
-	HIP_OBJS      += $(patsubst %.cu,%.o,$(wildcard ggml/src/ggml-cuda/*.cu))
+	HIP_OBJS      += $(patsubst %.cu,%.o,$(filter-out ggml/src/ggml-cuda/ggml-cuda.cu, $(wildcard ggml/src/ggml-cuda/*.cu)))
 	HIP_OBJS      += $(OBJS_CUDA_TEMP_INST)
 
 	HIPFLAGS2    += $(addprefix --offload-arch=,$(GPU_TARGETS))
@@ -281,7 +281,7 @@ ifdef LLAMA_HIPBLAS
 
 ggml/src/ggml-cuda/%.o: ggml/src/ggml-cuda/%.cu ggml/include/ggml.h ggml/src/ggml-common.h ggml/src/ggml-cuda/common.cuh
 	$(HCXX) $(CXXFLAGS) $(HIPFLAGS) $(HIPFLAGS2) -x hip -c -o $@ $<
-ggml-cuda.o: ggml/src/ggml-cuda.cu ggml/include/ggml-cuda.h ggml/include/ggml.h ggml/include/ggml-backend.h ggml/src/ggml-backend-impl.h ggml/src/ggml-common.h $(wildcard ggml/src/ggml-cuda/*.cuh)
+ggml-cuda.o: ggml/src/ggml-cuda/ggml-cuda.cu ggml/include/ggml-cuda.h ggml/include/ggml.h ggml/include/ggml-backend.h ggml/src/ggml-backend-impl.h ggml/src/ggml-common.h $(wildcard ggml/src/ggml-cuda/*.cuh)
 	$(HCXX) $(CXXFLAGS) $(HIPFLAGS) $(HIPFLAGS2) -x hip -c -o $@ $<
 ggml_v2-cuda.o: otherarch/ggml_v2-cuda.cu otherarch/ggml_v2-cuda.h
 	$(HCXX) $(CXXFLAGS) $(HIPFLAGS) $(HIPFLAGS2) -x hip -c -o $@ $<
@@ -298,9 +298,9 @@ ifdef LLAMA_METAL
 	LDFLAGS  += -framework Foundation -framework Metal -framework MetalKit -framework MetalPerformanceShaders
 	OBJS     += ggml-metal.o
 
-ggml-metal.o: ggml/src/ggml-metal.m ggml/include/ggml-metal.h
+ggml-metal.o: ggml/src/ggml-metal/ggml-metal.m ggml/include/ggml-metal.h
 	@echo "== Preparing merged Metal file =="
-	@sed -e '/#include "ggml-common.h"/r ggml/src/ggml-common.h' -e '/#include "ggml-common.h"/d' < ggml/src/ggml-metal.metal > ggml/src/ggml-metal-merged.metal
+	@sed -e '/#include "..\/ggml-common.h"/r ggml/src/ggml-common.h' -e '/#include "..\/ggml-common.h"/d' < ggml/src/ggml-metal/ggml-metal.metal > ggml/src/ggml-metal-merged.metal
 	@cp ggml/src/ggml-metal-merged.metal ./ggml-metal-merged.metal
 	$(CC) $(CFLAGS) -c $< -o $@
 endif # LLAMA_METAL
@@ -431,15 +431,15 @@ ggml_v4_vulkan_noavx2.o: ggml/src/ggml.c ggml/include/ggml.h
 	$(CC)  $(FASTCFLAGS) $(SIMPLECFLAGS) $(VULKAN_FLAGS) -c $< -o $@
 
 # cpu and clblast separated
-ggml-cpu.o: ggml/src/ggml-cpu.c ggml/include/ggml-cpu.h
+ggml-cpu.o: ggml/src/ggml-cpu/ggml-cpu.c ggml/include/ggml-cpu.h
 	$(CC)  $(FASTCFLAGS) $(FULLCFLAGS) -c $< -o $@
-ggml-cpu_v4_failsafe.o: ggml/src/ggml-cpu.c ggml/include/ggml-cpu.h
+ggml-cpu_v4_failsafe.o: ggml/src/ggml-cpu/ggml-cpu.c ggml/include/ggml-cpu.h
 	$(CC)  $(FASTCFLAGS) $(NONECFLAGS) -c $< -o $@
-ggml-cpu_v4_noavx2.o: ggml/src/ggml-cpu.c ggml/include/ggml-cpu.h
+ggml-cpu_v4_noavx2.o: ggml/src/ggml-cpu/ggml-cpu.c ggml/include/ggml-cpu.h
 	$(CC)  $(FASTCFLAGS) $(SIMPLECFLAGS) -c $< -o $@
-ggml-cpu_v4_clblast.o: ggml/src/ggml-cpu.c ggml/include/ggml-cpu.h
+ggml-cpu_v4_clblast.o: ggml/src/ggml-cpu/ggml-cpu.c ggml/include/ggml-cpu.h
 	$(CC)  $(FASTCFLAGS) $(FULLCFLAGS) $(CLBLAST_FLAGS) -c $< -o $@
-ggml-cpu_v4_clblast_noavx2.o: ggml/src/ggml-cpu.c ggml/include/ggml-cpu.h
+ggml-cpu_v4_clblast_noavx2.o: ggml/src/ggml-cpu/ggml-cpu.c ggml/include/ggml-cpu.h
 	$(CC)  $(FASTCFLAGS) $(SIMPLECFLAGS) $(CLBLAST_FLAGS) -c $< -o $@
 
 #quants
@@ -449,13 +449,27 @@ ggml-quants_noavx2.o: ggml/src/ggml-quants.c ggml/include/ggml.h ggml/src/ggml-q
 	$(CC)  $(CFLAGS) $(SIMPLECFLAGS) -c $< -o $@
 ggml-quants_failsafe.o: ggml/src/ggml-quants.c ggml/include/ggml.h ggml/src/ggml-quants.h ggml/src/ggml-common.h
 	$(CC)  $(CFLAGS) $(NONECFLAGS) -c $< -o $@
+ggml-cpu-quants.o: ggml/src/ggml-cpu/ggml-cpu-quants.c ggml/include/ggml.h ggml/src/ggml-cpu/ggml-cpu-quants.h ggml/src/ggml-common.h
+	$(CC)  $(CFLAGS) $(FULLCFLAGS) -c $< -o $@
+ggml-cpu-quants_noavx2.o: ggml/src/ggml-cpu/ggml-cpu-quants.c ggml/include/ggml.h ggml/src/ggml-cpu/ggml-cpu-quants.h ggml/src/ggml-common.h
+	$(CC)  $(CFLAGS) $(SIMPLECFLAGS) -c $< -o $@
+ggml-cpu-quants_failsafe.o: ggml/src/ggml-cpu/ggml-cpu-quants.c ggml/include/ggml.h ggml/src/ggml-cpu/ggml-cpu-quants.h ggml/src/ggml-common.h
+	$(CC)  $(CFLAGS) $(NONECFLAGS) -c $< -o $@
+
+#aarch64
+ggml-cpu-aarch64.o: ggml/src/ggml-cpu/ggml-cpu-aarch64.c ggml/include/ggml.h ggml/src/ggml-cpu/ggml-cpu-aarch64.h
+	$(CC)  $(CFLAGS) $(FULLCFLAGS) -c $< -o $@
+ggml-cpu-aarch64_noavx2.o: ggml/src/ggml-cpu/ggml-cpu-aarch64.c ggml/include/ggml.h ggml/src/ggml-cpu/ggml-cpu-aarch64.h
+	$(CC)  $(CFLAGS) $(SIMPLECFLAGS) -c $< -o $@
+ggml-cpu-aarch64_failsafe.o: ggml/src/ggml-cpu/ggml-cpu-aarch64.c ggml/include/ggml.h ggml/src/ggml-cpu/ggml-cpu-aarch64.h
+	$(CC)  $(CFLAGS) $(NONECFLAGS) -c $< -o $@
 
 #sgemm
-sgemm.o: ggml/src/llamafile/sgemm.cpp ggml/src/llamafile/sgemm.h ggml/include/ggml.h
+sgemm.o: ggml/src/ggml-cpu/llamafile/sgemm.cpp ggml/src/ggml-cpu/llamafile/sgemm.h ggml/include/ggml.h
 	$(CXX) $(CXXFLAGS) $(FULLCFLAGS) -c $< -o $@
-sgemm_noavx2.o: ggml/src/llamafile/sgemm.cpp ggml/src/llamafile/sgemm.h ggml/include/ggml.h
+sgemm_noavx2.o: ggml/src/ggml-cpu/llamafile/sgemm.cpp ggml/src/ggml-cpu/llamafile/sgemm.h ggml/include/ggml.h
 	$(CXX) $(CXXFLAGS) $(SIMPLECFLAGS) -c $< -o $@
-sgemm_failsafe.o: ggml/src/llamafile/sgemm.cpp ggml/src/llamafile/sgemm.h ggml/include/ggml.h
+sgemm_failsafe.o: ggml/src/ggml-cpu/llamafile/sgemm.cpp ggml/src/ggml-cpu/llamafile/sgemm.h ggml/include/ggml.h
 	$(CXX) $(CXXFLAGS) $(NONECFLAGS) -c $< -o $@
 
 #there's no intrinsics or special gpu ops used here, so we can have a universal object
@@ -469,6 +483,10 @@ unicode-data.o: src/unicode-data.cpp src/unicode-data.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 ggml-aarch64.o: ggml/src/ggml-aarch64.c ggml/include/ggml.h ggml/src/ggml-aarch64.h ggml/src/ggml-common.h
 	$(CC)  $(CFLAGS) -c $< -o $@
+ggml-threading.o: ggml/src/ggml-threading.cpp ggml/include/ggml.h
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+ggml-cpu-cpp.o: ggml/src/ggml-cpu/ggml-cpu.cpp ggml/include/ggml.h ggml/src/ggml-common.h
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 #these have special gpu defines
 ggml-backend_default.o: ggml/src/ggml-backend.cpp ggml/src/ggml-backend-impl.h ggml/include/ggml.h ggml/include/ggml-backend.h
@@ -476,6 +494,12 @@ ggml-backend_default.o: ggml/src/ggml-backend.cpp ggml/src/ggml-backend-impl.h g
 ggml-backend_vulkan.o: ggml/src/ggml-backend.cpp ggml/src/ggml-backend-impl.h ggml/include/ggml.h ggml/include/ggml-backend.h
 	$(CXX)  $(CXXFLAGS) $(VULKAN_FLAGS) -c $< -o $@
 ggml-backend_cublas.o: ggml/src/ggml-backend.cpp ggml/src/ggml-backend-impl.h ggml/include/ggml.h ggml/include/ggml-backend.h
+	$(CXX)  $(CXXFLAGS) $(CUBLAS_FLAGS) $(HIPFLAGS) -c $< -o $@
+ggml-backend-reg_default.o: ggml/src/ggml-backend-reg.cpp ggml/src/ggml-backend-impl.h ggml/include/ggml.h ggml/include/ggml-backend.h ggml/include/ggml-cpu.h
+	$(CXX)  $(CXXFLAGS) -c $< -o $@
+ggml-backend-reg_vulkan.o: ggml/src/ggml-backend-reg.cpp ggml/src/ggml-backend-impl.h ggml/include/ggml.h ggml/include/ggml-backend.h ggml/include/ggml-cpu.h
+	$(CXX)  $(CXXFLAGS) $(VULKAN_FLAGS) -c $< -o $@
+ggml-backend-reg_cublas.o: ggml/src/ggml-backend-reg.cpp ggml/src/ggml-backend-impl.h ggml/include/ggml.h ggml/include/ggml-backend.h ggml/include/ggml-cpu.h
 	$(CXX)  $(CXXFLAGS) $(CUBLAS_FLAGS) $(HIPFLAGS) -c $< -o $@
 llavaclip_default.o: examples/llava/clip.cpp examples/llava/clip.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
@@ -485,7 +509,7 @@ llavaclip_vulkan.o: examples/llava/clip.cpp examples/llava/clip.h
 	$(CXX) $(CXXFLAGS) $(VULKAN_FLAGS) -c $< -o $@
 
 #this is only used for accelerate
-ggml-blas.o: ggml/src/ggml-blas.cpp ggml/include/ggml-blas.h
+ggml-blas.o: ggml/src/ggml-blas/ggml-blas.cpp ggml/include/ggml-blas.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 #version 3 libs
@@ -533,7 +557,7 @@ ggml_v3-opencl.o: otherarch/ggml_v3-opencl.cpp otherarch/ggml_v3-opencl.h
 	$(CXX) $(CXXFLAGS) $(CLBLAST_FLAGS) -c $< -o $@
 
 #vulkan
-ggml-vulkan.o: ggml/src/ggml-vulkan.cpp ggml/include/ggml-vulkan.h ggml/src/ggml-vulkan-shaders.hpp ggml/src/ggml-vulkan-shaders.cpp
+ggml-vulkan.o: ggml/src/ggml-vulkan/ggml-vulkan.cpp ggml/include/ggml-vulkan.h ggml/src/ggml-vulkan-shaders.hpp ggml/src/ggml-vulkan-shaders.cpp
 	$(CXX) $(CXXFLAGS) $(VULKAN_FLAGS) -c $< -o $@
 
 # intermediate objects
@@ -586,32 +610,32 @@ clean:
 	rm -vrf ggml/src/ggml-cuda/template-instances/*.o
 
 # useful tools
-main: examples/main/main.cpp common/json-schema-to-grammar.cpp common/arg.cpp build-info.h ggml.o ggml-cpu.o llama.o console.o llavaclip_default.o llava.o ggml-backend_default.o $(OBJS_FULL) $(OBJS)
+main: examples/main/main.cpp common/json-schema-to-grammar.cpp common/arg.cpp build-info.h ggml.o ggml-cpu.o llama.o console.o llavaclip_default.o llava.o ggml-backend_default.o ggml-backend-reg_default.o $(OBJS_FULL) $(OBJS)
 	$(CXX) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDFLAGS)
 	@echo '====  Run ./main -h for help.  ===='
-sdmain: otherarch/sdcpp/util.cpp otherarch/sdcpp/main.cpp otherarch/sdcpp/stable-diffusion.cpp otherarch/sdcpp/upscaler.cpp otherarch/sdcpp/model.cpp otherarch/sdcpp/thirdparty/zip.c build-info.h ggml.o ggml-cpu.o llama.o console.o ggml-backend_default.o $(OBJS_FULL) $(OBJS)
+sdmain: otherarch/sdcpp/util.cpp otherarch/sdcpp/main.cpp otherarch/sdcpp/stable-diffusion.cpp otherarch/sdcpp/upscaler.cpp otherarch/sdcpp/model.cpp otherarch/sdcpp/thirdparty/zip.c build-info.h ggml.o ggml-cpu.o llama.o console.o ggml-backend_default.o ggml-backend-reg_default.o $(OBJS_FULL) $(OBJS)
 	$(CXX) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDFLAGS)
-whispermain: otherarch/whispercpp/main.cpp otherarch/whispercpp/whisper.cpp build-info.h ggml.o ggml-cpu.o llama.o console.o ggml-backend_default.o $(OBJS_FULL) $(OBJS)
+whispermain: otherarch/whispercpp/main.cpp otherarch/whispercpp/whisper.cpp build-info.h ggml.o ggml-cpu.o llama.o console.o ggml-backend_default.o ggml-backend-reg_default.o $(OBJS_FULL) $(OBJS)
 	$(CXX) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDFLAGS)
-imatrix: examples/imatrix/imatrix.cpp build-info.h ggml.o ggml-cpu.o llama.o console.o llavaclip_default.o llava.o ggml-backend_default.o $(OBJS_FULL) $(OBJS)
+imatrix: examples/imatrix/imatrix.cpp build-info.h ggml.o ggml-cpu.o llama.o console.o llavaclip_default.o llava.o ggml-backend_default.o ggml-backend-reg_default.o $(OBJS_FULL) $(OBJS)
 	$(CXX) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDFLAGS)
-gguf: examples/gguf/gguf.cpp build-info.h ggml.o ggml-cpu.o llama.o llavaclip_default.o llava.o ggml-backend_default.o $(OBJS_FULL) $(OBJS)
+gguf: examples/gguf/gguf.cpp build-info.h ggml.o ggml-cpu.o llama.o llavaclip_default.o llava.o ggml-backend_default.o ggml-backend-reg_default.o $(OBJS_FULL) $(OBJS)
 	$(CXX) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDFLAGS)
-gguf-split: examples/gguf-split/gguf-split.cpp ggml.o ggml-cpu.o llama.o build-info.h llavaclip_default.o llava.o ggml-backend_default.o $(OBJS_FULL) $(OBJS)
+gguf-split: examples/gguf-split/gguf-split.cpp ggml.o ggml-cpu.o llama.o build-info.h llavaclip_default.o llava.o ggml-backend_default.o ggml-backend-reg_default.o $(OBJS_FULL) $(OBJS)
 	$(CXX) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDFLAGS)
 
-vulkan-shaders-gen: ggml/src/vulkan-shaders/vulkan-shaders-gen.cpp
+vulkan-shaders-gen: ggml/src/ggml-vulkan/vulkan-shaders/vulkan-shaders-gen.cpp
 	@echo 'This command can be MANUALLY run to regenerate vulkan shaders. Normally concedo will do it, so you do not have to.'
 	$(CXX) $(CXXFLAGS) $(filter-out %.h,$^) -o $@ $(LDFLAGS)
 	@echo 'Now rebuilding vulkan shaders...'
-	$(shell) vulkan-shaders-gen --glslc glslc --input-dir ggml/src/vulkan-shaders --target-hpp ggml/src/ggml-vulkan-shaders.hpp --target-cpp ggml/src/ggml-vulkan-shaders.cpp
+	$(shell) vulkan-shaders-gen --glslc glslc --input-dir ggml/src/ggml-vulkan/vulkan-shaders --target-hpp ggml/src/ggml-vulkan-shaders.hpp --target-cpp ggml/src/ggml-vulkan-shaders.cpp
 
 #generated libraries
-koboldcpp_default: ggml.o ggml-cpu.o ggml_v3.o ggml_v2.o ggml_v1.o expose.o gpttype_adapter.o sdcpp_default.o whispercpp_default.o llavaclip_default.o llava.o ggml-backend_default.o $(OBJS_FULL) $(OBJS)
+koboldcpp_default: ggml.o ggml-cpu.o ggml_v3.o ggml_v2.o ggml_v1.o expose.o gpttype_adapter.o sdcpp_default.o whispercpp_default.o llavaclip_default.o llava.o ggml-backend_default.o ggml-backend-reg_default.o $(OBJS_FULL) $(OBJS)
 	$(DEFAULT_BUILD)
 
 ifdef FAILSAFE_BUILD
-koboldcpp_failsafe: ggml_v4_failsafe.o ggml-cpu_v4_failsafe.o ggml_v3_failsafe.o ggml_v2_failsafe.o ggml_v1_failsafe.o expose.o gpttype_adapter_failsafe.o sdcpp_default.o whispercpp_default.o llavaclip_default.o llava.o ggml-backend_default.o $(OBJS_FAILSAFE) $(OBJS)
+koboldcpp_failsafe: ggml_v4_failsafe.o ggml-cpu_v4_failsafe.o ggml_v3_failsafe.o ggml_v2_failsafe.o ggml_v1_failsafe.o expose.o gpttype_adapter_failsafe.o sdcpp_default.o whispercpp_default.o llavaclip_default.o llava.o ggml-backend_default.o ggml-backend-reg_default.o $(OBJS_FAILSAFE) $(OBJS)
 	$(FAILSAFE_BUILD)
 else
 koboldcpp_failsafe:
@@ -619,7 +643,7 @@ koboldcpp_failsafe:
 endif
 
 ifdef NOAVX2_BUILD
-koboldcpp_noavx2: ggml_v4_noavx2.o ggml-cpu_v4_noavx2.o ggml_v3_noavx2.o ggml_v2_noavx2.o ggml_v1_failsafe.o expose.o gpttype_adapter_failsafe.o sdcpp_default.o whispercpp_default.o llavaclip_default.o llava.o ggml-backend_default.o $(OBJS_SIMPLE) $(OBJS)
+koboldcpp_noavx2: ggml_v4_noavx2.o ggml-cpu_v4_noavx2.o ggml_v3_noavx2.o ggml_v2_noavx2.o ggml_v1_failsafe.o expose.o gpttype_adapter_failsafe.o sdcpp_default.o whispercpp_default.o llavaclip_default.o llava.o ggml-backend_default.o ggml-backend-reg_default.o $(OBJS_SIMPLE) $(OBJS)
 	$(NOAVX2_BUILD)
 else
 koboldcpp_noavx2:
@@ -627,10 +651,10 @@ koboldcpp_noavx2:
 endif
 
 ifdef CLBLAST_BUILD
-koboldcpp_clblast: ggml_v4_clblast.o ggml-cpu_v4_clblast.o ggml_v3_clblast.o ggml_v2_clblast.o ggml_v1.o expose.o gpttype_adapter_clblast.o ggml-opencl.o ggml_v3-opencl.o ggml_v2-opencl.o ggml_v2-opencl-legacy.o sdcpp_default.o whispercpp_default.o llavaclip_default.o llava.o ggml-backend_default.o $(OBJS_FULL) $(OBJS)
+koboldcpp_clblast: ggml_v4_clblast.o ggml-cpu_v4_clblast.o ggml_v3_clblast.o ggml_v2_clblast.o ggml_v1.o expose.o gpttype_adapter_clblast.o ggml-opencl.o ggml_v3-opencl.o ggml_v2-opencl.o ggml_v2-opencl-legacy.o sdcpp_default.o whispercpp_default.o llavaclip_default.o llava.o ggml-backend_default.o ggml-backend-reg_default.o $(OBJS_FULL) $(OBJS)
 	$(CLBLAST_BUILD)
 ifdef NOAVX2_BUILD
-koboldcpp_clblast_noavx2: ggml_v4_clblast_noavx2.o ggml-cpu_v4_clblast_noavx2.o ggml_v3_clblast_noavx2.o ggml_v2_clblast_noavx2.o ggml_v1_failsafe.o expose.o gpttype_adapter_clblast_noavx2.o ggml-opencl.o ggml_v3-opencl.o ggml_v2-opencl.o ggml_v2-opencl-legacy.o sdcpp_default.o whispercpp_default.o llavaclip_default.o llava.o ggml-backend_default.o $(OBJS_SIMPLE) $(OBJS)
+koboldcpp_clblast_noavx2: ggml_v4_clblast_noavx2.o ggml-cpu_v4_clblast_noavx2.o ggml_v3_clblast_noavx2.o ggml_v2_clblast_noavx2.o ggml_v1_failsafe.o expose.o gpttype_adapter_clblast_noavx2.o ggml-opencl.o ggml_v3-opencl.o ggml_v2-opencl.o ggml_v2-opencl-legacy.o sdcpp_default.o whispercpp_default.o llavaclip_default.o llava.o ggml-backend_default.o ggml-backend-reg_default.o $(OBJS_SIMPLE) $(OBJS)
 	$(CLBLAST_BUILD)
 else
 koboldcpp_clblast_noavx2:
@@ -644,7 +668,7 @@ koboldcpp_clblast_noavx2:
 endif
 
 ifdef CUBLAS_BUILD
-koboldcpp_cublas: ggml_v4_cublas.o ggml-cpu.o ggml_v3_cublas.o ggml_v2_cublas.o ggml_v1.o expose.o gpttype_adapter_cublas.o sdcpp_cublas.o whispercpp_cublas.o llavaclip_cublas.o llava.o ggml-backend_cublas.o $(CUBLAS_OBJS) $(OBJS_FULL) $(OBJS)
+koboldcpp_cublas: ggml_v4_cublas.o ggml-cpu.o ggml_v3_cublas.o ggml_v2_cublas.o ggml_v1.o expose.o gpttype_adapter_cublas.o sdcpp_cublas.o whispercpp_cublas.o llavaclip_cublas.o llava.o ggml-backend_cublas.o ggml-backend-reg_cublas.o $(CUBLAS_OBJS) $(OBJS_FULL) $(OBJS)
 	$(CUBLAS_BUILD)
 else
 koboldcpp_cublas:
@@ -652,7 +676,7 @@ koboldcpp_cublas:
 endif
 
 ifdef HIPBLAS_BUILD
-koboldcpp_hipblas: ggml_v4_cublas.o ggml-cpu.o ggml_v3_cublas.o ggml_v2_cublas.o ggml_v1.o expose.o gpttype_adapter_cublas.o sdcpp_cublas.o whispercpp_cublas.o llavaclip_cublas.o llava.o ggml-backend_cublas.o $(HIP_OBJS) $(OBJS_FULL) $(OBJS)
+koboldcpp_hipblas: ggml_v4_cublas.o ggml-cpu.o ggml_v3_cublas.o ggml_v2_cublas.o ggml_v1.o expose.o gpttype_adapter_cublas.o sdcpp_cublas.o whispercpp_cublas.o llavaclip_cublas.o llava.o ggml-backend_cublas.o ggml-backend-reg_cublas.o $(HIP_OBJS) $(OBJS_FULL) $(OBJS)
 	$(HIPBLAS_BUILD)
 else
 koboldcpp_hipblas:
@@ -660,10 +684,10 @@ koboldcpp_hipblas:
 endif
 
 ifdef VULKAN_BUILD
-koboldcpp_vulkan: ggml_v4_vulkan.o ggml-cpu.o ggml_v3.o ggml_v2.o ggml_v1.o expose.o gpttype_adapter_vulkan.o ggml-vulkan.o sdcpp_vulkan.o whispercpp_default.o llavaclip_vulkan.o llava.o ggml-backend_vulkan.o $(OBJS_FULL) $(OBJS)
+koboldcpp_vulkan: ggml_v4_vulkan.o ggml-cpu.o ggml_v3.o ggml_v2.o ggml_v1.o expose.o gpttype_adapter_vulkan.o ggml-vulkan.o sdcpp_vulkan.o whispercpp_default.o llavaclip_vulkan.o llava.o ggml-backend_vulkan.o ggml-backend-reg_vulkan.o $(OBJS_FULL) $(OBJS)
 	$(VULKAN_BUILD)
 ifdef NOAVX2_BUILD
-koboldcpp_vulkan_noavx2: ggml_v4_vulkan_noavx2.o ggml-cpu_v4_noavx2.o ggml_v3_noavx2.o ggml_v2_noavx2.o ggml_v1_failsafe.o expose.o gpttype_adapter_vulkan_noavx2.o ggml-vulkan.o sdcpp_vulkan.o whispercpp_default.o llavaclip_vulkan.o llava.o ggml-backend_vulkan.o $(OBJS_SIMPLE) $(OBJS)
+koboldcpp_vulkan_noavx2: ggml_v4_vulkan_noavx2.o ggml-cpu_v4_noavx2.o ggml_v3_noavx2.o ggml_v2_noavx2.o ggml_v1_failsafe.o expose.o gpttype_adapter_vulkan_noavx2.o ggml-vulkan.o sdcpp_vulkan.o whispercpp_default.o llavaclip_vulkan.o llava.o ggml-backend_vulkan.o ggml-backend-reg_vulkan.o $(OBJS_SIMPLE) $(OBJS)
 	$(VULKAN_BUILD)
 else
 koboldcpp_vulkan_noavx2:
@@ -677,17 +701,17 @@ koboldcpp_vulkan_noavx2:
 endif
 
 # tools
-quantize_gguf: examples/quantize/quantize.cpp ggml.o ggml-cpu.o llama.o llavaclip_default.o llava.o ggml-backend_default.o $(OBJS_FULL)
+quantize_gguf: examples/quantize/quantize.cpp ggml.o ggml-cpu.o llama.o llavaclip_default.o llava.o ggml-backend_default.o ggml-backend-reg_default.o $(OBJS_FULL)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
-quantize_gptj: otherarch/tools/gptj_quantize.cpp otherarch/tools/common-ggml.cpp ggml_v3.o ggml.o ggml-cpu.o llama.o llavaclip_default.o llava.o ggml-backend_default.o $(OBJS_FULL)
+quantize_gptj: otherarch/tools/gptj_quantize.cpp otherarch/tools/common-ggml.cpp ggml_v3.o ggml.o ggml-cpu.o llama.o llavaclip_default.o llava.o ggml-backend_default.o ggml-backend-reg_default.o $(OBJS_FULL)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
-quantize_gpt2: otherarch/tools/gpt2_quantize.cpp otherarch/tools/common-ggml.cpp ggml_v3.o ggml.o ggml-cpu.o llama.o llavaclip_default.o llava.o ggml-backend_default.o $(OBJS_FULL)
+quantize_gpt2: otherarch/tools/gpt2_quantize.cpp otherarch/tools/common-ggml.cpp ggml_v3.o ggml.o ggml-cpu.o llama.o llavaclip_default.o llava.o ggml-backend_default.o ggml-backend-reg_default.o $(OBJS_FULL)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
-quantize_neox: otherarch/tools/neox_quantize.cpp otherarch/tools/common-ggml.cpp ggml_v3.o ggml.o ggml-cpu.o llama.o llavaclip_default.o llava.o ggml-backend_default.o $(OBJS_FULL)
+quantize_neox: otherarch/tools/neox_quantize.cpp otherarch/tools/common-ggml.cpp ggml_v3.o ggml.o ggml-cpu.o llama.o llavaclip_default.o llava.o ggml-backend_default.o ggml-backend-reg_default.o $(OBJS_FULL)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
-quantize_mpt: otherarch/tools/mpt_quantize.cpp otherarch/tools/common-ggml.cpp ggml_v3.o ggml.o ggml-cpu.o llama.o llavaclip_default.o llava.o ggml-backend_default.o $(OBJS_FULL)
+quantize_mpt: otherarch/tools/mpt_quantize.cpp otherarch/tools/common-ggml.cpp ggml_v3.o ggml.o ggml-cpu.o llama.o llavaclip_default.o llava.o ggml-backend_default.o ggml-backend-reg_default.o $(OBJS_FULL)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
-quantize_clip: examples/llava/clip.cpp examples/llava/clip.h examples/llava/quantclip.cpp ggml_v3.o ggml.o ggml-cpu.o llama.o ggml-backend_default.o $(OBJS_FULL)
+quantize_clip: examples/llava/clip.cpp examples/llava/clip.h examples/llava/quantclip.cpp ggml_v3.o ggml.o ggml-cpu.o llama.o ggml-backend_default.o ggml-backend-reg_default.o $(OBJS_FULL)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
 #window simple clinfo

@@ -135,6 +135,7 @@ static void zeros(std::ofstream & file, size_t n) {
 }
 
 static bool phi3swa_warning_showed = false; //to warn when old phi3 model has no SWA
+static bool old_mixtral_warning_showed = false;
 static int clblast_offload_fallback_layers = 0;
 static int layer_name_to_number(std::string inputString)
 {
@@ -2924,8 +2925,14 @@ struct llama_model {
     // for quantize-stats only
     std::vector<std::pair<std::string, struct ggml_tensor *>> tensors_by_name;
 
-    int64_t t_load_us = 0;
+    int64_t t_load_us  = 0;
     int64_t t_start_us = 0;
+
+    // total number of parameters in the model
+    uint64_t n_elements = 0;
+
+    // total size of all the tensors in the model in bytes
+    size_t  n_bytes     = 0;
 
     // keep track of loaded lora adapters
     std::set<struct llama_lora_adapter *> lora_adapters;
@@ -4295,8 +4302,8 @@ struct llama_model_loader {
     int n_tensors = 0;
     int n_created = 0;
 
-    int64_t n_elements = 0;
-    size_t  n_bytes    = 0;
+    uint64_t n_elements = 0;
+    size_t  n_bytes     = 0;
 
     bool use_mmap = false;
     bool check_tensors;
@@ -5373,6 +5380,11 @@ static const char * llama_model_vocab_type_name(enum llama_vocab_type type){
         case LLAMA_VOCAB_TYPE_RWKV: return "RWKV";
         default:                    return "unknown";
     }
+}
+
+static void llm_load_stats(llama_model_loader & ml, llama_model & model) {
+    model.n_elements = ml.n_elements;
+    model.n_bytes = ml.n_bytes;
 }
 
 static void llm_load_arch(llama_model_loader & ml, llama_model & model) {
@@ -7295,7 +7307,7 @@ static llama_model::buft_list_t make_cpu_buft_list(llama_model & model) {
     auto * cpu_dev = ggml_backend_dev_by_type(GGML_BACKEND_DEVICE_TYPE_CPU);
     auto * cpu_reg = ggml_backend_dev_backend_reg(cpu_dev);
     auto ggml_backend_dev_get_extra_bufts_fn = (ggml_backend_dev_get_extra_bufts_t)
-        ggml_backend_reg_get_proc_address(cpu_reg, "ggml_backend_cpu_get_extra_bufts");
+        ggml_backend_reg_get_proc_address(cpu_reg, "ggml_backend_dev_get_extra_bufts");
     if (ggml_backend_dev_get_extra_bufts_fn) {
         ggml_backend_buffer_type_t * extra_bufts = ggml_backend_dev_get_extra_bufts_fn(cpu_dev);
         while (extra_bufts && *extra_bufts) {
@@ -7476,6 +7488,9 @@ static bool llm_load_tensors(
 
     // create tensors for the weights
     {
+        //this is a very dirty kcpp hack that attempts to reuse the most recently use ctx for old mixtral models
+        ggml_context * last_used_ctx = nullptr;
+
         // note: cast to int64_t since we will use these for the tensor dimensions
         const int64_t n_head        = hparams.n_head();
         const int64_t n_head_kv     = hparams.n_head_kv();
@@ -7569,7 +7584,7 @@ static bool llm_load_tensors(
 
             // avoid using a host buffer when using mmap
             auto * buft_dev = ggml_backend_buft_get_device(buft);
-            if (ml.use_mmap && buft == ggml_backend_dev_host_buffer_type(buft_dev)) {
+            if (ml.use_mmap && buft_dev && buft == ggml_backend_dev_host_buffer_type(buft_dev)) {
                 auto * cpu_dev = ggml_backend_dev_by_type(GGML_BACKEND_DEVICE_TYPE_CPU);
                 buft = ggml_backend_dev_buffer_type(cpu_dev);
             }
@@ -7592,6 +7607,7 @@ static bool llm_load_tensors(
                     return t;
                 }
             }
+            last_used_ctx = ctx; //this caches the last ctx which should match the buft we want for this layer. kobo forgive me.
             return ml.create_tensor(ctx, tn, ne, flags);
         };
 
@@ -7649,8 +7665,47 @@ static bool llm_load_tensors(
                         } else {
                             layer.ffn_gate_inp  = create_tensor(tn(LLM_TENSOR_FFN_GATE_INP,  "weight", i), {n_embd, n_expert}, 0);
                             layer.ffn_gate_exps = create_tensor(tn(LLM_TENSOR_FFN_GATE_EXPS, "weight", i), {n_embd,   n_ff, n_expert}, llama_model_loader::TENSOR_NOT_REQUIRED);
-                            layer.ffn_down_exps = create_tensor(tn(LLM_TENSOR_FFN_DOWN_EXPS, "weight", i), {  n_ff, n_embd, n_expert}, 0);
-                            layer.ffn_up_exps   = create_tensor(tn(LLM_TENSOR_FFN_UP_EXPS,   "weight", i), {n_embd,   n_ff, n_expert}, 0);
+
+                            if (layer.ffn_gate_exps) {
+                                layer.ffn_down_exps = create_tensor(tn(LLM_TENSOR_FFN_DOWN_EXPS, "weight", i), {  n_ff, n_embd, n_expert}, 0);
+                                layer.ffn_up_exps   = create_tensor(tn(LLM_TENSOR_FFN_UP_EXPS,   "weight", i), {n_embd,   n_ff, n_expert}, 0);
+                            } else {
+                                // merge split expert into a single tensor for compatibility with older MIXTRAL models
+                                // requires disabling mmap
+                                //slaren removed this in #10026, but i think its useful to keep.
+                                use_mmap_buffer = false;
+                                ml.use_mmap = false;
+                                if(!old_mixtral_warning_showed)
+                                {
+                                    std::cout << "\n!!!!!!\nWARNING: Using extremely outdated MoE quant. Please update it!\nAttempting to apply hacky kcpp fallback, using last ctx:" << last_used_ctx << "\n";
+                                    old_mixtral_warning_showed = true;
+                                }
+                                ggml_context * ctx_split = last_used_ctx;
+                                // for(auto it = ctx_map.cbegin(); it != ctx_map.cend(); ++it)
+                                // {
+                                //     std::cout << "\nName: " << ggml_backend_buft_name(it->first) << " Addr: " << it->second << "\n";
+                                //     ctx_split = it->second;
+                                // }
+
+                                ggml_type type_gate = ml.require_tensor_meta(tn(LLM_TENSOR_FFN_GATE_EXP, "weight", i, 0).str().c_str())->type;
+                                ggml_type type_down = ml.require_tensor_meta(tn(LLM_TENSOR_FFN_DOWN_EXP, "weight", i, 0).str().c_str())->type;
+                                ggml_type type_up   = ml.require_tensor_meta(tn(LLM_TENSOR_FFN_UP_EXP,   "weight", i, 0).str().c_str())->type;
+
+                                layer.ffn_gate_exps = ggml_new_tensor_3d(ctx_split, type_gate, n_embd,   n_ff, n_expert);
+                                layer.ffn_down_exps = ggml_new_tensor_3d(ctx_split, type_down,   n_ff, n_embd, n_expert);
+                                layer.ffn_up_exps   = ggml_new_tensor_3d(ctx_split, type_up,   n_embd,   n_ff, n_expert);
+
+                                ggml_set_name(layer.ffn_gate_exps, tn(LLM_TENSOR_FFN_GATE_EXPS, "weight", i).str().c_str());
+                                ggml_set_name(layer.ffn_down_exps, tn(LLM_TENSOR_FFN_DOWN_EXPS, "weight", i).str().c_str());
+                                ggml_set_name(layer.ffn_up_exps,   tn(LLM_TENSOR_FFN_UP_EXPS,   "weight", i).str().c_str());
+
+                                for (uint32_t x = 0; x < n_expert; ++x) {
+                                    // the individual experts are loaded into a view of the merged tensor
+                                    ml.create_tensor_as_view(ctx_split, layer.ffn_gate_exps, tn(LLM_TENSOR_FFN_GATE_EXP, "weight", i, x), { n_embd, n_ff }, layer.ffn_gate_exps->nb[2]*x);
+                                    ml.create_tensor_as_view(ctx_split, layer.ffn_down_exps, tn(LLM_TENSOR_FFN_DOWN_EXP, "weight", i, x), { n_ff, n_embd }, layer.ffn_down_exps->nb[2]*x);
+                                    ml.create_tensor_as_view(ctx_split, layer.ffn_up_exps,   tn(LLM_TENSOR_FFN_UP_EXP,   "weight", i, x), { n_embd, n_ff }, layer.ffn_up_exps->nb[2]*x);
+                                }
+                            }
                         }
                     }
                 } break;
@@ -7730,8 +7785,47 @@ static bool llm_load_tensors(
 
                         layer.ffn_gate_inp  = create_tensor(tn(LLM_TENSOR_FFN_GATE_INP,  "weight", i), {n_embd, n_expert}, 0);
                         layer.ffn_gate_exps = create_tensor(tn(LLM_TENSOR_FFN_GATE_EXPS, "weight", i), {n_embd, n_ff, n_expert}, llama_model_loader::TENSOR_NOT_REQUIRED);
-                        layer.ffn_down_exps = create_tensor(tn(LLM_TENSOR_FFN_DOWN_EXPS, "weight", i), {  n_ff, n_embd, n_expert}, 0);
-                        layer.ffn_up_exps   = create_tensor(tn(LLM_TENSOR_FFN_UP_EXPS,   "weight", i), {n_embd,   n_ff, n_expert}, 0);
+
+                        if (layer.ffn_gate_exps) {
+                            layer.ffn_down_exps = create_tensor(tn(LLM_TENSOR_FFN_DOWN_EXPS, "weight", i), {  n_ff, n_embd, n_expert}, 0);
+                            layer.ffn_up_exps   = create_tensor(tn(LLM_TENSOR_FFN_UP_EXPS,   "weight", i), {n_embd,   n_ff, n_expert}, 0);
+                        } else {
+                            // merge split expert into a single tensor for compatibility with older MIXTRAL models
+                            // requires disabling mmap
+                            //slaren removed this in #10026, but i think its useful to keep.
+                            use_mmap_buffer = false;
+                            ml.use_mmap = false;
+                            if(!old_mixtral_warning_showed)
+                            {
+                                std::cout << "\n!!!!!!\nWARNING: Using extremely outdated MoE quant. Please update it!\nAttempting to apply hacky kcpp fallback, using last ctx:" << last_used_ctx << "\n";
+                                old_mixtral_warning_showed = true;
+                            }
+                            ggml_context * ctx_split = last_used_ctx;
+                            // for(auto it = ctx_map.cbegin(); it != ctx_map.cend(); ++it)
+                            // {
+                            //     std::cout << "\nName: " << ggml_backend_buft_name(it->first) << " Addr: " << it->second << "\n";
+                            //     ctx_split = it->second;
+                            // }
+
+                            ggml_type type_gate = ml.require_tensor_meta(tn(LLM_TENSOR_FFN_GATE_EXP, "weight", i, 0).str().c_str())->type;
+                            ggml_type type_down = ml.require_tensor_meta(tn(LLM_TENSOR_FFN_DOWN_EXP, "weight", i, 0).str().c_str())->type;
+                            ggml_type type_up   = ml.require_tensor_meta(tn(LLM_TENSOR_FFN_UP_EXP,   "weight", i, 0).str().c_str())->type;
+
+                            layer.ffn_gate_exps = ggml_new_tensor_3d(ctx_split, type_gate, n_embd,   n_ff, n_expert);
+                            layer.ffn_down_exps = ggml_new_tensor_3d(ctx_split, type_down,   n_ff, n_embd, n_expert);
+                            layer.ffn_up_exps   = ggml_new_tensor_3d(ctx_split, type_up,   n_embd,   n_ff, n_expert);
+
+                            ggml_set_name(layer.ffn_gate_exps, tn(LLM_TENSOR_FFN_GATE_EXPS, "weight", i).str().c_str());
+                            ggml_set_name(layer.ffn_down_exps, tn(LLM_TENSOR_FFN_DOWN_EXPS, "weight", i).str().c_str());
+                            ggml_set_name(layer.ffn_up_exps,   tn(LLM_TENSOR_FFN_UP_EXPS,   "weight", i).str().c_str());
+
+                            for (uint32_t x = 0; x < n_expert; ++x) {
+                                // the individual experts are loaded into a view of the merged tensor
+                                ml.create_tensor_as_view(ctx_split, layer.ffn_gate_exps, tn(LLM_TENSOR_FFN_GATE_EXP, "weight", i, x), { n_embd, n_ff }, layer.ffn_gate_exps->nb[2]*x);
+                                ml.create_tensor_as_view(ctx_split, layer.ffn_down_exps, tn(LLM_TENSOR_FFN_DOWN_EXP, "weight", i, x), { n_ff, n_embd }, layer.ffn_down_exps->nb[2]*x);
+                                ml.create_tensor_as_view(ctx_split, layer.ffn_up_exps,   tn(LLM_TENSOR_FFN_UP_EXP,   "weight", i, x), { n_embd, n_ff }, layer.ffn_up_exps->nb[2]*x);
+                            }
+                        }
 
                         layer.layer_out_norm   = create_tensor(tn(LLM_TENSOR_LAYER_OUT_NORM, "weight", i), {n_embd}, 0);
                     }
@@ -9176,6 +9270,10 @@ static bool llm_load_tensors(
 
         // check if it is possible to use buffer_from_host_ptr with this buffer type
         ggml_backend_dev_t dev = ggml_backend_buft_get_device(buft);
+        if (!dev) {
+            // FIXME: workaround for CPU backend buft having a NULL device
+            dev = ggml_backend_reg_dev_get(ggml_backend_cpu_reg(), 0);
+        }
         ggml_backend_dev_props props;
         ggml_backend_dev_get_props(dev, &props);
         bool buffer_from_host_ptr_supported = props.caps.buffer_from_host_ptr;
@@ -9300,6 +9398,7 @@ static int llama_model_load(const std::string & fname, llama_model & model, llam
             throw std::runtime_error("error loading model vocabulary: " + std::string(e.what()));
         }
 
+        llm_load_stats(ml, model);
         llm_load_print_meta(ml, model);
 
         if (model.vocab.type != LLAMA_VOCAB_TYPE_NONE &&
@@ -9798,7 +9897,7 @@ static struct ggml_tensor * llm_build_kqv(
         cur = ggml_flash_attn_ext(ctx, q, k, v, kq_mask, kq_scale, hparams.f_max_alibi_bias,
                                   hparams.attn_soft_cap ? hparams.f_attn_logit_softcapping : 0.0f);
 
-#if defined(GGML_USE_HIPBLAS) //workaround for speed regression on rocm
+#if defined(GGML_USE_HIP) //workaround for speed regression on rocm
         if (model.arch == LLM_ARCH_PHI2 || model.arch == LLM_ARCH_PHI3 || model.arch == LLM_ARCH_GPTNEOX || model.arch == LLM_ARCH_GEMMA2 || model.arch == LLM_ARCH_GRANITE || model.arch == LLM_ARCH_GRANITE_MOE) {
             ggml_flash_attn_ext_set_prec(cur, GGML_PREC_F32);
         }
@@ -9811,7 +9910,7 @@ static struct ggml_tensor * llm_build_kqv(
         struct ggml_tensor * kq = ggml_mul_mat(ctx, k, q);
         cb(kq, "kq", il);
 
-#if defined(GGML_USE_HIPBLAS) //workaround for speed regression on rocm
+#if defined(GGML_USE_HIP) //workaround for speed regression on rocm
         if (model.arch == LLM_ARCH_PHI2 || model.arch == LLM_ARCH_PHI3 || model.arch == LLM_ARCH_GPTNEOX || model.arch == LLM_ARCH_QWEN2 || model.arch == LLM_ARCH_NEMOTRON || model.arch == LLM_ARCH_CHATGLM  || model.arch == LLM_ARCH_GRANITE || model.arch == LLM_ARCH_GRANITE_MOE) {
             // for this arch, we need to perform the KQ multiplication with F32 precision, otherwise we get NaNs
             // ref: https://github.com/ggerganov/llama.cpp/pull/4490#issuecomment-1859055847
@@ -18677,6 +18776,7 @@ static void llama_model_quantize_internal(const std::string & fname_inp, const s
     llama_model model;
     llm_load_arch(ml, model);
     llm_load_hparams(ml, model);
+    llm_load_stats(ml, model);
 
     struct quantize_state_internal qs(model, params);
 
@@ -20033,19 +20133,11 @@ int32_t llama_model_desc(const struct llama_model * model, char * buf, size_t bu
 }
 
 uint64_t llama_model_size(const struct llama_model * model) {
-    uint64_t size = 0;
-    for (const auto & it : model->tensors_by_name) {
-        size += ggml_nbytes(it.second);
-    }
-    return size;
+    return model->n_bytes;
 }
 
 uint64_t llama_model_n_params(const struct llama_model * model) {
-    uint64_t nparams = 0;
-    for (const auto & it : model->tensors_by_name) {
-        nparams += ggml_nelements(it.second);
-    }
-    return nparams;
+    return model->n_elements;
 }
 
 struct ggml_tensor * llama_get_model_tensor(struct llama_model * model, const char * name) {
@@ -22115,7 +22207,6 @@ const char * llama_print_system_info(void) {
     s += "FP16_VA = "     + std::to_string(ggml_cpu_has_fp16_va())     + " | ";
     s += "RISCV_VECT = "  + std::to_string(ggml_cpu_has_riscv_v())     + " | ";
     s += "WASM_SIMD = "   + std::to_string(ggml_cpu_has_wasm_simd())   + " | ";
-    s += "BLAS = "        + std::to_string(ggml_cpu_has_blas())        + " | ";
     s += "SSE3 = "        + std::to_string(ggml_cpu_has_sse3())        + " | ";
     s += "SSSE3 = "       + std::to_string(ggml_cpu_has_ssse3())       + " | ";
     s += "VSX = "         + std::to_string(ggml_cpu_has_vsx())         + " | ";

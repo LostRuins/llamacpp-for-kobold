@@ -275,6 +275,12 @@ extern "C"
         return (int)last_stop_reason;
     }
 
+    static std::string chat_template = "";
+    const char* get_chat_template() {
+        chat_template = gpttype_get_chat_template();
+        return chat_template.c_str();
+    }
+
     const char* get_pending_output() {
        return gpttype_get_pending_output().c_str();
     }

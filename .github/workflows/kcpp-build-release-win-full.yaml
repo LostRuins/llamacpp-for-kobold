@@ -58,7 +58,7 @@ jobs:
           mkdir build
           cd build
           cmake .. -DLLAMA_CUBLAS=ON -DCMAKE_SYSTEM_VERSION="10.0.19041.0"
-          cmake --build . --config Release -j 1
+          cmake --build . --config Release -j 2
           mv bin/Release/koboldcpp_cublas.dll ../koboldcpp_cublas.dll
           cd ..
 

@@ -91,6 +91,8 @@ enum ModelLoadResult
 ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in_file_format, FileFormatExtraMeta file_format_meta);
 generation_outputs gpttype_generate(const generation_inputs inputs);
 bool gpttype_generate_abort();
+std::string gpttype_get_chat_template();
+
 const std::string & gpttype_get_pending_output();
 std::vector<int> gpttype_get_token_arr(const std::string & input, bool addbos);
 const std::vector<TopPicksData> gpttype_get_top_picks_data();

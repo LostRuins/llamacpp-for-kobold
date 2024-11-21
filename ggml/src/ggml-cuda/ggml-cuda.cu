@@ -93,7 +93,7 @@ int ggml_cuda_get_device() {
 
 static cudaError_t ggml_cuda_device_malloc(void ** ptr, size_t size, int device) {
     ggml_cuda_set_device(device);
-#if defined(GGML_USE_HIPBLAS) && defined(GGML_HIP_UMA)
+#if defined(GGML_USE_HIP) && defined(GGML_HIP_UMA)
     auto res = hipMallocManaged(ptr, size);
     if (res == hipSuccess) {
         // if error we "need" to know why...
@@ -102,7 +102,7 @@ static cudaError_t ggml_cuda_device_malloc(void ** ptr, size_t size, int device)
     return res;
 #else
 
-#if !defined(GGML_USE_HIPBLAS)
+#if !defined(GGML_USE_HIP)
     cudaError_t err;
     if (getenv("GGML_CUDA_ENABLE_UNIFIED_MEMORY") != nullptr)
     {
@@ -115,7 +115,7 @@ static cudaError_t ggml_cuda_device_malloc(void ** ptr, size_t size, int device)
     return err;
 #else
     return cudaMalloc(ptr, size);
-#endif // !defined(GGML_USE_HIPBLAS)
+#endif // !defined(GGML_USE_HIP)
 
 #endif
 }
@@ -149,12 +149,12 @@ static ggml_cuda_device_info ggml_cuda_init() {
 //#else
 //    GGML_LOG_INFO("%s: GGML_CUDA_FORCE_CUBLAS: no\n", __func__);
 //#endif // GGML_CUDA_FORCE_CUBLAS
-    GGML_LOG_INFO("Initializing CUDA, please wait, this might take a while for first run...\n", __func__, info.device_count);
+    GGML_LOG_INFO("---\nInitializing CUDA, please wait, the following step may take a few minutes for first launch...\n---\n", __func__, info.device_count);
     GGML_LOG_INFO("%s: found %d " GGML_CUDA_NAME " devices:\n", __func__, info.device_count);
     for (int id = 0; id < info.device_count; ++id) {
         int device_vmm = 0;
 
-#if !defined(GGML_USE_HIPBLAS) && !defined(GGML_CUDA_NO_VMM)
+#if !defined(GGML_USE_HIP) && !defined(GGML_CUDA_NO_VMM)
         CUdevice device;
         CU_CHECK(cuDeviceGet(&device, id));
         CU_CHECK(cuDeviceGetAttribute(&device_vmm, CU_DEVICE_ATTRIBUTE_VIRTUAL_MEMORY_MANAGEMENT_SUPPORTED, device));
@@ -166,7 +166,7 @@ static ggml_cuda_device_info ggml_cuda_init() {
             alloc_prop.location.id = id;
             CU_CHECK(cuMemGetAllocationGranularity(&info.devices[id].vmm_granularity, &alloc_prop, CU_MEM_ALLOC_GRANULARITY_RECOMMENDED));
         }
-#endif // !defined(GGML_USE_HIPBLAS) && !defined(GGML_CUDA_NO_VMM)
+#endif // !defined(GGML_USE_HIP) && !defined(GGML_CUDA_NO_VMM)
         info.devices[id].vmm = !!device_vmm;
 
         cudaDeviceProp prop;
@@ -178,13 +178,13 @@ static ggml_cuda_device_info ggml_cuda_init() {
 
         info.devices[id].nsm   = prop.multiProcessorCount;
         info.devices[id].smpb  = prop.sharedMemPerBlock;
-#if defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)
+#if defined(GGML_USE_HIP) && defined(__HIP_PLATFORM_AMD__)
         info.devices[id].smpbo = prop.sharedMemPerBlock;
         info.devices[id].cc = 100*prop.major + 10*prop.minor + CC_OFFSET_AMD;
 #else
         info.devices[id].smpbo = prop.sharedMemPerBlockOptin;
         info.devices[id].cc = 100*prop.major + 10*prop.minor;
-#endif // defined(GGML_USE_HIPBLAS) && defined(__HIP_PLATFORM_AMD__)
+#endif // defined(GGML_USE_HIP) && defined(__HIP_PLATFORM_AMD__)
     }
 
     for (int id = 0; id < info.device_count; ++id) {
@@ -300,7 +300,7 @@ struct ggml_cuda_pool_leg : public ggml_cuda_pool {
 };
 
 // pool with virtual memory
-#if !defined(GGML_USE_HIPBLAS) && !defined(GGML_CUDA_NO_VMM)
+#if !defined(GGML_USE_HIP) && !defined(GGML_CUDA_NO_VMM)
 struct ggml_cuda_pool_vmm : public ggml_cuda_pool {
     static const size_t CUDA_POOL_VMM_MAX_SIZE = 1ull << 35; // 32 GB
 
@@ -394,14 +394,14 @@ struct ggml_cuda_pool_vmm : public ggml_cuda_pool {
         GGML_ASSERT(ptr == (void *) (pool_addr + pool_used));
     }
 };
-#endif // !defined(GGML_USE_HIPBLAS) && !defined(GGML_CUDA_NO_VMM)
+#endif // !defined(GGML_USE_HIP) && !defined(GGML_CUDA_NO_VMM)
 
 std::unique_ptr<ggml_cuda_pool> ggml_backend_cuda_context::new_pool_for_device(int device) {
-#if !defined(GGML_USE_HIPBLAS) && !defined(GGML_CUDA_NO_VMM)
+#if !defined(GGML_USE_HIP) && !defined(GGML_CUDA_NO_VMM)
     if (ggml_cuda_info().devices[device].vmm) {
         return std::unique_ptr<ggml_cuda_pool>(new ggml_cuda_pool_vmm(device));
     }
-#endif // !defined(GGML_USE_HIPBLAS) && !defined(GGML_CUDA_NO_VMM)
+#endif // !defined(GGML_USE_HIP) && !defined(GGML_CUDA_NO_VMM)
     return std::unique_ptr<ggml_cuda_pool>(new ggml_cuda_pool_leg(device));
 }
 
@@ -1326,7 +1326,7 @@ static void ggml_cuda_set_peer_access(const int n_tokens, int main_device) {
 static cudaError_t ggml_cuda_Memcpy2DPeerAsync(
     void * dst, int dstDevice, size_t dpitch, void * src, int srcDevice, size_t spitch, size_t width, size_t height, cudaStream_t stream) {
 
-#if !defined(GGML_USE_HIPBLAS) && !defined(GGML_USE_MUSA)
+#if !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA)
     // cudaMemcpy2DAsync may fail with copies between vmm pools of different devices
     cudaMemcpy3DPeerParms p = {};
     p.dstDevice = dstDevice;
@@ -1340,7 +1340,7 @@ static cudaError_t ggml_cuda_Memcpy2DPeerAsync(
     GGML_UNUSED(dstDevice);
     GGML_UNUSED(srcDevice);
     return cudaMemcpy2DAsync(dst, dpitch, src, spitch, width, height, cudaMemcpyDeviceToDevice, stream);
-#endif // !defined(GGML_USE_HIPBLAS) && !defined(GGML_USE_MUSA)
+#endif // !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA)
 }
 
 static void ggml_cuda_op_mul_mat(
@@ -2983,6 +2983,17 @@ static bool ggml_backend_cuda_device_supports_op(ggml_backend_dev_t dev, const g
             {
                 struct ggml_tensor * a = op->src[0];
                 struct ggml_tensor * b = op->src[1];
+                // for small weight matrices the active device can end up without any rows, don't use row split in those cases
+                // this avoids some edge cases (and the performance would not be good anyways)
+                if (a->buffer && ggml_backend_buft_is_cuda_split(a->buffer->buft)) {
+                    ggml_backend_cuda_split_buffer_type_context * buft_ctx = (ggml_backend_cuda_split_buffer_type_context *) a->buffer->buft->context;
+                    int64_t row_low;
+                    int64_t row_high;
+                    get_row_split(&row_low, &row_high, a, buft_ctx->tensor_split, dev_ctx->device);
+                    if (row_low == row_high) {
+                        return false;
+                    }
+                }
                 if (b->type == GGML_TYPE_F16 && a->type != GGML_TYPE_F16) {
                     return false;
                 }
