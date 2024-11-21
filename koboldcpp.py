@@ -1977,11 +1977,11 @@ Enter Prompt:<br>
 
     def do_POST(self):
         global modelbusy, requestsinqueue, currentusergenkey, totalgens, pendingabortkey, multiplayer_turn_major, multiplayer_turn_minor, multiplayer_story_data_compressed
-
-        body = bytearray()
-
-        if "Content-Length" in self.headers:
-            content_length = int(self.headers["Content-Length"])
+        contlenstr = self.headers['content-length']
+        content_length = 0
+        body = None
+        if contlenstr:
+            content_length = int(contlenstr)
             if content_length > (1024*1024*32): #32mb payload limit
                 self.send_response(500)
                 self.end_headers(content_type='application/json')
@@ -1990,27 +1990,40 @@ Enter Prompt:<br>
                 "type": "bad_input",
                 }}).encode())
                 return
-            body.extend(self.rfile.read(content_length))
-        elif "chunked" in self.headers.get("Transfer-Encoding", ""):
+            body = self.rfile.read(content_length)
+        elif self.headers.get('transfer-encoding', '').lower()=="chunked":
             content_length = 0
-            while True:
-                line = self.rfile.readline().strip()
-                chunk_length = int(line, 16)
-                content_length += chunk_length
-                if content_length > (1024*1024*32): #32mb payload limit
-                    self.send_response(500)
-                    self.end_headers(content_type='application/json')
-                    self.wfile.write(json.dumps({"detail": {
-                    "msg": "Payload is too big. Max payload size is 32MB.",
-                    "type": "bad_input",
-                    }}).encode())
-                    return
-                if chunk_length != 0:
-                    chunk = self.rfile.read(chunk_length)
-                    body.extend(chunk)
-                self.rfile.readline()
-                if chunk_length == 0:
-                    break
+            chunklimit = 0  # do not process more than 512 chunks, prevents bad actors
+            body = b''
+            try:
+                while True:
+                    chunklimit += 1
+                    line = self.rfile.readline().strip()
+                    if line:
+                        chunk_length = max(0,int(line, 16))
+                        content_length += chunk_length
+                    if not line or chunklimit > 512 or content_length > (1024*1024*32): #32mb payload limit
+                        self.send_response(500)
+                        self.end_headers(content_type='application/json')
+                        self.wfile.write(json.dumps({"detail": {
+                        "msg": "Payload is too big. Max payload size is 32MB.",
+                        "type": "bad_input",
+                        }}).encode())
+                        return
+                    if chunk_length != 0:
+                        chunk = self.rfile.read(chunk_length)
+                        body += chunk
+                    self.rfile.readline()
+                    if chunk_length == 0:
+                        break
+            except Exception as e:
+                self.send_response(500)
+                self.end_headers(content_type='application/json')
+                self.wfile.write(json.dumps({"detail": {
+                "msg": "Failed to parse chunked request.",
+                "type": "bad_input",
+                }}).encode())
+                return
 
         self.path = self.path.rstrip('/')
         response_body = None
