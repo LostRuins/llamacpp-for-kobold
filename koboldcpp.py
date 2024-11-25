@@ -2013,7 +2013,13 @@ Enter Prompt:<br>
         elif self.path=="/props":
             ctbytes = handle.get_chat_template()
             chat_template = ctypes.string_at(ctbytes).decode("UTF-8","ignore")
-            response_body = (json.dumps({"chat_template":chat_template,"total_slots":1}).encode())
+            response_body = (json.dumps({
+                "chat_template": chat_template,
+                "total_slots": 1,
+                "default_generation_settings": {
+                    "n_ctx": maxctx,
+                },
+            }).encode())
 
         elif self.path=="/api" or self.path=="/docs" or self.path.startswith(('/api/?json=','/api?json=','/docs/?json=','/docs?json=')):
             content_type = 'text/html'
