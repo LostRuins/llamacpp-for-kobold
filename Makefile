@@ -395,7 +395,7 @@ else
 	ifndef LLAMA_HIPBLAS
 	ifndef LLAMA_VULKAN
 	ifndef LLAMA_METAL
-	NOTIFY_MSG = @echo -e '\nYou did a basic CPU build. For faster speeds, install and link a BLAS library. \nSet LLAMA_VULKAN=1 to compile with Vulkan support. This is just a reminder, not an error.'
+	NOTIFY_MSG = @echo -e '\n***\nYou did a basic CPU build. For faster speeds, consider installing and linking a GPU BLAS library. For example, set LLAMA_VULKAN=1 to compile with Vulkan support. Read the KoboldCpp Wiki for more information. This is just a reminder, not an error.\n***\n'
 	endif
 	endif
 	endif

@@ -4344,7 +4344,7 @@ def main(launch_args,start_server=True):
             show_gui()
         except Exception as ex:
             exitcounter = 999
-            ermsg = "Reason: " + str(ex) + "\nFile selection GUI unsupported.\ncustomtkinter python module required!\n\nPlease check command line options with --help"
+            ermsg = "Reason: " + str(ex) + "\nFile selection GUI unsupported.\ncustomtkinter python module required!\n\nYou must use the command line instead, e.g. python ./koboldcpp.py --help"
             show_gui_msgbox("Warning, GUI failed to start",ermsg)
             if args.skiplauncher:
                 print("Note: In order to use --skiplauncher, you need to specify a model with --model")

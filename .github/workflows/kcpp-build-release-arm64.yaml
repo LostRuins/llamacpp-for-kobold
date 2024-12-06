@@ -1,35 +1,53 @@
 name: Koboldcpp Linux ARM64
 
-on: workflow_dispatch
+on:
+  workflow_dispatch
+
 env:
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
-  NOAVX2: 1
 
 jobs:
   linux-arm:
     runs-on: ubuntu-latest
     steps:
-      - name: Clone
+      - name: Clone Repository
         id: checkout
         uses: actions/checkout@v3
         with:
           ref: ${{ github.head_ref || github.ref_name }}
 
-      - name: Build Dependencies
-        id: depends1
+      - name: Setup Build Environment
+        id: setup_environment
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3 python3-pip python3-dev build-essential \
-              libffi-dev libssl-dev libbz2-dev libreadline-dev libsqlite3-dev \
-              crossbuild-essential-arm64 qemu qemu-user qemu-user-static \
-              gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          sudo apt-get install -y \
+            build-essential \
+            crossbuild-essential-arm64 \
+            gcc-aarch64-linux-gnu \
+            g++-aarch64-linux-gnu \
+            python3 \
+            python3-tk \
+            python3-pip \
+            qemu-user-static \
+            binfmt-support \
+            qemu-user-binfmt \
+            libffi-dev:arm64 \
+            zlib1g-dev:arm64 \
+            libssl-dev:arm64
+          sudo update-binfmts --enable qemu-aarch64
 
-      - name: Python Dependencies
-        id: depends2
+      - name: Install ARM64 Python Environment
+        id: install_arm_python
         run: |
-          pip install customtkinter pyinstaller tk
+          # Install ARM64 Python with QEMU emulation
+          sudo apt-get install -y python3-arm64 python3-pip-arm64
+          sudo ln -sf /usr/bin/python3-arm64 /usr/bin/python3-arm
+          sudo ln -sf /usr/bin/pip3-arm64 /usr/bin/pip3-arm
 
-      - name: Build with ARM NEON Support
+          # Install necessary Python packages in ARM64 environment
+          python3-arm -m pip install --no-cache-dir customtkinter pyinstaller tk psutil
+
+      - name: Build for ARM
         id: build_binary
         run: |
           # Enable cross-compilation for ARM
@@ -40,14 +58,35 @@ jobs:
           export UNAME_M=aarch64
           export UNAME_S=Linux
 
+          # Build any necessary C/C++ components
           make LLAMA_PORTABLE=1
           chmod +x './create_ver_file.sh'
-          . create_ver_file.sh
-          pyinstaller --noconfirm --onefile --collect-all customtkinter --collect-all psutil --add-data './koboldcpp_default.so:.' --add-data './kcpp_adapters:./kcpp_adapters' --add-data './koboldcpp.py:.' --add-data './klite.embd:.' --add-data './kcpp_docs.embd:.' --add-data './kcpp_sdui.embd:.' --add-data './taesd.embd:.' --add-data './taesd_xl.embd:.' --add-data './rwkv_vocab.embd:.' --add-data './rwkv_world_vocab.embd:.' --version-file './version.txt' --clean --console koboldcpp.py -n "koboldcpp-linux-arm64"
+          ./create_ver_file.sh
 
-      - name: Save artifact
+          # Package with ARM64 PyInstaller
+          python3-arm -m pyinstaller \
+            --noconfirm \
+            --onefile \
+            --collect-all customtkinter \
+            --collect-all psutil \
+            --add-data './koboldcpp_default.so:.' \
+            --add-data './kcpp_adapters:./kcpp_adapters' \
+            --add-data './koboldcpp.py:.' \
+            --add-data './klite.embd:.' \
+            --add-data './kcpp_docs.embd:.' \
+            --add-data './kcpp_sdui.embd:.' \
+            --add-data './taesd.embd:.' \
+            --add-data './taesd_xl.embd:.' \
+            --add-data './rwkv_vocab.embd:.' \
+            --add-data './rwkv_world_vocab.embd:.' \
+            --version-file './version.txt' \
+            --clean \
+            --console \
+            koboldcpp.py \
+            -n "koboldcpp-linux-arm64"
+
+      - name: Save Artifact
         uses: actions/upload-artifact@v3
         with:
           name: kcpp_linux_arm64_binary
           path: dist/
-
