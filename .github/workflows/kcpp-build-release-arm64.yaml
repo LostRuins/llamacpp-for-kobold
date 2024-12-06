@@ -19,6 +19,7 @@ jobs:
       - name: Setup Build Environment
         id: setup_environment
         run: |
+          sudo dpkg --add-architecture arm64
           sudo apt-get update
           sudo apt-get install -y \
             build-essential \
@@ -39,13 +40,10 @@ jobs:
       - name: Install ARM64 Python Environment
         id: install_arm_python
         run: |
-          # Install ARM64 Python with QEMU emulation
-          sudo apt-get install -y python3-arm64 python3-pip-arm64
-          sudo ln -sf /usr/bin/python3-arm64 /usr/bin/python3-arm
-          sudo ln -sf /usr/bin/pip3-arm64 /usr/bin/pip3-arm
-
-          # Install necessary Python packages in ARM64 environment
-          python3-arm -m pip install --no-cache-dir customtkinter pyinstaller tk psutil
+          # Install ARM64 Python packages using qemu
+          python3 -m pip install --upgrade pip
+          sudo apt-get install -y python3-arm64 python3-pip-arm64 || true
+          python3 -m pip install --no-cache-dir customtkinter pyinstaller tk psutil
 
       - name: Build for ARM
         id: build_binary
@@ -64,7 +62,7 @@ jobs:
           ./create_ver_file.sh
 
           # Package with ARM64 PyInstaller
-          python3-arm -m pyinstaller \
+          python3-arm64 -m pyinstaller \
             --noconfirm \
             --onefile \
             --collect-all customtkinter \
