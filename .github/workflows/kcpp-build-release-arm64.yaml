@@ -14,33 +14,47 @@ jobs:
         with:
           ref: ${{ github.head_ref || github.ref_name }}
 
-      - name: Build Dependencies
-        id: depends1
+      - name: Install Dependencies
+        id: depends
         run: |
           sudo apt-get update
           sudo apt-get install -y python3-tk python3-pip python3-dev build-essential \
               libffi-dev libssl-dev libbz2-dev libreadline-dev libsqlite3-dev \
               crossbuild-essential-arm64 gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
-      - name: Python Dependencies
-        id: depends2
-        run: |
-          pip install customtkinter pyinstaller tk
-
-      - name: Build with ARM NEON Support
+      - name: Cross compile binary build for ARM64
         id: build_binary
         run: |
-          # Enable cross-compilation for ARM
           export CC=aarch64-linux-gnu-gcc
           export CXX=aarch64-linux-gnu-g++
           export AR=aarch64-linux-gnu-ar
           export UNAME_M=aarch64
           export UNAME_S=Linux
-
           make LLAMA_PORTABLE=1
           chmod +x './create_ver_file.sh'
           . create_ver_file.sh
-          pyinstaller --noconfirm --onefile --collect-all customtkinter --collect-all psutil --add-data './koboldcpp_default.so:.' --add-data './kcpp_adapters:./kcpp_adapters' --add-data './koboldcpp.py:.' --add-data './klite.embd:.' --add-data './kcpp_docs.embd:.' --add-data './kcpp_sdui.embd:.' --add-data './taesd.embd:.' --add-data './taesd_xl.embd:.' --add-data './rwkv_vocab.embd:.' --add-data './rwkv_world_vocab.embd:.' --version-file './version.txt' --clean --console koboldcpp.py -n "koboldcpp-linux-arm64"
+
+      - name: Install QEMU
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static binfmt-support
+
+      - name: Setup QEMU for ARM64
+        run: |
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+
+      - name: Build ARM64 PyInstaller
+        run: |
+          docker run --rm \
+            --platform linux/arm64 \
+            -v "${PWD}:/src" \
+            python:3.9-slim-bullseye \
+            /bin/bash -c "
+              apt-get update && apt-get install -y build-essential && \
+              pip install customtkinter pyinstaller tk && \
+              cd /src && \
+              pyinstaller --noconfirm --onefile --collect-all customtkinter --collect-all psutil --add-data './koboldcpp_default.so:.' --add-data './kcpp_adapters:./kcpp_adapters' --add-data './koboldcpp.py:.' --add-data './klite.embd:.' --add-data './kcpp_docs.embd:.' --add-data './kcpp_sdui.embd:.' --add-data './taesd.embd:.' --add-data './taesd_xl.embd:.' --add-data './rwkv_vocab.embd:.' --add-data './rwkv_world_vocab.embd:.' --version-file './version.txt' --clean --console koboldcpp.py -n 'koboldcpp-linux-arm64'
+            "
 
       - name: Save artifact
         uses: actions/upload-artifact@v3
