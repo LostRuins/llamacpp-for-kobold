@@ -22,14 +22,22 @@ jobs:
               libffi-dev libssl-dev libbz2-dev libreadline-dev libsqlite3-dev \
               crossbuild-essential-arm64 gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
-      - name: Cross compile binary build for ARM64
-        id: build_binary
+      - name: Install New GCC for Cross-Compilation
         run: |
-          export CC=aarch64-linux-gnu-gcc
-          export CXX=aarch64-linux-gnu-g++
+          sudo apt-get install -y software-properties-common
+          sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+          sudo apt-get update
+          sudo apt-get install -y gcc-12 g++-12 gcc-12-aarch64-linux-gnu g++-12-aarch64-linux-gnu
+          export CC=/usr/bin/aarch64-linux-gnu-gcc-12
+          export CXX=/usr/bin/aarch64-linux-gnu-g++-12
           export AR=aarch64-linux-gnu-ar
           export UNAME_M=aarch64
           export UNAME_S=Linux
+          export PATH=/usr/bin:$PATH
+
+      - name: Cross compile binary build for ARM64
+        id: build_binary
+        run: |
           make LLAMA_PORTABLE=1
           chmod +x './create_ver_file.sh'
           . create_ver_file.sh
@@ -51,9 +59,26 @@ jobs:
             python:3.9-slim-bullseye \
             /bin/bash -c "
               apt-get update && apt-get install -y build-essential && \
+              apt-get install -y software-properties-common && \
+              add-apt-repository -y ppa:ubuntu-toolchain-r/test && \
+              apt-get update && apt-get install -y gcc-12 g++-12 && \
+              export LD_LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/12:$LD_LIBRARY_PATH && \
               pip install customtkinter pyinstaller tk && \
               cd /src && \
-              pyinstaller --noconfirm --onefile --collect-all customtkinter --collect-all psutil --add-data './koboldcpp_default.so:.' --add-data './kcpp_adapters:./kcpp_adapters' --add-data './koboldcpp.py:.' --add-data './klite.embd:.' --add-data './kcpp_docs.embd:.' --add-data './kcpp_sdui.embd:.' --add-data './taesd.embd:.' --add-data './taesd_xl.embd:.' --add-data './rwkv_vocab.embd:.' --add-data './rwkv_world_vocab.embd:.' --version-file './version.txt' --clean --console koboldcpp.py -n 'koboldcpp-linux-arm64'
+              pyinstaller --noconfirm --onefile --collect-all customtkinter --collect-all psutil \
+              --add-data './koboldcpp_default.so:.' \
+              --add-data './kcpp_adapters:./kcpp_adapters' \
+              --add-data './koboldcpp.py:.' \
+              --add-data './klite.embd:.' \
+              --add-data './kcpp_docs.embd:.' \
+              --add-data './kcpp_sdui.embd:.' \
+              --add-data './taesd.embd:.' \
+              --add-data './taesd_xl.embd:.' \
+              --add-data './rwkv_vocab.embd:.' \
+              --add-data './rwkv_world_vocab.embd:.' \
+              --version-file './version.txt' \
+              --runtime-hook pyinstaller_hooks/runtime_hook_gcc.py \
+              --clean --console koboldcpp.py -n 'koboldcpp-linux-arm64'
             "
 
       - name: Save artifact
