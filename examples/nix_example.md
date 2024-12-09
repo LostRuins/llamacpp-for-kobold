@@ -5,7 +5,6 @@
 ## KoboldCpp Nix - CUDA Support
 
 - In order to enable NVIDIA CUDA support, you will need to set `nixpkgs.config.allowUnfree`, `hardware.opengl.enable` (*`hardware.graphics.enable` if you're using 24.11 or the unstable channel*) and `nixpkgs.config.cudaSupport` to `true`, and set `nixpkgs.config.cudaArches` *(e.g., if you have an RTX 2080, you need to set `cudaArches` to `[ "sm_75" ]`)* to your GPU architecture. Find your architecture here: [Matching CUDA arch and CUDA gencode for various NVIDIA architectures](https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/)
-- Make sure to configure `nixpkgs` settings again/separately for home-manager if `home-manager.useGlobalPkgs` is set to `false`.
 - Metal is enabled by default on macOS, Vulkan support is enabled by default on both Linux and macOS, ROCm support isn't available yet.
 
 ## Example KoboldCpp Nix Configuration
@@ -24,6 +23,13 @@ environment.systemPackages = [ pkgs.koboldcpp ];
 # If you're using home-manager to install KoboldCpp
 # home.packages = [ pkgs.koboldcpp ];
 ```
+
+## KoboldCpp - Home Manager
+
+The setup for Home Manager is the same as regular Nix, with one exception regarding Home Manager's instance of nixpkgs. By default, Home Manager manages its own isolated instance of nixpkgs, which has two implications:
+
+1. You can keep your private Home Manager nixpkgs instance and simply repeat your `nixpkgs.config` in home manager.
+2. You can set `home-manager.useGlobalPkgs = true;` to copy your module system's nixpkgs instance. This way, you only need to define it in your `configuration.nix`, and Home Manager will "inherit" this configuration.
 
 ## Getting Help for KoboldCpp Nix
 
