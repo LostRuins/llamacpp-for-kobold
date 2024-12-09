@@ -426,21 +426,21 @@ $(info )
 #
 
 ggml.o: ggml/src/ggml.c ggml/include/ggml.h
-	$(CC)  $(FASTCFLAGS) $(FULLCFLAGS) -c $< -o $@
+	$(CC)  $(CFLAGS) $(FULLCFLAGS) -c $< -o $@
 ggml_v4_failsafe.o: ggml/src/ggml.c ggml/include/ggml.h
-	$(CC)  $(FASTCFLAGS) $(NONECFLAGS) -c $< -o $@
+	$(CC)  $(CFLAGS) $(NONECFLAGS) -c $< -o $@
 ggml_v4_noavx2.o: ggml/src/ggml.c ggml/include/ggml.h
-	$(CC)  $(FASTCFLAGS) $(SIMPLECFLAGS) -c $< -o $@
+	$(CC)  $(CFLAGS) $(SIMPLECFLAGS) -c $< -o $@
 ggml_v4_clblast.o: ggml/src/ggml.c ggml/include/ggml.h
-	$(CC)  $(FASTCFLAGS) $(FULLCFLAGS) $(CLBLAST_FLAGS) -c $< -o $@
+	$(CC)  $(CFLAGS) $(FULLCFLAGS) $(CLBLAST_FLAGS) -c $< -o $@
 ggml_v4_cublas.o: ggml/src/ggml.c ggml/include/ggml.h
-	$(CC)  $(FASTCFLAGS) $(FULLCFLAGS) $(CUBLAS_FLAGS) $(HIPFLAGS) -c $< -o $@
+	$(CC)  $(CFLAGS) $(FULLCFLAGS) $(CUBLAS_FLAGS) $(HIPFLAGS) -c $< -o $@
 ggml_v4_clblast_noavx2.o: ggml/src/ggml.c ggml/include/ggml.h
-	$(CC)  $(FASTCFLAGS) $(SIMPLECFLAGS) $(CLBLAST_FLAGS) -c $< -o $@
+	$(CC)  $(CFLAGS) $(SIMPLECFLAGS) $(CLBLAST_FLAGS) -c $< -o $@
 ggml_v4_vulkan.o: ggml/src/ggml.c ggml/include/ggml.h
-	$(CC)  $(FASTCFLAGS) $(FULLCFLAGS) $(VULKAN_FLAGS) -c $< -o $@
+	$(CC)  $(CFLAGS) $(FULLCFLAGS) $(VULKAN_FLAGS) -c $< -o $@
 ggml_v4_vulkan_noavx2.o: ggml/src/ggml.c ggml/include/ggml.h
-	$(CC)  $(FASTCFLAGS) $(SIMPLECFLAGS) $(VULKAN_FLAGS) -c $< -o $@
+	$(CC)  $(CFLAGS) $(SIMPLECFLAGS) $(VULKAN_FLAGS) -c $< -o $@
 
 # cpu and clblast separated
 ggml-cpu.o: ggml/src/ggml-cpu/ggml-cpu.c ggml/include/ggml-cpu.h
