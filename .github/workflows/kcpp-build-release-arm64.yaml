@@ -34,10 +34,6 @@ jobs:
           export UNAME_M=aarch64
           export UNAME_S=Linux
           export PATH=/usr/bin:$PATH
-
-      - name: Cross compile binary build for ARM64
-        id: build_binary
-        run: |
           make LLAMA_PORTABLE=1
           chmod +x './create_ver_file.sh'
           . create_ver_file.sh
