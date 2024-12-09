@@ -4,7 +4,36 @@
 
 ## KoboldCpp Nix - CUDA Support
 
-- In order to enable NVIDIA CUDA support, you will need to set `nixpkgs.config.allowUnfree`, `hardware.opengl.enable` (*`hardware.graphics.enable` if you're using 24.11 or the unstable channel*) and `nixpkgs.config.cudaSupport` to `true`, and set `nixpkgs.config.cudaArches` *(e.g., if you have an RTX 2080, you need to set `cudaArches` to `[ "sm_75" ]`)* to your GPU architecture. Find your architecture here: [Matching CUDA arch and CUDA gencode for various NVIDIA architectures](https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/)
+In order to enable NVIDIA CUDA support, you'll need to configure several settings:
+
+- Enable required options:
+
+```nix
+nixpkgs.config.allowUnfree = true;    # Allow proprietary software
+nixpkgs.config.cudaSupport = true;    # Enable CUDA functionality
+```
+
+- Enable graphics support based on your NixOS version:
+
+```nix
+# For NixOS 24.05:
+hardware.opengl.enable = true;
+
+# For NixOS 24.11 or unstable:
+hardware.graphics.enable = true;
+```
+
+- Set your GPU architecture:
+
+```nix
+nixpkgs.config.cudaArches = [ "sm_75" ];  # Example for RTX 2080
+```
+
+To find your GPU's architecture code:
+
+1. Visit the [NVIDIA Architecture Guide](https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/)
+2. Locate your GPU Architecture
+3. Use the corresponding `sm_XX` code in your configuration
 
 ## Hardware Support
 
