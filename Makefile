@@ -311,11 +311,13 @@ endif # LLAMA_METAL
 ifneq ($(filter arm64% aarch64%,$(UNAME_M)),)
 	# Apple M1, M2, etc.
 	# Raspberry Pi 3, 4, Zero 2 (64-bit)
-	ifdef LLAMA_PORTABLE
-	else
-		CFLAGS += -mcpu=native
-		CXXFLAGS += -mcpu=native
-	endif
+ifdef LLAMA_PORTABLE
+	CFLAGS +=
+	CXXFLAGS +=
+else
+	CFLAGS += -mcpu=native
+	CXXFLAGS += -mcpu=native
+endif
 endif
 
 ifneq ($(filter armv6%,$(UNAME_M)),)
