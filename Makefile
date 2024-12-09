@@ -426,63 +426,63 @@ $(info )
 #
 
 ggml.o: ggml/src/ggml.c ggml/include/ggml.h
-	$(CC)  $(FASTCFLAGS) $(FULLCFLAGS) -c $< -o $@
+	$(CC) -mcpu=native $(FASTCFLAGS) $(FULLCFLAGS) -c $< -o $@
 ggml_v4_failsafe.o: ggml/src/ggml.c ggml/include/ggml.h
-	$(CC)  $(FASTCFLAGS) $(NONECFLAGS) -c $< -o $@
+	$(CC) -mcpu=native $(FASTCFLAGS) $(NONECFLAGS) -c $< -o $@
 ggml_v4_noavx2.o: ggml/src/ggml.c ggml/include/ggml.h
-	$(CC)  $(FASTCFLAGS) $(SIMPLECFLAGS) -c $< -o $@
+	$(CC) -mcpu=native $(FASTCFLAGS) $(SIMPLECFLAGS) -c $< -o $@
 ggml_v4_clblast.o: ggml/src/ggml.c ggml/include/ggml.h
-	$(CC)  $(FASTCFLAGS) $(FULLCFLAGS) $(CLBLAST_FLAGS) -c $< -o $@
+	$(CC) -mcpu=native $(FASTCFLAGS) $(FULLCFLAGS) $(CLBLAST_FLAGS) -c $< -o $@
 ggml_v4_cublas.o: ggml/src/ggml.c ggml/include/ggml.h
-	$(CC)  $(FASTCFLAGS) $(FULLCFLAGS) $(CUBLAS_FLAGS) $(HIPFLAGS) -c $< -o $@
+	$(CC) -mcpu=native $(FASTCFLAGS) $(FULLCFLAGS) $(CUBLAS_FLAGS) $(HIPFLAGS) -c $< -o $@
 ggml_v4_clblast_noavx2.o: ggml/src/ggml.c ggml/include/ggml.h
-	$(CC)  $(FASTCFLAGS) $(SIMPLECFLAGS) $(CLBLAST_FLAGS) -c $< -o $@
+	$(CC) -mcpu=native $(FASTCFLAGS) $(SIMPLECFLAGS) $(CLBLAST_FLAGS) -c $< -o $@
 ggml_v4_vulkan.o: ggml/src/ggml.c ggml/include/ggml.h
-	$(CC)  $(FASTCFLAGS) $(FULLCFLAGS) $(VULKAN_FLAGS) -c $< -o $@
+	$(CC) -mcpu=native $(FASTCFLAGS) $(FULLCFLAGS) $(VULKAN_FLAGS) -c $< -o $@
 ggml_v4_vulkan_noavx2.o: ggml/src/ggml.c ggml/include/ggml.h
-	$(CC)  $(FASTCFLAGS) $(SIMPLECFLAGS) $(VULKAN_FLAGS) -c $< -o $@
+	$(CC) -mcpu=native $(FASTCFLAGS) $(SIMPLECFLAGS) $(VULKAN_FLAGS) -c $< -o $@
 
 # cpu and clblast separated
 ggml-cpu.o: ggml/src/ggml-cpu/ggml-cpu.c ggml/include/ggml-cpu.h
-	$(CC)  $(FASTCFLAGS) $(FULLCFLAGS) -c $< -o $@
+	$(CC) -mcpu=native $(FASTCFLAGS) $(FULLCFLAGS) -c $< -o $@
 ggml-cpu_v4_failsafe.o: ggml/src/ggml-cpu/ggml-cpu.c ggml/include/ggml-cpu.h
-	$(CC)  $(FASTCFLAGS) $(NONECFLAGS) -c $< -o $@
+	$(CC) -mcpu=native $(FASTCFLAGS) $(NONECFLAGS) -c $< -o $@
 ggml-cpu_v4_noavx2.o: ggml/src/ggml-cpu/ggml-cpu.c ggml/include/ggml-cpu.h
-	$(CC)  $(FASTCFLAGS) $(SIMPLECFLAGS) -c $< -o $@
+	$(CC) -mcpu=native $(FASTCFLAGS) $(SIMPLECFLAGS) -c $< -o $@
 ggml-cpu_v4_clblast.o: ggml/src/ggml-cpu/ggml-cpu.c ggml/include/ggml-cpu.h
-	$(CC)  $(FASTCFLAGS) $(FULLCFLAGS) $(CLBLAST_FLAGS) -c $< -o $@
+	$(CC) -mcpu=native $(FASTCFLAGS) $(FULLCFLAGS) $(CLBLAST_FLAGS) -c $< -o $@
 ggml-cpu_v4_clblast_noavx2.o: ggml/src/ggml-cpu/ggml-cpu.c ggml/include/ggml-cpu.h
-	$(CC)  $(FASTCFLAGS) $(SIMPLECFLAGS) $(CLBLAST_FLAGS) -c $< -o $@
+	$(CC) -mcpu=native $(FASTCFLAGS) $(SIMPLECFLAGS) $(CLBLAST_FLAGS) -c $< -o $@
 
 #quants
 ggml-quants.o: ggml/src/ggml-quants.c ggml/include/ggml.h ggml/src/ggml-quants.h ggml/src/ggml-common.h
-	$(CC)  $(CFLAGS) $(FULLCFLAGS) -c $< -o $@
+	$(CC) -mcpu=native $(CFLAGS) $(FULLCFLAGS) -c $< -o $@
 ggml-quants_noavx2.o: ggml/src/ggml-quants.c ggml/include/ggml.h ggml/src/ggml-quants.h ggml/src/ggml-common.h
-	$(CC)  $(CFLAGS) $(SIMPLECFLAGS) -c $< -o $@
+	$(CC) -mcpu=native $(CFLAGS) $(SIMPLECFLAGS) -c $< -o $@
 ggml-quants_failsafe.o: ggml/src/ggml-quants.c ggml/include/ggml.h ggml/src/ggml-quants.h ggml/src/ggml-common.h
-	$(CC)  $(CFLAGS) $(NONECFLAGS) -c $< -o $@
+	$(CC) -mcpu=native $(CFLAGS) $(NONECFLAGS) -c $< -o $@
 ggml-cpu-quants.o: ggml/src/ggml-cpu/ggml-cpu-quants.c ggml/include/ggml.h ggml/src/ggml-cpu/ggml-cpu-quants.h ggml/src/ggml-common.h
-	$(CC)  $(CFLAGS) $(FULLCFLAGS) -c $< -o $@
+	$(CC) -mcpu=native $(CFLAGS) $(FULLCFLAGS) -c $< -o $@
 ggml-cpu-quants_noavx2.o: ggml/src/ggml-cpu/ggml-cpu-quants.c ggml/include/ggml.h ggml/src/ggml-cpu/ggml-cpu-quants.h ggml/src/ggml-common.h
-	$(CC)  $(CFLAGS) $(SIMPLECFLAGS) -c $< -o $@
+	$(CC) -mcpu=native $(CFLAGS) $(SIMPLECFLAGS) -c $< -o $@
 ggml-cpu-quants_failsafe.o: ggml/src/ggml-cpu/ggml-cpu-quants.c ggml/include/ggml.h ggml/src/ggml-cpu/ggml-cpu-quants.h ggml/src/ggml-common.h
-	$(CC)  $(CFLAGS) $(NONECFLAGS) -c $< -o $@
+	$(CC) -mcpu=native $(CFLAGS) $(NONECFLAGS) -c $< -o $@
 
 #aarch64
 ggml-cpu-aarch64.o: ggml/src/ggml-cpu/ggml-cpu-aarch64.c ggml/include/ggml.h ggml/src/ggml-cpu/ggml-cpu-aarch64.h
-	$(CC)  $(CFLAGS) $(FULLCFLAGS) -c $< -o $@
+	$(CC) -mcpu=native $(CFLAGS) $(FULLCFLAGS) -c $< -o $@
 ggml-cpu-aarch64_noavx2.o: ggml/src/ggml-cpu/ggml-cpu-aarch64.c ggml/include/ggml.h ggml/src/ggml-cpu/ggml-cpu-aarch64.h
-	$(CC)  $(CFLAGS) $(SIMPLECFLAGS) -c $< -o $@
+	$(CC) -mcpu=native $(CFLAGS) $(SIMPLECFLAGS) -c $< -o $@
 ggml-cpu-aarch64_failsafe.o: ggml/src/ggml-cpu/ggml-cpu-aarch64.c ggml/include/ggml.h ggml/src/ggml-cpu/ggml-cpu-aarch64.h
-	$(CC)  $(CFLAGS) $(NONECFLAGS) -c $< -o $@
+	$(CC) -mcpu=native $(CFLAGS) $(NONECFLAGS) -c $< -o $@
 
 #sgemm
 sgemm.o: ggml/src/ggml-cpu/llamafile/sgemm.cpp ggml/src/ggml-cpu/llamafile/sgemm.h ggml/include/ggml.h
-	$(CXX) $(CXXFLAGS) $(FULLCFLAGS) -c $< -o $@
+	$(CXX) -mcpu=native $(CXXFLAGS) $(FULLCFLAGS) -c $< -o $@
 sgemm_noavx2.o: ggml/src/ggml-cpu/llamafile/sgemm.cpp ggml/src/ggml-cpu/llamafile/sgemm.h ggml/include/ggml.h
-	$(CXX) $(CXXFLAGS) $(SIMPLECFLAGS) -c $< -o $@
+	$(CXX) -mcpu=native $(CXXFLAGS) $(SIMPLECFLAGS) -c $< -o $@
 sgemm_failsafe.o: ggml/src/ggml-cpu/llamafile/sgemm.cpp ggml/src/ggml-cpu/llamafile/sgemm.h ggml/include/ggml.h
-	$(CXX) $(CXXFLAGS) $(NONECFLAGS) -c $< -o $@
+	$(CXX) -mcpu=native $(CXXFLAGS) $(NONECFLAGS) -c $< -o $@
 
 #there's no intrinsics or special gpu ops used here, so we can have a universal object
 ggml-alloc.o: ggml/src/ggml-alloc.c ggml/include/ggml.h ggml/include/ggml-alloc.h
@@ -494,15 +494,15 @@ unicode.o: src/unicode.cpp src/unicode.h
 unicode-data.o: src/unicode-data.cpp src/unicode-data.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 ggml-aarch64.o: ggml/src/ggml-aarch64.c ggml/include/ggml.h ggml/src/ggml-aarch64.h ggml/src/ggml-common.h
-	$(CC)  $(CFLAGS) -c $< -o $@
+	$(CC) -mcpu=native $(CFLAGS) -c $< -o $@
 ggml-threading.o: ggml/src/ggml-threading.cpp ggml/include/ggml.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 ggml-cpu-cpp.o: ggml/src/ggml-cpu/ggml-cpu.cpp ggml/include/ggml.h ggml/src/ggml-common.h
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) -mcpu=native $(CXXFLAGS) -c $< -o $@
 
 #these have special gpu defines
 ggml-backend_default.o: ggml/src/ggml-backend.cpp ggml/src/ggml-backend-impl.h ggml/include/ggml.h ggml/include/ggml-backend.h
-	$(CXX)  $(CXXFLAGS) -c $< -o $@
+	$(CXX) -mcpu=native $(CXXFLAGS) -c $< -o $@
 ggml-backend_vulkan.o: ggml/src/ggml-backend.cpp ggml/src/ggml-backend-impl.h ggml/include/ggml.h ggml/include/ggml-backend.h
 	$(CXX)  $(CXXFLAGS) $(VULKAN_FLAGS) -c $< -o $@
 ggml-backend_cublas.o: ggml/src/ggml-backend.cpp ggml/src/ggml-backend-impl.h ggml/include/ggml.h ggml/include/ggml-backend.h
@@ -522,7 +522,7 @@ llavaclip_vulkan.o: examples/llava/clip.cpp examples/llava/clip.h
 
 #this is only used for accelerate
 ggml-blas.o: ggml/src/ggml-blas/ggml-blas.cpp ggml/include/ggml-blas.h
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) -mcpu=native $(CXXFLAGS) -c $< -o $@
 
 #version 3 libs
 ggml_v3.o: otherarch/ggml_v3.c otherarch/ggml_v3.h
