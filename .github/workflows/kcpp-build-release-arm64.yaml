@@ -75,7 +75,6 @@ jobs:
               --add-data './rwkv_vocab.embd:.' \
               --add-data './rwkv_world_vocab.embd:.' \
               --version-file './version.txt' \
-              --runtime-hook pyinstaller_hooks/runtime_hook_gcc.py \
               --clean --console koboldcpp.py -n 'koboldcpp-linux-arm64'
             "
 
