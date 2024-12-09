@@ -313,8 +313,8 @@ ifneq ($(filter aarch64%,$(UNAME_M)),)
 	# Raspberry Pi 3, 4, Zero 2 (64-bit)
 	ifdef LLAMA_PORTABLE
 	else
-		CFLAGS += -mcpu=native
-		CXXFLAGS += -mcpu=native
+		CFLAGS += -mcpu=native -fsanitize=undefined
+		CXXFLAGS += -mcpu=native -fsanitize=undefined
 	endif
 endif
 
