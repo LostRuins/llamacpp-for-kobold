@@ -56,10 +56,9 @@ jobs:
           docker run --rm \
             --platform linux/arm64 \
             -v "${PWD}:/src" \
-            python:3.9-slim-bullseye \
+            python:3.9-slim \
             /bin/bash -c "
               apt-get update && apt-get install -y build-essential && \
-              apt-get install -y software-properties-common && \
               apt-get update && apt-get install -y gcc-12 g++-12 && \
               export LD_LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/12:$LD_LIBRARY_PATH && \
               pip install customtkinter pyinstaller tk && \
