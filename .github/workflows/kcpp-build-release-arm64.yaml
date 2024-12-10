@@ -37,6 +37,9 @@ jobs:
           make LLAMA_PORTABLE=1
           chmod +x './create_ver_file.sh'
           . create_ver_file.sh
+          mkdir -p dist
+          cp './koboldcpp_default.so' dist
+          ls
 
       - name: Install QEMU
         run: |

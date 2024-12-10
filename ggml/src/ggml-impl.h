@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#ifdef __ARM_FEATURE_SVE
+#if defined(__ARM_FEATURE_SVE) && ! defined(LLAMA_NOSVE)
 #include <arm_sve.h>
 #endif // __ARM_FEATURE_SVE
 

@@ -312,9 +312,12 @@ ifneq ($(filter aarch64%,$(UNAME_M)),)
 	# Apple M1, M2, etc.
 	# Raspberry Pi 3, 4, Zero 2 (64-bit)
 	ifdef LLAMA_PORTABLE
+		CFLAGS +=
+		CXXFLAGS +=
 	else
-		CFLAGS += -mcpu=native
-		CXXFLAGS += -mcpu=native
+		# sve is cooked so we are disabling it
+		CFLAGS += -mcpu=native -DLLAMA_NOSVE
+		CXXFLAGS += -mcpu=native -DLLAMA_NOSVE
 	endif
 endif
 

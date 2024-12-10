@@ -741,7 +741,7 @@ void ggml_gemv_q4_0_8x8_q8_0(int n, float * restrict s, size_t bs, const void * 
     UNUSED(blocklen);
 
 #if ! ((defined(_MSC_VER)) && ! defined(__clang__)) && defined(__aarch64__)
-#if defined(__ARM_FEATURE_SVE)
+#if defined(__ARM_FEATURE_SVE) && ! defined(LLAMA_NOSVE)
     if (ggml_cpu_has_sve() && ggml_cpu_get_sve_cnt() == QK8_0) {
         const void * b_ptr = vx;
         const void * a_ptr = vy;
@@ -2081,7 +2081,7 @@ void ggml_gemm_q4_0_8x8_q8_0(int n, float * restrict s, size_t bs, const void * 
     UNUSED(blocklen);
 
 #if ! ((defined(_MSC_VER)) && ! defined(__clang__)) && defined(__aarch64__)
-#if defined(__ARM_FEATURE_SVE) && defined(__ARM_FEATURE_MATMUL_INT8)
+#if defined(__ARM_FEATURE_SVE) && defined(__ARM_FEATURE_MATMUL_INT8) && ! defined(LLAMA_NOSVE)
     if (ggml_cpu_has_sve() && ggml_cpu_has_matmul_int8() && ggml_cpu_get_sve_cnt() == QK8_0) {
         const void * b_ptr = vx;
         const void * a_ptr = vy;

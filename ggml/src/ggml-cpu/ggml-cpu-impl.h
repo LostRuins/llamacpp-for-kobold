@@ -59,7 +59,7 @@ struct ggml_compute_params {
 #endif
 #endif
 
-#if defined(__ARM_FEATURE_SVE)
+#if defined(__ARM_FEATURE_SVE) && ! defined(LLAMA_NOSVE)
 #include <arm_sve.h>
 #include <sys/prctl.h>
 #endif
