@@ -104,6 +104,7 @@ extern "C" {
         LLAMA_VOCAB_PRE_TYPE_GPT3_FINNISH   = 24,
         LLAMA_VOCAB_PRE_TYPE_EXAONE         = 25,
         LLAMA_VOCAB_PRE_TYPE_CHAMELEON      = 26,
+        LLAMA_VOCAB_PRE_TYPE_MINERVA        = 27,
     };
 
     enum llama_rope_type {
@@ -185,7 +186,8 @@ extern "C" {
         LLAMA_ROPE_SCALING_TYPE_NONE        = 0,
         LLAMA_ROPE_SCALING_TYPE_LINEAR      = 1,
         LLAMA_ROPE_SCALING_TYPE_YARN        = 2,
-        LLAMA_ROPE_SCALING_TYPE_MAX_VALUE   = LLAMA_ROPE_SCALING_TYPE_YARN,
+        LLAMA_ROPE_SCALING_TYPE_LONGROPE    = 3,
+        LLAMA_ROPE_SCALING_TYPE_MAX_VALUE   = LLAMA_ROPE_SCALING_TYPE_LONGROPE,
     };
 
     enum llama_pooling_type {
@@ -991,6 +993,9 @@ extern "C" {
                                   bool   add_ass,
                                   char * buf,
                                int32_t   length);
+
+    // Get list of built-in chat templates
+    LLAMA_API int32_t llama_chat_builtin_templates(const char ** output, size_t len);
 
     //
     // Sampling API
