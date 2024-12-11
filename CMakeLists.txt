@@ -434,11 +434,11 @@ add_library(ggml
             ggml/src/ggml-quants.h
             ggml/src/ggml-cpu/llamafile/sgemm.cpp
             ggml/src/ggml-cpu/llamafile/sgemm.h
-            ggml/src/ggml-aarch64.c
-            ggml/src/ggml-aarch64.h
+            ggml/src/ggml-cpu/ggml-cpu-traits.cpp
+            ggml/src/ggml-cpu/ggml-cpu-traits.h
             ggml/src/ggml-threading.cpp
             ggml/src/ggml-cpu/ggml-cpu.cpp
-            ggml/src/ggml-cpu/ggml-cpu-aarch64.c
+            ggml/src/ggml-cpu/ggml-cpu-aarch64.cpp
             ggml/src/ggml-cpu/ggml-cpu-aarch64.h
             ggml/src/ggml-cpu/ggml-cpu-quants.c
             ggml/src/ggml-cpu/ggml-cpu-quants.h

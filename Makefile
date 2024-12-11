@@ -92,9 +92,9 @@ endif
 CUBLASLD_FLAGS =
 CUBLAS_OBJS =
 
-OBJS_FULL += ggml-alloc.o ggml-aarch64.o ggml-quants.o ggml-cpu-quants.o ggml-cpu-aarch64.o unicode.o unicode-data.o ggml-threading.o ggml-cpu-cpp.o sgemm.o common.o sampling.o
-OBJS_SIMPLE += ggml-alloc.o ggml-aarch64.o ggml-quants_noavx2.o ggml-cpu-quants_noavx2.o ggml-cpu-aarch64_noavx2.o unicode.o unicode-data.o ggml-threading.o ggml-cpu-cpp.o sgemm_noavx2.o common.o sampling.o
-OBJS_FAILSAFE += ggml-alloc.o ggml-aarch64.o ggml-quants_failsafe.o ggml-cpu-quants_failsafe.o ggml-cpu-aarch64_failsafe.o unicode.o unicode-data.o ggml-threading.o ggml-cpu-cpp.o sgemm_failsafe.o common.o sampling.o
+OBJS_FULL += ggml-alloc.o ggml-cpu-traits.o ggml-quants.o ggml-cpu-quants.o ggml-cpu-aarch64.o unicode.o unicode-data.o ggml-threading.o ggml-cpu-cpp.o sgemm.o common.o sampling.o
+OBJS_SIMPLE += ggml-alloc.o ggml-cpu-traits.o ggml-quants_noavx2.o ggml-cpu-quants_noavx2.o ggml-cpu-aarch64_noavx2.o unicode.o unicode-data.o ggml-threading.o ggml-cpu-cpp.o sgemm_noavx2.o common.o sampling.o
+OBJS_FAILSAFE += ggml-alloc.o ggml-cpu-traits.o ggml-quants_failsafe.o ggml-cpu-quants_failsafe.o ggml-cpu-aarch64_failsafe.o unicode.o unicode-data.o ggml-threading.o ggml-cpu-cpp.o sgemm_failsafe.o common.o sampling.o
 
 # OS specific
 # TODO: support Windows
@@ -488,12 +488,12 @@ ggml-cpu-quants_failsafe.o: ggml/src/ggml-cpu/ggml-cpu-quants.c ggml/include/ggm
 	$(CC)  $(CFLAGS) $(NONECFLAGS) -c $< -o $@
 
 #aarch64
-ggml-cpu-aarch64.o: ggml/src/ggml-cpu/ggml-cpu-aarch64.c ggml/include/ggml.h ggml/src/ggml-cpu/ggml-cpu-aarch64.h
-	$(CC)  $(CFLAGS) $(FULLCFLAGS) -c $< -o $@
-ggml-cpu-aarch64_noavx2.o: ggml/src/ggml-cpu/ggml-cpu-aarch64.c ggml/include/ggml.h ggml/src/ggml-cpu/ggml-cpu-aarch64.h
-	$(CC)  $(CFLAGS) $(SIMPLECFLAGS) -c $< -o $@
-ggml-cpu-aarch64_failsafe.o: ggml/src/ggml-cpu/ggml-cpu-aarch64.c ggml/include/ggml.h ggml/src/ggml-cpu/ggml-cpu-aarch64.h
-	$(CC)  $(CFLAGS) $(NONECFLAGS) -c $< -o $@
+ggml-cpu-aarch64.o: ggml/src/ggml-cpu/ggml-cpu-aarch64.cpp ggml/include/ggml.h ggml/src/ggml-cpu/ggml-cpu-aarch64.h
+	$(CXX) $(CXXFLAGS) $(FULLCFLAGS) -c $< -o $@
+ggml-cpu-aarch64_noavx2.o: ggml/src/ggml-cpu/ggml-cpu-aarch64.cpp ggml/include/ggml.h ggml/src/ggml-cpu/ggml-cpu-aarch64.h
+	$(CXX) $(CXXFLAGS) $(SIMPLECFLAGS) -c $< -o $@
+ggml-cpu-aarch64_failsafe.o: ggml/src/ggml-cpu/ggml-cpu-aarch64.cpp ggml/include/ggml.h ggml/src/ggml-cpu/ggml-cpu-aarch64.h
+	$(CXX) $(CXXFLAGS) $(NONECFLAGS) -c $< -o $@
 
 #sgemm
 sgemm.o: ggml/src/ggml-cpu/llamafile/sgemm.cpp ggml/src/ggml-cpu/llamafile/sgemm.h ggml/include/ggml.h
@@ -512,8 +512,8 @@ unicode.o: src/unicode.cpp src/unicode.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 unicode-data.o: src/unicode-data.cpp src/unicode-data.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
-ggml-aarch64.o: ggml/src/ggml-aarch64.c ggml/include/ggml.h ggml/src/ggml-aarch64.h ggml/src/ggml-common.h
-	$(CC)  $(CFLAGS) -c $< -o $@
+ggml-cpu-traits.o: ggml/src/ggml-cpu/ggml-cpu-traits.cpp ggml/src/ggml-cpu/ggml-cpu-traits.h ggml/include/ggml.h
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 ggml-threading.o: ggml/src/ggml-threading.cpp ggml/include/ggml.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 ggml-cpu-cpp.o: ggml/src/ggml-cpu/ggml-cpu.cpp ggml/include/ggml.h ggml/src/ggml-common.h
