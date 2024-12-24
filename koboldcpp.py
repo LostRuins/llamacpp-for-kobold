@@ -4667,6 +4667,16 @@ def main(launch_args,start_server=True):
                     "tools_start": "\n\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n\n<tools>\n", # Qwen 2.5 -- if ambiguous & worth it, use this string to ID/split out
                     "tools_end": "\n</tools>\n\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\n<tool_call>\n{\"name\": <function-name>, \"arguments\": <args-json-object>}\n</tool_call><|im_end|>\n",
                 }
+            elif "System role not supported" in chat_template and "<start_of_turn>" in chat_template:
+                print("Chat completion heuristic: Google Gemma 2.")
+                # Google Gemma 2
+                chatcompl_adapter = {
+                    "user_start": "<start_of_turn>user\n",
+                    "user_end": "<end_of_turn>\n",
+                    "assistant_start": "<start_of_turn>model\n",
+                    "assistant_end": "<end_of_turn>\n",
+                }
+
 
     #handle loading image model
     if args.sdmodel and args.sdmodel!="":
