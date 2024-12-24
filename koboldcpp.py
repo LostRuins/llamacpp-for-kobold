@@ -4709,6 +4709,8 @@ def main(launch_args,start_server=True):
             elif "[/INST]" in chat_template:
                 print("Chat completion heuristic: Mistral (Generic)")
                 chatcompl_adapter = {
+                    "system_start": "[INST]",
+                    "system_end": "[/INST]\n",
                     "user_start": "[INST]",
                     "user_end": "[/INST]\n",
                     "assistant_start": "",
