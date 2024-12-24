@@ -4657,7 +4657,6 @@ def main(launch_args,start_server=True):
             if "<|im_start|>assistant" in chat_template and "<|im_end|>" in chat_template:
                 if "<|im_sep|>" in chat_template:
                     print("Chat completion heuristic: ChatML (Phi 4)")
-                    # Phi 4 ChatML
                     chatcompl_adapter = {
                         "system_start": "<|im_start|>system<|im_sep|>",
                         "system_end": "<|im_end|>",
@@ -4668,7 +4667,6 @@ def main(launch_args,start_server=True):
                     }
                 elif "You are provided with function signatures within <tools>" in chat_template:
                     print("Chat completion heuristic: ChatML (Qwen 2.5 based).")
-                    # Qwen 2.5 ChatML
                     chatcompl_adapter = {
                         "system_start": "<|im_start|>system\n\n",
                         "system_end": "<|im_end|>\n\n",
@@ -4692,7 +4690,6 @@ def main(launch_args,start_server=True):
 
             elif "System role not supported" in chat_template and "<start_of_turn>" in chat_template:
                 print("Chat completion heuristic: Google Gemma 2.")
-                # Google Gemma 2
                 chatcompl_adapter = {
                     "user_start": "<start_of_turn>user\n",
                     "user_end": "<end_of_turn>\n",
@@ -4700,7 +4697,6 @@ def main(launch_args,start_server=True):
                     "assistant_end": "<end_of_turn>\n",
                 }
             elif "<|start_header_id|>system" in chat_template:
-                # Llama 3.x
                 print("Chat completion heuristic: Llama 3.x.")
                 chatcompl_adapter = {
                     "system_start": "<|start_header_id|>system<|end_header_id|>\n\n",
