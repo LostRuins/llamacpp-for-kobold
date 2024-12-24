@@ -4656,7 +4656,7 @@ def main(launch_args,start_server=True):
             # "Better than nothing" simple heuristics
             if "<|im_start|>assistant" in chat_template and "<|im_end|>" in chat_template:
                 if "<|im_sep|>" in chat_template:
-                    print("Chat completion heuristic: Phi 4")
+                    print("Chat completion heuristic: ChatML (Phi 4)")
                     # Phi 4 ChatML
                     chatcompl_adapter = {
                         "system_start": "<|im_start|>system<|im_sep|>",
@@ -4666,7 +4666,7 @@ def main(launch_args,start_server=True):
                         "assistant_start": "<|im_start|>assistant<|im_sep|>",
                         "assistant_end": "<|im_end|>",
                     }
-                else:
+                elif "You are provided with function signatures within <tools>" in chat_template:
                     print("Chat completion heuristic: ChatML (Qwen 2.5 based).")
                     # Qwen 2.5 ChatML
                     chatcompl_adapter = {
@@ -4679,6 +4679,17 @@ def main(launch_args,start_server=True):
                         "tools_start": "\n\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n\n<tools>\n", # Qwen 2.5 -- if ambiguous & worth it, use this string to ID/split out
                         "tools_end": "\n</tools>\n\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\n<tool_call>\n{\"name\": <function-name>, \"arguments\": <args-json-object>}\n</tool_call><|im_end|>\n",
                     }
+                else:
+                    print("Chat completion heuristic: ChatML (Generic).")
+                    chatcompl_adapter = {
+                        "system_start": "<|im_start|>system\n\n",
+                        "system_end": "<|im_end|>\n\n",
+                        "user_start": "<|im_start|>user\n\n",
+                        "user_end": "<|im_end|>\n\n",
+                        "assistant_start": "<|im_start|>assistant\n\n",
+                        "assistant_end": "<|im_end|>\n\n",
+                    }
+
             elif "System role not supported" in chat_template and "<start_of_turn>" in chat_template:
                 print("Chat completion heuristic: Google Gemma 2.")
                 # Google Gemma 2
