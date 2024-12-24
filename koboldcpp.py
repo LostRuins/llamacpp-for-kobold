@@ -4655,18 +4655,30 @@ def main(launch_args,start_server=True):
         if chat_template != "":
             # "Better than nothing" simple heuristics
             if "<|im_start|>assistant" in chat_template and "<|im_end|>" in chat_template:
-                print("Chat completion heuristic: ChatML (Qwen 2.5 based).")
-                # ChatML
-                chatcompl_adapter = {
-                    "system_start": "<|im_start|>system\n\n",
-                    "system_end": "<|im_end|>\n\n",
-                    "user_start": "<|im_start|>user\n\n",
-                    "user_end": "<|im_end|>\n\n",
-                    "assistant_start": "<|im_start|>assistant\n\n",
-                    "assistant_end": "<|im_end|>\n\n",
-                    "tools_start": "\n\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n\n<tools>\n", # Qwen 2.5 -- if ambiguous & worth it, use this string to ID/split out
-                    "tools_end": "\n</tools>\n\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\n<tool_call>\n{\"name\": <function-name>, \"arguments\": <args-json-object>}\n</tool_call><|im_end|>\n",
-                }
+                if "<|im_sep|>" in chat_template:
+                    print("Chat completion heuristic: Phi 4")
+                    # Phi 4 ChatML
+                    chatcompl_adapter = {
+                        "system_start": "<|im_start|>system<|im_sep|>",
+                        "system_end": "<|im_end|>",
+                        "user_start": "<|im_start|>user<|im_sep|>",
+                        "user_end": "<|im_end|>",
+                        "assistant_start": "<|im_start|>assistant<|im_sep|>",
+                        "assistant_end": "<|im_end|>",
+                    }
+                else:
+                    print("Chat completion heuristic: ChatML (Qwen 2.5 based).")
+                    # Qwen 2.5 ChatML
+                    chatcompl_adapter = {
+                        "system_start": "<|im_start|>system\n\n",
+                        "system_end": "<|im_end|>\n\n",
+                        "user_start": "<|im_start|>user\n\n",
+                        "user_end": "<|im_end|>\n\n",
+                        "assistant_start": "<|im_start|>assistant\n\n",
+                        "assistant_end": "<|im_end|>\n\n",
+                        "tools_start": "\n\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n\n<tools>\n", # Qwen 2.5 -- if ambiguous & worth it, use this string to ID/split out
+                        "tools_end": "\n</tools>\n\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\n<tool_call>\n{\"name\": <function-name>, \"arguments\": <args-json-object>}\n</tool_call><|im_end|>\n",
+                    }
             elif "System role not supported" in chat_template and "<start_of_turn>" in chat_template:
                 print("Chat completion heuristic: Google Gemma 2.")
                 # Google Gemma 2
@@ -4676,6 +4688,18 @@ def main(launch_args,start_server=True):
                     "assistant_start": "<start_of_turn>model\n",
                     "assistant_end": "<end_of_turn>\n",
                 }
+            elif "<|start_header_id|>system" in chat_template:
+                # Llama 3.x
+                print("Chat completion heuristic: Llama 3.x.")
+                chatcompl_adapter = {
+                    "system_start": "<|start_header_id|>system<|end_header_id|>\n\n",
+                    "system_end": "<|eot_id|>\n\n",
+                    "user_start": "<|start_header_id|>user<|end_header_id|>\n\n",
+                    "user_end": "<|eot_id|>\n\n",
+                    "assistant_start": "<|start_header_id|>assistant<|end_header_id|>\n\n",
+                    "assistant_end": "<|eot_id|>\n\n",
+                }
+
 
 
     #handle loading image model
