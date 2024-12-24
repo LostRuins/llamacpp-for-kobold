@@ -4496,6 +4496,14 @@ def main(launch_args,start_server=True):
     # sanitize and replace the default vanity name. remember me....
     if args.model_param and args.model_param!="":
         newmdldisplayname = os.path.basename(args.model_param)
+        if (
+            len(newmdldisplayname) < 25
+            and args.model_param.count("/") > 1
+            and newmdldisplayname.startswith("ggml-model-")
+            and newmdldisplayname.endswith(".gguf")
+        ):
+            # use the last path as model name, and stack on the quant info
+            newmdldisplayname = args.model_param.rsplit("/", 2)[1] + newmdldisplayname[10:]
         newmdldisplayname = os.path.splitext(newmdldisplayname)[0]
         friendlymodelname = "koboldcpp/" + sanitize_string(newmdldisplayname)
 
