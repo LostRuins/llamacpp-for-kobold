@@ -4648,6 +4648,26 @@ def main(launch_args,start_server=True):
             exitcounter = 999
             exit_with_error(3,"Could not load text model: " + modelname)
 
+    if chatcompl_adapter is None:
+        # Try to derive chat completions adapter from chat template, now that we have the model loaded
+        ctbytes = handle.get_chat_template()
+        chat_template = ctypes.string_at(ctbytes).decode("UTF-8","ignore")
+        if chat_template != "":
+            # "Better than nothing" simple heuristics
+            if "<|im_start|>assistant" in chat_template and "<|im_end|>" in chat_template:
+                print("Chat completion heuristic: ChatML (Qwen 2.5 based).")
+                # ChatML
+                chatcompl_adapter = {
+                    "system_start": "<|im_start|>system\n\n",
+                    "system_end": "<|im_end|>\n\n",
+                    "user_start": "<|im_start|>user\n\n",
+                    "user_end": "<|im_end|>\n\n",
+                    "assistant_start": "<|im_start|>assistant\n\n",
+                    "assistant_end": "<|im_end|>\n\n",
+                    "tools_start": "\n\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n\n<tools>\n", # Qwen 2.5 -- if ambiguous & worth it, use this string to ID/split out
+                    "tools_end": "\n</tools>\n\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\n<tool_call>\n{\"name\": <function-name>, \"arguments\": <args-json-object>}\n</tool_call><|im_end|>\n",
+                }
+
     #handle loading image model
     if args.sdmodel and args.sdmodel!="":
         imgmodel = args.sdmodel
