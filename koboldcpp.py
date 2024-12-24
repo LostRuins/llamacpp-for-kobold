@@ -4706,7 +4706,14 @@ def main(launch_args,start_server=True):
                     "assistant_start": "<|start_header_id|>assistant<|end_header_id|>\n\n",
                     "assistant_end": "<|eot_id|>\n\n",
                 }
-
+            elif "[/INST]" in chat_template:
+                print("Chat completion heuristic: Mistral (Generic)")
+                chatcompl_adapter = {
+                    "user_start": "[INST]",
+                    "user_end": "[/INST]\n",
+                    "assistant_start": "",
+                    "assistant_end": "</s>",
+                }
 
 
     #handle loading image model
