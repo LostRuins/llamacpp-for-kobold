@@ -4707,15 +4707,26 @@ def main(launch_args,start_server=True):
                     "assistant_end": "<|eot_id|>\n\n",
                 }
             elif "[/INST]" in chat_template:
-                print("Chat completion heuristic: Mistral (Generic)")
-                chatcompl_adapter = {
-                    "system_start": "[INST]",
-                    "system_end": "[/INST]\n",
-                    "user_start": "[INST]",
-                    "user_end": "[/INST]\n",
-                    "assistant_start": "",
-                    "assistant_end": "</s>",
-                }
+                if "\"[INST] \" + system_message" in chat_template:
+                    print("Chat completion heuristic: Mistral V3")
+                    chatcompl_adapter = {
+                        "system_start": "[INST] ",
+                        "system_end": "[/INST] ",
+                        "user_start": "[INST] ",
+                        "user_end": "[/INST] ",
+                        "assistant_start": "",
+                        "assistant_end": "</s>",
+                    }
+                else:
+                    print("Chat completion heuristic: Mistral (Generic)")
+                    chatcompl_adapter = {
+                        "system_start": "[INST]",
+                        "system_end": "[/INST]\n",
+                        "user_start": "[INST]",
+                        "user_end": "[/INST]\n",
+                        "assistant_start": "",
+                        "assistant_end": "</s>",
+                    }
             elif "<|system|>" in chat_template and "<|user|>" in chat_template:
                 print("Chat completion heuristic: Phi 3.5")
                 chatcompl_adapter = {
