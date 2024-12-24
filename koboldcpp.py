@@ -4716,6 +4716,16 @@ def main(launch_args,start_server=True):
                     "assistant_start": "",
                     "assistant_end": "</s>",
                 }
+            elif "<|system|>" in chat_template and "<|user|>" in chat_template:
+                print("Chat completion heuristic: Phi 3.5")
+                chatcompl_adapter = {
+                    "system_start": "<|system|>\n",
+                    "system_end": "<|end|>\n",
+                    "user_start": "<|user|>\n",
+                    "user_end": "<|end|>\n",
+                    "assistant_start": "<|assistant|>\n",
+                    "assistant_end": "<|end|>\n",
+                }
 
 
     #handle loading image model
