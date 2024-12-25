@@ -629,14 +629,14 @@ struct kcpp_embd_batch { //duplcated from llava_embd_batch
 };
 
 //loads a model for speculative decoding.
-static void speculative_decoding_setup(std::string spec_model_filename, const llama_model_params & base_model_params, const llama_context_params & base_ctx_params, int base_n_vocab, const float * draft_gpusplit, int draftgpulayers)
+static void speculative_decoding_setup(std::string spec_model_filename, const llama_model_params & base_model_params, const llama_context_params & base_ctx_params, int base_n_vocab, const float * draft_gpusplit, int draft_gpulayers)
 {
     llama_model_params draft_model_params = llama_model_default_params();
     llama_context_params draft_ctx_params = llama_context_default_params();
 
     draft_model_params.use_mmap = base_model_params.use_mmap;
     draft_model_params.use_mlock = base_model_params.use_mlock;
-    draft_model_params.n_gpu_layers = draftgpulayers; //layers offload the speculative model.
+    draft_model_params.n_gpu_layers = draft_gpulayers; //layers offload the speculative model.
     draft_ctx_params.n_ctx = base_ctx_params.n_ctx;
     draft_ctx_params.logits_all = false;
     draft_ctx_params.offload_kqv = base_ctx_params.offload_kqv;
