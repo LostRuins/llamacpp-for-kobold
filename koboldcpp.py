@@ -4413,7 +4413,7 @@ def main(launch_args,start_server=True):
             print("Warning: Saved story file invalid or not found. No story will be preloaded into server.")
 
     # try to read chat completions adapter
-    if args.chatcompletionsadapter and "autoguess" not in args.chatcompletionsadapter.lower():
+    if args.chatcompletionsadapter:
         global chatcompl_adapter
         ccadapter_path = None
         canload = False
@@ -4649,118 +4649,21 @@ def main(launch_args,start_server=True):
             exit_with_error(3,"Could not load text model: " + modelname)
 
     if (
-        chatcompl_adapter is None
-        and args.chatcompletionsadapter
-        and "autoguess" in args.chatcompletionsadapter.lower()
+        chatcompl_adapter is not None
+        and isinstance(chatcompl_adapter, list)
     ):
+        # The chat completions adapter is a list that needs derivation from chat templates
         # Try to derive chat completions adapter from chat template, now that we have the model loaded
         ctbytes = handle.get_chat_template()
         chat_template = ctypes.string_at(ctbytes).decode("UTF-8","ignore")
+        candidates = chatcompl_adapter
+        chatcompl_adapter = None
         if chat_template != "":
-            # "Better than nothing" simple heuristics
-            if "<|im_start|>assistant" in chat_template and "<|im_end|>" in chat_template:
-                if "<|im_sep|>" in chat_template:
-                    print("Chat completion heuristic: ChatML (Phi 4)")
-                    chatcompl_adapter = {
-                        "system_start": "<|im_start|>system<|im_sep|>",
-                        "system_end": "<|im_end|>",
-                        "user_start": "<|im_start|>user<|im_sep|>",
-                        "user_end": "<|im_end|>",
-                        "assistant_start": "<|im_start|>assistant<|im_sep|>",
-                        "assistant_end": "<|im_end|>",
-                    }
-                elif "You are provided with function signatures within <tools>" in chat_template:
-                    print("Chat completion heuristic: ChatML (Qwen 2.5 based).")
-                    chatcompl_adapter = {
-                        "system_start": "<|im_start|>system\n\n",
-                        "system_end": "<|im_end|>\n\n",
-                        "user_start": "<|im_start|>user\n\n",
-                        "user_end": "<|im_end|>\n\n",
-                        "assistant_start": "<|im_start|>assistant\n\n",
-                        "assistant_end": "<|im_end|>\n\n",
-                        "tools_start": "\n\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n\n<tools>\n", # Qwen 2.5 -- if ambiguous & worth it, use this string to ID/split out
-                        "tools_end": "\n</tools>\n\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\n<tool_call>\n{\"name\": <function-name>, \"arguments\": <args-json-object>}\n</tool_call><|im_end|>\n",
-                    }
-                else:
-                    print("Chat completion heuristic: ChatML (Generic).")
-                    chatcompl_adapter = {
-                        "system_start": "<|im_start|>system\n\n",
-                        "system_end": "<|im_end|>\n\n",
-                        "user_start": "<|im_start|>user\n\n",
-                        "user_end": "<|im_end|>\n\n",
-                        "assistant_start": "<|im_start|>assistant\n\n",
-                        "assistant_end": "<|im_end|>\n\n",
-                    }
-
-            elif "System role not supported" in chat_template and "<start_of_turn>" in chat_template:
-                print("Chat completion heuristic: Google Gemma 2.")
-                chatcompl_adapter = {
-                    "user_start": "<start_of_turn>user\n",
-                    "user_end": "<end_of_turn>\n",
-                    "assistant_start": "<start_of_turn>model\n",
-                    "assistant_end": "<end_of_turn>\n",
-                }
-            elif "<|start_header_id|>system" in chat_template:
-                print("Chat completion heuristic: Llama 3.x.")
-                chatcompl_adapter = {
-                    "system_start": "<|start_header_id|>system<|end_header_id|>\n\n",
-                    "system_end": "<|eot_id|>\n\n",
-                    "user_start": "<|start_header_id|>user<|end_header_id|>\n\n",
-                    "user_end": "<|eot_id|>\n\n",
-                    "assistant_start": "<|start_header_id|>assistant<|end_header_id|>\n\n",
-                    "assistant_end": "<|eot_id|>\n\n",
-                }
-            elif "[/INST]" in chat_template:
-                if "[SYSTEM_PROMPT]" in chat_template:
-                    print("Chat completion heuristic: Mistral V7 (with system prompt)")
-                    chatcompl_adapter = {
-                        "system_start": "[SYSTEM_PROMPT] ",
-                        "system_end": "[/SYSTEM_PROMPT]",
-                        "user_start": "[INST] ",
-                        "user_end": "[/INST]",
-                        "assistant_start": " ",
-                        "assistant_end": "</s>",
-                    }
-                elif "\"[INST] \" + system_message" in chat_template:
-                    print("Chat completion heuristic: Mistral V3")
-                    chatcompl_adapter = {
-                        "system_start": "[INST] ",
-                        "system_end": "[/INST] ",
-                        "user_start": "[INST] ",
-                        "user_end": "[/INST] ",
-                        "assistant_start": "",
-                        "assistant_end": "</s>",
-                    }
-                else:
-                    print("Chat completion heuristic: Mistral (Generic)")
-                    chatcompl_adapter = {
-                        "system_start": "[INST]",
-                        "system_end": "[/INST]\n",
-                        "user_start": "[INST]",
-                        "user_end": "[/INST]\n",
-                        "assistant_start": "",
-                        "assistant_end": "</s>",
-                    }
-            elif "<|system|>" in chat_template and "<|user|>" in chat_template:
-                print("Chat completion heuristic: Phi 3.5")
-                chatcompl_adapter = {
-                    "system_start": "<|system|>\n",
-                    "system_end": "<|end|>\n",
-                    "user_start": "<|user|>\n",
-                    "user_end": "<|end|>\n",
-                    "assistant_start": "<|assistant|>\n",
-                    "assistant_end": "<|end|>\n",
-                }
-            elif "<|START_OF_TURN_TOKEN|>" in chat_template:
-                print("Chat completion heuristic: Cohere (Aya Expanse 32B based)")
-                chatcompl_adapter = {
-                    "system_start": "<|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|>",
-                    "system_end": "<|END_OF_TURN_TOKEN|>",
-                    "user_start": "<|START_OF_TURN_TOKEN|><|USER_TOKEN|>",
-                    "user_end": "<|END_OF_TURN_TOKEN|>",
-                    "assistant_start": "<|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>",
-                    "assistant_end": "<|END_OF_TURN_TOKEN|>",
-                }
+            for entry in candidates:
+                if all(s in chat_template for s in entry['search']):
+                    print(f"Chat completion heuristic: {entry['name']}")
+                    chatcompl_adapter = entry['adapter']
+                    break
         if chatcompl_adapter is None:
             print("Chat template heuristics failed to identify chat completions format. Alpaca will be used.")
 
