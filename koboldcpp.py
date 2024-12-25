@@ -4502,8 +4502,11 @@ def main(launch_args,start_server=True):
             and newmdldisplayname.startswith("ggml-model-")
             and newmdldisplayname.endswith(".gguf")
         ):
-            # use the last path as model name, and stack on the quant info
-            newmdldisplayname = args.model_param.rsplit("/", 2)[1] + newmdldisplayname[10:]
+            # if there are .safetensors files in the same dir, we can safely assume this is a model dir
+            # and the last path component is the model name
+            if any(p.endswith(".safetensors") for p in os.listdir(os.path.dirname(args.model_param))):
+                # use the last path as model name, and stack on the quant info
+                newmdldisplayname = args.model_param.rsplit("/", 2)[1] + newmdldisplayname[10:]
         newmdldisplayname = os.path.splitext(newmdldisplayname)[0]
         friendlymodelname = "koboldcpp/" + sanitize_string(newmdldisplayname)
 
