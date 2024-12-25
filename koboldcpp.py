@@ -4737,6 +4737,17 @@ def main(launch_args,start_server=True):
                     "assistant_start": "<|assistant|>\n",
                     "assistant_end": "<|end|>\n",
                 }
+            elif "<|START_OF_TURN_TOKEN|>" in chat_template:
+                print("Chat completion heuristic: Cohere (Aya Expanse 32B based)")
+                chatcompl_adapter = {
+                    "system_start": "<|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|>",
+                    "system_end": "<|END_OF_TURN_TOKEN|>",
+                    "user_start": "<|START_OF_TURN_TOKEN|><|USER_TOKEN|>",
+                    "user_end": "<|END_OF_TURN_TOKEN|>",
+                    "assistant_start": "<|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>",
+                    "assistant_end": "<|END_OF_TURN_TOKEN|>",
+                }
+
 
 
     #handle loading image model
