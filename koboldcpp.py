@@ -4413,7 +4413,7 @@ def main(launch_args,start_server=True):
             print("Warning: Saved story file invalid or not found. No story will be preloaded into server.")
 
     # try to read chat completions adapter
-    if args.chatcompletionsadapter:
+    if args.chatcompletionsadapter and "autoguess" not in args.chatcompletionsadapter.lower():
         global chatcompl_adapter
         ccadapter_path = None
         canload = False
@@ -4648,7 +4648,11 @@ def main(launch_args,start_server=True):
             exitcounter = 999
             exit_with_error(3,"Could not load text model: " + modelname)
 
-    if chatcompl_adapter is None:
+    if (
+        chatcompl_adapter is None
+        and args.chatcompletionsadapter
+        and "autoguess" in args.chatcompletionsadapter.lower()
+    ):
         # Try to derive chat completions adapter from chat template, now that we have the model loaded
         ctbytes = handle.get_chat_template()
         chat_template = ctypes.string_at(ctbytes).decode("UTF-8","ignore")
