@@ -4711,7 +4711,17 @@ def main(launch_args,start_server=True):
                     "assistant_end": "<|eot_id|>\n\n",
                 }
             elif "[/INST]" in chat_template:
-                if "\"[INST] \" + system_message" in chat_template:
+                if "[SYSTEM_PROMPT]" in chat_template:
+                    print("Chat completion heuristic: Mistral V7 (with system prompt)")
+                    chatcompl_adapter = {
+                        "system_start": "[SYSTEM_PROMPT] ",
+                        "system_end": "[/SYSTEM_PROMPT]",
+                        "user_start": "[INST] ",
+                        "user_end": "[/INST]",
+                        "assistant_start": " ",
+                        "assistant_end": "</s>",
+                    }
+                elif "\"[INST] \" + system_message" in chat_template:
                     print("Chat completion heuristic: Mistral V3")
                     chatcompl_adapter = {
                         "system_start": "[INST] ",
