@@ -4751,7 +4751,11 @@ def main(launch_args,start_server=True):
                     "assistant_start": "<|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>",
                     "assistant_end": "<|END_OF_TURN_TOKEN|>",
                 }
+        if chatcompl_adapter is None:
+            print("Chat template heuristics failed to identify chat completions format. Alpaca will be used.")
 
+    if chatcompl_adapter is None and not args.chatcompletionsadapter:
+        print("Note: Alpaca format will be used for OpenAI Compatible API chat completions. Use --chatcompletionsadapter=AutoGuess to use chat template heuristics.")
 
 
     #handle loading image model
