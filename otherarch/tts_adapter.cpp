@@ -15,6 +15,8 @@
 #include <thread>
 #include <vector>
 
+#include "corecrt_math_defines.h"
+
 #include "src/llama-context.h"
 
 #if defined(_MSC_VER)
