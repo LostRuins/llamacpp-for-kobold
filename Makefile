@@ -319,7 +319,9 @@ ggml-metal.o: ggml/src/ggml-metal/ggml-metal.m ggml/src/ggml-metal/ggml-metal-im
 	$(CC) $(CFLAGS) -c $< -o $@
 endif # LLAMA_METAL
 
-ifneq ($(filter aarch64%,$(UNAME_M)),)
+DUMMY= # end recipe and reset indentation
+
+ifneq ($(filter arm64%aarch64%,$(UNAME_M)),)
 	# Apple M1, M2, etc.
 	# Raspberry Pi 3, 4, Zero 2 (64-bit)
 	ifdef LLAMA_PORTABLE
