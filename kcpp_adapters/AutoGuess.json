@@ -109,5 +109,16 @@
         "assistant_start": "<|START_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>",
         "assistant_end": "<|END_OF_TURN_TOKEN|>"
     }
+}, {
+    "search": ["<｜User｜>"],
+    "name": "DeepSeek V2.5",
+    "adapter": {
+        "system_start": "",
+        "system_end": "",
+        "user_start": "<｜User｜>",
+        "user_end": "",
+        "assistant_start": "<｜Assistant｜>",
+        "assistant_end": "<｜end▁of▁sentence｜>"
+    }
 }
 ]
