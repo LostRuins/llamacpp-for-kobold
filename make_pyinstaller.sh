@@ -7,6 +7,7 @@ pyinstaller --noconfirm --onefile --clean --console --collect-all customtkinter 
 --add-data "./klite.embd:." \
 --add-data "./kcpp_docs.embd:." \
 --add-data "./kcpp_sdui.embd:." \
+--add-data "./kcpp_control.html:." \
 --add-data "./taesd.embd:." \
 --add-data "./taesd_xl.embd:." \
 --add-data "./taesd_f.embd:." \
