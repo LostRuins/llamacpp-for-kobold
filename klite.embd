@@ -19314,7 +19314,7 @@ initializeInstructUIFunctionality();
 			<div style="overflow: auto;">
 				<div id="saveloadentries" class="menutext saveloadgrid">
 				</div>
-				<div class="menutext"><p style="padding:6px;font-size: 10px;" class="color_red">Caution: Storage Slots are saved to a tempoary cache and can be deleted by your browser. To avoid losing data, use the download file button.</p></div>
+				<div class="menutext"><p style="padding:6px;font-size: 10px;" class="color_red">Caution: Storage Slots are saved to a temporary cache and can be deleted by your browser. To avoid losing data, use the download file button.</p></div>
 				<div class="popupfooter">
 					<button type="button" class="btn btn-primary" id=""
 						onclick="hide_popups()">Back</button>
