@@ -53,6 +53,7 @@ lastgeneratedcomfyimg = b''
 fullsdmodelpath = ""  #if empty, it's not initialized
 mmprojpath = "" #if empty, it's not initialized
 password = "" #if empty, no auth key required
+controlPassword = ""
 fullwhispermodelpath = "" #if empty, it's not initialized
 ttsmodelpath = "" #if empty, not initialized
 maxctx = 4096
@@ -117,6 +118,8 @@ VKDevicesNames = ["","","",""]
 VKIsDGPU = [0,0,0,0]
 MaxMemory = [0]
 MaxFreeMemory = [0]
+
+configAfterRestart = ""
 
 class logit_bias(ctypes.Structure):
     _fields_ = [("token_id", ctypes.c_int32),
@@ -608,6 +611,7 @@ def exit_with_error(code, message, title="Error"):
     else:
         print(message, flush=True)
     time.sleep(2)
+    interProcessSend(f"kill.{code}")
     sys.exit(code)
 
 def utfprint(str, importance = 2): #0 = only debugmode, 1 = except quiet, 2 = always print
@@ -1985,6 +1989,61 @@ def LaunchWebbrowser(target_url, failedmsg):
             print(failedmsg)
             print(f"Please manually open your browser to {target_url}")
 
+def getSaves():
+    import sqlite3
+    dbPath = os.path.join(configsDir, "kcpp.db")
+    with sqlite3.connect(dbPath) as con:
+        try:
+            cursor = con.cursor()
+
+            result = cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='saveData';").fetchall()
+            if result == []:
+                saveDataCreate = """CREATE TABLE IF NOT EXISTS saveData (
+                    id INTEGER PRIMARY KEY,
+                    name NVARCHAR NOT NULL,
+                    encodedSave NVARCHAR NOT NULL
+                );"""
+                cursor.execute(saveDataCreate)
+           
+            result = cursor.execute("select name, encodedSave from saveData").fetchall()
+            cursor.close()
+            
+            saves = {}
+            for save in result: 
+                saves[save[0]] = save[1]
+            return saves
+        # Handle errors
+        except sqlite3.Error as error:
+            print(f'Error occurred - {error}')
+        
+def setSave(saveName, b64Data):
+    import sqlite3
+    dbPath = os.path.join(configsDir, "kcpp.db")
+    with sqlite3.connect(dbPath) as con:
+        try:
+            cursor = con.cursor()
+            cursor.execute(f"INSERT INTO saveData(name, encodedSave) VALUES ('{saveName}', '{b64Data.decode('utf-8')}');")
+            cursor.close()
+            return True
+        # Handle errors
+        except sqlite3.Error as error:
+            print(f'Error occurred - {error}')
+            return False
+        
+def deleteSave(saveName):
+    import sqlite3
+    dbPath = os.path.join(configsDir, "kcpp.db")
+    with sqlite3.connect(dbPath) as con:
+        try:
+            cursor = con.cursor()
+            cursor.execute(f"DELETE FROM saveData WHERE name = '{saveName}';")
+            cursor.close()
+            return True
+        # Handle errors
+        except sqlite3.Error as error:
+            print(f'Error occurred - {error}')
+            return False
+
 #################################################################
 ### A hacky simple HTTP server simulating a kobold api by Concedo
 ### we are intentionally NOT using flask, because we want MINIMAL dependencies
@@ -2268,6 +2327,40 @@ class ServerRequestHandler(http.server.SimpleHTTPRequestHandler):
                     }}).encode())
                 return False
         return True
+    
+    def secure_control_endpoint(self): #returns false if auth fails. caller should exit
+        #handle password stuff
+        if controlPassword and controlPassword !="":
+            auth_header = None
+            auth_ok = False
+            if 'Authorization' in self.headers:
+                auth_header = self.headers['Authorization']
+            elif 'authorization' in self.headers:
+                auth_header = self.headers['authorization']
+            if auth_header is not None and auth_header.startswith('Bearer '):
+                token = auth_header[len('Bearer '):].strip()
+                if token==controlPassword:
+                    auth_ok = True
+            elif auth_header is not None and auth_header.startswith('Basic '):
+                try:
+                    token = auth_header[len('Basic '):]
+                    token = base64.b64decode(token).decode('utf-8').strip()
+                    token = token.split(":")[1]
+                    if token==controlPassword:
+                        auth_ok = True
+                except:
+                    auth_ok = False
+            if auth_ok is False:
+                self.send_response(401)
+                self.send_header("WWW-Authenticate", "Basic realm=\"control\"")
+                self.end_headers(content_type='application/json')
+                self.wfile.write(json.dumps({"detail": {
+                        "error": "Unauthorized",
+                        "msg": "Authentication key is missing or invalid.",
+                        "type": "unauthorized",
+                    }}).encode())
+                return False
+        return True
 
     def noscript_webui(self):
         global modelbusy, sslvalid
@@ -2521,6 +2614,75 @@ Enter Prompt:<br>
                 response_body = (json.dumps({}).encode())
             else:
                 response_body = preloaded_story
+        elif "/control/saves/get/" in self.path and self.path.index("/control/saves/get/") == 0:
+            saveToLoad = self.path[self.path.rindex("/") + 1:]
+            if not controlEnabled:
+                content_type = 'text/html'
+                response_body = ("Control API disabled").encode()
+            elif not self.secure_control_endpoint():
+                return
+            else:
+                content_type = 'application/json'
+                if configsDir is None:
+                    response_body = ("\{\}").encode()
+                else:
+                    saves = getSaves()
+                    if saveToLoad in saves:
+                        jsonArray = json.dumps(saves[saveToLoad])
+                        response_body = (jsonArray).encode()
+                    else:
+                        response_body = ("\{\}").encode()
+        elif self.path=="/control/saves":
+            if not controlEnabled:
+                content_type = 'text/html'
+                response_body = ("Control API disabled").encode()
+            elif not self.secure_control_endpoint():
+                return
+            else:
+                content_type = 'application/json'
+                if configsDir is None:
+                    response_body = ("\{\}").encode()
+                else:
+                    saves = getSaves()
+                    jsonArray = json.dumps(list(saves.keys()))
+                    response_body = (jsonArray).encode()
+        elif self.path=="/control/configs":
+            if not controlEnabled:
+                content_type = 'text/html'
+                response_body = ("Control API disabled").encode()
+            elif not self.secure_control_endpoint():
+                return
+            else:
+                content_type = 'application/json'
+                if customConfigs is None:
+                    response_body = ("[]").encode()
+                else:
+                    jsonArray = json.dumps(customConfigs)
+                    response_body = (jsonArray).encode()
+        elif self.path=="/control/configs/current":
+            if not controlEnabled:
+                content_type = 'text/html'
+                response_body = ("Control API disabled").encode()
+            elif not self.secure_control_endpoint():
+                return
+            else:
+                content_type = 'text/plain'
+                if config is None:
+                    response_body = ("").encode()
+                else:
+                    response_body = (str(os.path.basename(config[0]))).encode()
+        elif self.path=="/control":
+            if not controlEnabled:
+                content_type = 'text/html'
+                response_body = ("Control API disabled").encode()
+            elif not self.secure_control_endpoint():
+                return
+            else:
+                content_type = 'text/html'
+                if embedded_kcpp_docs is None:
+                    response_body = ("Control API disabled").encode()
+                else:
+                    response_body = embedded_kcpp_control
         elif self.path.endswith(('/api')) or self.path.endswith(('/api/v1')):
             self.path = "/api"
             self.send_response(302)
@@ -2761,6 +2923,54 @@ Enter Prompt:<br>
                     response_body = (json.dumps([]).encode())
             else:
                 response_body = (json.dumps([]).encode())
+        
+        elif "/control/saves/put/" in self.path and self.path.index("/control/saves/put/") == 0:
+            saveName = self.path[self.path.rindex("/") + 1:]
+            if not controlEnabled:
+                response_body = ("Control API disabled").encode()
+            elif not self.secure_control_endpoint():
+                return
+            else:
+                if configsDir is None:
+                    response_body = ("No config directory provided").encode()
+                else:
+                    saves = getSaves()
+                    if saveName is not None and saveName not in saves:
+                        if (setSave(saveName, body)):
+                            response_body = ("Saved to DB").encode()
+                        else:
+                            response_body = ("Error when saving to DB").encode()
+                    else:
+                        response_body = ("Save already exists or no save name provided").encode()
+        elif "/control/saves/delete/" in self.path and self.path.index("/control/saves/delete/") == 0:
+            saveName = self.path[self.path.rindex("/") + 1:]
+            if not controlEnabled:
+                response_body = ("Control API disabled").encode()
+            elif not self.secure_control_endpoint():
+                return
+            else:
+                if configsDir is None:
+                    response_body = ("No config directory provided").encode()
+                else:
+                    saves = getSaves()
+                    if saveName is not None and saveName in saves:
+                        if (deleteSave(saveName)):
+                            response_body = ("Deleted from DB").encode()
+                        else:
+                            response_body = ("Error when deleting to DB").encode()
+                    else:
+                        response_body = ("Save does not exists or no save name provided").encode()
+        elif self.path=="/control/restart":
+            if not controlEnabled:
+                response_body = ("Control API disabled").encode()
+            elif not self.secure_control_endpoint():
+                return
+            else:
+                tempbody = json.loads(body)
+                configSelected = tempbody.get('config', "")
+                if configSelected != "" and configSelected in customConfigs:
+                    interProcessSend(configSelected)
+                    exit(0)
 
         elif self.path.endswith('/set_tts_settings'): #return dummy response
             response_body = (json.dumps({"message": "Settings successfully applied"}).encode())
@@ -3041,15 +3251,18 @@ def RunServerMultiThreaded(addr, port):
                 except (KeyboardInterrupt,SystemExit):
                     exitcounter = 999
                     self.httpd.server_close()
+                    interProcessSend("kill.0")
                     sys.exit(0)
                 finally:
                     exitcounter = 999
                     self.httpd.server_close()
+                    interProcessSend("kill.0")
                     os._exit(0)
         def stop(self):
             global exitcounter
             exitcounter = 999
             self.httpd.server_close()
+            interProcessSend("kill.0")
 
     threadArr = []
     for i in range(numThreads):
@@ -3062,6 +3275,7 @@ def RunServerMultiThreaded(addr, port):
             exitcounter = 999
             for i in range(numThreads):
                 threadArr[i].stop()
+            interProcessSend("kill.0")
             sys.exit(0)
 
 # note: customtkinter-5.2.0
@@ -4330,12 +4544,14 @@ def show_gui():
     except (KeyboardInterrupt,SystemExit):
         exitcounter = 999
         print("Exiting by user request.")
+        interProcessSend("kill.0")
         sys.exit(0)
 
 
     if nextstate==0:
         exitcounter = 999
         print("Exiting by user request.")
+        interProcessSend("kill.0")
         sys.exit(0)
     else:
         # processing vars
@@ -4353,6 +4569,7 @@ def show_gui():
             else:
                 print("No text or image model file was selected. Cannot continue.", flush=True)
             time.sleep(2)
+            interProcessSend("kill.2")
             sys.exit(2)
 
 def show_gui_msgbox(title,message):
@@ -4572,6 +4789,7 @@ def run_horde_worker(args, api_key, worker_name):
         print_with_time("Horde Worker Shutdown - Server Closing.")
     exitcounter = 999
     time.sleep(3)
+    interProcessSend("kill.2")
     sys.exit(2)
 
 def convert_outdated_args(args):
@@ -4623,13 +4841,14 @@ def check_deprecation_warning():
 
 
 
-def setuptunnel(has_sd):
+def setuptunnel(argsObj, has_sd):
     # This script will help setup a cloudflared tunnel for accessing KoboldCpp over the internet
     # It should work out of the box on both linux and windows
     try:
         import subprocess
         import re
-        global sslvalid
+        
+        sslvalid = argsObj.ssl and len(argsObj.ssl)==2 and isinstance(argsObj.ssl[0], str) and os.path.exists(argsObj.ssl[0]) and isinstance(argsObj.ssl[1], str) and os.path.exists(argsObj.ssl[1])
         httpsaffix = ("https" if sslvalid else "http")
         def run_tunnel():
             tunnelproc = None
@@ -4638,13 +4857,13 @@ def setuptunnel(has_sd):
             time.sleep(0.2)
             if os.name == 'nt':
                 print("Starting Cloudflare Tunnel for Windows, please wait...", flush=True)
-                tunnelproc = subprocess.Popen(f"cloudflared.exe tunnel --url {httpsaffix}://localhost:{args.port}", text=True, encoding='utf-8', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+                tunnelproc = subprocess.Popen(f"cloudflared.exe tunnel --url {httpsaffix}://localhost:{argsObj.port} --no-tls-verify", text=True, encoding='utf-8', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
             elif sys.platform=="darwin":
                 print("Starting Cloudflare Tunnel for MacOS, please wait...", flush=True)
-                tunnelproc = subprocess.Popen(f"./cloudflared tunnel --url {httpsaffix}://localhost:{args.port}", text=True, encoding='utf-8', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+                tunnelproc = subprocess.Popen(f"./cloudflared tunnel --url {httpsaffix}://localhost:{argsObj.port} --no-tls-verify", text=True, encoding='utf-8', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
             else:
                 print("Starting Cloudflare Tunnel for Linux, please wait...", flush=True)
-                tunnelproc = subprocess.Popen(f"./cloudflared-linux-amd64 tunnel --url {httpsaffix}://localhost:{args.port}", text=True, encoding='utf-8', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+                tunnelproc = subprocess.Popen(f"./cloudflared-linux-amd64 tunnel --url {httpsaffix}://localhost:{argsObj.port} --no-tls-verify", text=True, encoding='utf-8', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
             time.sleep(10)
             def tunnel_reader():
                 nonlocal tunnelproc,tunneloutput,tunnelrawlog
@@ -4879,11 +5098,29 @@ def analyze_gguf_model_wrapper(filename=""):
     dumpthread = threading.Thread(target=analyze_gguf_model, args=(args,filename))
     dumpthread.start()
 
+def interProcessSend(obj):
+    from multiprocessing.connection import Client
+    address = ('localhost', comPort)
+    conn = Client(address) # comPassword
+    conn.send(obj)
+    time.sleep(2)
+    conn.close()
+
 def main(launch_args,start_server=True):
-    global embedded_kailite, embedded_kcpp_docs, embedded_kcpp_sdui
+    global embedded_kailite, embedded_kcpp_docs, embedded_kcpp_sdui, embedded_kcpp_control
     global libname, args, friendlymodelname, friendlysdmodelname, fullsdmodelpath, mmprojpath, password, fullwhispermodelpath, ttsmodelpath
+    global configsDir, customConfigs, comPort, comPassword, controlEnabled, controlPassword, config
 
     args = launch_args
+
+    comPort = args.comPort
+    controlEnabled = args.controlEnabled
+    # comPassword = args.comPassword
+    if ('customConfigs' in args):
+        configsDir = args.configsDir
+        customConfigs = args.customConfigs
+        config = args.config
+
     if (args.version) and len(sys.argv) <= 2:
         print(f"{KcppVersion}") # just print version and exit
         return
@@ -4953,6 +5190,7 @@ def main(launch_args,start_server=True):
             if args.skiplauncher:
                 print("Note: In order to use --skiplauncher, you need to specify a model with --model")
             time.sleep(3)
+            interProcessSend("kill.2")
             sys.exit(2)
 
     #try to read story if provided
@@ -5168,6 +5406,9 @@ def main(launch_args,start_server=True):
     if args.password and args.password!="":
         password = args.password.strip()
 
+    if args.controlPassword and args.controlPassword!="":
+        controlPassword = args.controlPassword.strip()
+
     #handle loading text model
     if args.model_param:
         if not os.path.exists(args.model_param):
@@ -5372,6 +5613,14 @@ def main(launch_args,start_server=True):
     except Exception:
         print("Could not find Embedded SDUI.")
 
+    try:
+        basepath = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
+        with open(os.path.join(basepath, "kcpp_control.html"), mode='rb') as f:
+            embedded_kcpp_control = f.read()
+            print("Embedded control API loaded.")
+    except Exception:
+        print("Could not find Embedded KoboldCpp control API.")
+
     # print enabled modules
     caps = get_capabilities()
     enabledmlist = []
@@ -5526,8 +5775,8 @@ def main(launch_args,start_server=True):
 
     check_deprecation_warning()
     if start_server:
-        if args.remotetunnel:
-            setuptunnel(True if args.sdmodel else False)
+        if not controlEnabled and args.remotetunnel:
+            setuptunnel(launch_args, True if args.sdmodel else False)
         else:
             # Flush stdout for previous win32 issue so the client can see output.
             print(f"======\nPlease connect to custom endpoint at {epurl}", flush=True)
@@ -5536,6 +5785,7 @@ def main(launch_args,start_server=True):
         # Flush stdout for previous win32 issue so the client can see output.
         if not args.prompt or args.benchmark:
             print("Server was not started, main function complete. Idling.", flush=True)
+            interProcessSend("kill.0")
 
 def run_in_queue(launch_args, input_queue, output_queue):
     main(launch_args, start_server=False)
@@ -5560,6 +5810,8 @@ def start_in_seperate_process(launch_args):
     return (output_queue, input_queue, p)
 
 if __name__ == '__main__':
+    import multiprocessing
+    multiprocessing.freeze_support()
 
     def check_range(value_type, min_value, max_value):
         def range_checker(arg: str):
@@ -5682,4 +5934,70 @@ if __name__ == '__main__':
     compatgroup.add_argument("--noblas", help=argparse.SUPPRESS, action='store_true')
     compatgroup3.add_argument("--nommap", help=argparse.SUPPRESS, action='store_true')
 
-    main(parser.parse_args(),start_server=True)
+    advparser.add_argument("--controlPassword", help="Used to enable remote control. By passing in this argument, control endpoint will use the provided password.  Both the configs directory and password must be provided to enable the functionality.", default=None)
+    advparser.add_argument("--configsDir", help="Used to enable remote control. By passing in this argument, configs in the directory will by available for restarting operations.", default=None)
+    argsIn = parser.parse_args()
+
+    print("Attempting to run KCPP in daemon thread")
+    try:
+        argsIn.customConfigs = [each for each in os.listdir(argsIn.configsDir) if (each.endswith('.kcpps') or each.endswith('.kcppt'))]
+        print(f"Custom configs found: {', '.join(argsIn.customConfigs)}")
+    except Exception:
+        print("Could not load custom config dir.")
+    
+    configAfterRestart = argsIn.config
+    
+    argsIn.comPort = 65001
+    argsIn.controlEnabled = argsIn.controlPassword is not None and (len(argsIn.customConfigs) > 0)
+    print(f"Control endpoint: {argsIn.controlEnabled}")
+    runFlag = True
+    exitCode = 0
+
+    if argsIn.controlEnabled and argsIn.remotetunnel:
+        setuptunnel(argsIn, True) # Always show the SDUI URL just in case
+    
+    while runFlag:
+        import multiprocessing
+        try:
+            from multiprocessing.connection import Listener
+            address = ('localhost', 0)
+            listener = Listener(address) # , authkey=argsIn.comPassword
+            argsIn.comPort = listener.address[1]
+
+            kcppThread = multiprocessing.Process(target=main,kwargs={"launch_args": argsIn, "start_server": True})
+            kcppThread.start()
+
+            conn = listener.accept()
+            print(f'Connection accepted from {listener.last_accepted}')
+            while True:
+                try:
+                    msg = conn.recv()
+                    print(f"Server received internal message: {msg}")
+                    if argsIn.controlEnabled and msg in argsIn.customConfigs:
+                        configAfterRestart = msg
+                        conn.close()
+                        break
+                    elif "kill." in msg:
+                        killCode = str(msg).replace("kill.", "")
+                        if killCode.isdigit:
+                            print(f"Kill code {killCode} received")
+                            exitCode = int(killCode)
+                            runFlag = False
+                    else:
+                        configAfterRestart = None
+                except:
+                    runFlag = False
+                    break
+            listener.close()
+
+            if runFlag:
+                print(f'Server restarting with new config: {configAfterRestart}')
+            kcppThread.terminate()
+            if configAfterRestart is None:
+                break
+            argsIn.config = [os.path.join(argsIn.configsDir, configAfterRestart)]
+        except:
+            break        
+    
+    print("Server exiting")
+    sys.exit(exitCode)

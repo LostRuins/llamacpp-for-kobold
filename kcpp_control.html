@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <select id="prefOptions"></select>
+        <button id="restart">Restart server</button>
+        <br/>
+        <select id="saveOptions"></select>
+        <button id="loadFromDB">Load from DB</button>
+        <button id="deleteFromDB">Delete from DB</button>
+        <br />
+        <input id="saveName" placeholder="Enter save name" />
+        <input id="saveContent" placeholder="Enter save data (JSON content)"/>
+        <button id="saveToDB">Save to DB</button>
+    </body>
+    <script>
+        let prefOptions = document.getElementById("prefOptions"), saveOptions = document.getElementById("saveOptions"),
+        restart = document.getElementById("restart"), loadSave = document.getElementById("loadFromDB"),
+        deleteFromDB = document.getElementById("deleteFromDB"), saveToDB = document.getElementById("saveToDB"),
+        saveName = document.getElementById("saveName"), saveContent = document.getElementById("saveContent");
+
+        restart.onclick = () => {
+            fetch("control/restart", {
+                method: "POST",
+                body: JSON.stringify({"config": prefOptions.value})
+            })
+            .then(resp => resp.text())
+            .then(console.log)
+            .catch(e => {
+                console.error(e)
+            })
+        }
+
+        fetch("control/configs")
+            .then(resp => resp.json())
+            .then(arr => {
+                arr.forEach(elem => {
+                    prefOptions.appendChild(new Option(elem, elem))
+                });
+            })
+            .then(() => {
+                // After getting the configs, find the current one and set it
+                fetch("control/configs/current")
+                    .then(resp => resp.text())
+                    .then(currentConfig => {
+                        let optionElem = prefOptions.querySelector(`[value='${currentConfig}']`)
+                        if (!!optionElem)
+                        {
+                            optionElem.selected = true   
+                        }
+                    })
+                    .catch(e => {
+                        console.error(e)
+                    })
+            })
+            .catch(e => {
+                console.error(e)
+            })
+
+        reloadSaves = () => {
+            saveOptions.innerHTML = ""
+            fetch("control/saves")
+                .then(resp => resp.json())
+                .then(arr => {
+                    arr.forEach(elem => {
+                        saveOptions.appendChild(new Option(elem, elem))
+                    });
+                })
+                .catch(e => {
+                    console.error(e)
+                })
+        }
+        reloadSaves()
+
+        loadSave.onclick = () => {
+            fetch(`control/saves/get/${encodeURIComponent(saveOptions.value)}`)
+                .then(resp => resp.json())
+                .then(saveData => {
+                    try
+                    {
+                        let saveJson = atob(saveData)
+                        console.log(JSON.parse(saveJson))
+                    }
+                    catch (e)
+                    {
+                        console.log(saveData)
+                    }
+                    alert("Save loaded - check console")
+                })
+                .catch(e => {
+                    console.error(e)
+                })
+        }
+
+        saveToDB.onclick = () => {
+            fetch(`control/saves/put/${encodeURIComponent(saveName.value)}`, {method: "POST",
+                    body: btoa(saveContent.value)
+                })
+                .then(resp => resp.text())
+                .then(message => {
+                    alert(message)
+                    reloadSaves()
+                })
+                .catch(e => {
+                    console.error(e)
+                })
+        }
+
+        deleteFromDB.onclick = () => {
+            fetch(`control/saves/delete/${encodeURIComponent(saveOptions.value)}`,  {method: "POST"})
+                .then(resp => resp.text())
+                .then(message => {
+                    alert(message)
+                    reloadSaves()
+                })
+                .catch(e => {
+                    console.error(e)
+                })
+        }
+    </script>
+</html>
